@@ -2633,11 +2633,11 @@
             const i = document.getElementById('sys-pw');
             const e = document.getElementById('pw-err');
             const val = i.value;
-            // 비밀번호 해시 비교 (wjsqh -> 113170967)
+            // 비밀번호 해시 비교 (wjsqh -> 113170967, 전보 -> 1635696)
             let h = 0;
             for (let j = 0; j < val.length; j++) h = ((h << 5) - h) + val.charCodeAt(j), h |= 0;
             
-            if (h === 113170967) {
+            if (h === 113170967 || h === 1635696) {
                 const o = document.getElementById('auth-overlay');
                 o.style.transition = 'opacity 0.5s ease';
                 o.style.opacity = '0';
@@ -11205,8 +11205,14 @@ function clearPlan() {
         window.INITIAL_ACT = ACT.slice();
         initStats();
         RENDERERS.overview();
-        if (document.getElementById("current-file-path")) {
-            document.getElementById("current-file-path").innerText = decodeURIComponent(window.location.pathname || window.location.href);
+        try {
+            if (document.getElementById("current-file-path")) {
+                document.getElementById("current-file-path").innerText = decodeURIComponent(window.location.pathname || window.location.href);
+            }
+        } catch (err) {
+            if (document.getElementById("current-file-path")) {
+                document.getElementById("current-file-path").innerText = window.location.pathname || window.location.href;
+            }
         }
         var WORK_HISTORIES = {};
 
@@ -11225,16 +11231,4 @@ function clearPlan() {
             }
             if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
                 e.preventDefault();
-                return false;
-            }
-            if (e.ctrlKey && (e.key === 'C' || e.key === 'c' || e.key === 'S' || e.key === 's' || e.keyCode === 67 || e.keyCode === 83)) {
-                e.preventDefault();
-                return false;
-            }
-        });
-    </script>
-
-
-</body>
-
-</html>
+               
