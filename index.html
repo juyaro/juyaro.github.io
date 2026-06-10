@@ -1660,14 +1660,15 @@
 <body style="overflow: hidden;">
 
     <!-- 시스템 접속 보안 인증 레이어 -->
-    <div id="auth-overlay" style="position:fixed; inset:0; background:#060814; z-index:10000; display:flex; align-items:center; justify-content:center; font-family:'Noto Sans KR', sans-serif;">
-        <div style="background:#0f1322; padding:45px 35px; border-radius:12px; border:1px solid #1e293b; box-shadow:0 20px 40px rgba(0, 0, 0, 0.6); text-align:center; width:340px; box-sizing:border-box;">
-            <div style="width:48px; height:48px; background:linear-gradient(135deg, #0ea5e9, #2563eb); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#fff; margin:0 auto 20px; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">2</div>
-            <div style="font-size:18px; font-weight:700; color:#ffffff; margin-bottom:12px; letter-spacing:-0.5px;">시스템 보안 인증</div>
-            <div style="font-size:12px; color:#94a3b8; line-height:1.6; margin-bottom:24px; font-weight:400;">이동 관리 대시보드에 접근하기 위해<br>비밀번호를 입력해 주십시오.</div>
-            <input type="password" id="sys-pw" onkeydown="if(event.key==='Enter') checkAuth()" placeholder="비밀번호 입력" style="background:#161c2d; border:1px solid #273549; color:#fff; padding:12px; border-radius:6px; width:100%; outline:none; font-size:14px; text-align:center; box-sizing:border-box; transition:all 0.2s; margin-bottom:12px;">
-            <button onclick="checkAuth()" style="background:#3b82f6; color:#fff; border:none; padding:12px; border-radius:6px; font-weight:700; cursor:pointer; width:100%; font-size:14px; transition:all 0.2s;">확인</button>
-            <div id="pw-err" style="color:#ef4444; font-size:12px; margin-top:15px; display:none; font-weight:600; background:rgba(239,68,68,0.1); padding:8px; border-radius:6px; box-sizing:border-box; border:1px solid rgba(239,68,68,0.2);">❌ 비밀번호가 올바르지 않습니다.</div>
+    <div id="auth-overlay" style="position:fixed; inset:0; background:#0b0f1c; z-index:10000; display:flex; align-items:center; justify-content:center; flex-direction:column; font-family:'Noto Sans KR', sans-serif;">
+        <div style="background:#111827; padding:50px; border-radius:24px; border:1px solid #1e2d47; box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.5); text-align:center; max-width:400px; width:90%; position:relative;">
+            <div style="position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, #3b82f6, #06b6d4);"></div>
+            <div style="width:60px; height:60px; background:linear-gradient(135deg, #1d4ed8, #0891b2); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:36px; font-weight:900; color:#fff; margin:0 auto 20px;">2</div>
+            <div style="font-size:22px; font-weight:800; color:#fff; margin-bottom:8px;">시스템 인증</div>
+            <div style="font-size:13px; color:#64748b; margin-bottom:30px;">관리 시스템 접근을 위해 비밀번호를 입력하세요.</div>
+            <input type="password" id="sys-pw" onkeydown="if(event.key==='Enter') checkAuth()" placeholder="Password" style="background:#0b0f1c; border:1px solid #334155; color:#fff; padding:15px; border-radius:12px; width:100%; outline:none; font-size:18px; text-align:center; box-sizing:border-box; transition:all 0.2s; margin-bottom:15px;">
+            <button onclick="checkAuth()" style="background:#3b82f6; color:#fff; border:none; padding:15px; border-radius:12px; font-weight:700; cursor:pointer; width:100%; font-size:16px; transition:all 0.2s; box-shadow:0 4px 6px -1px rgba(59,130,246,0.3);">접속하기</button>
+            <div id="pw-err" style="color:#ef4444; font-size:12px; margin-top:20px; display:none; font-weight:600; background:rgba(239,68,68,0.1); padding:8px; border-radius:6px;">❌ 비밀번호가 올바르지 않습니다.</div>
         </div>
     </div>
 
@@ -2633,11 +2634,11 @@
             const i = document.getElementById('sys-pw');
             const e = document.getElementById('pw-err');
             const val = i.value;
-            // 비밀번호 해시 비교 (wjsqh -> 113170967, 전보 -> 1635696)
+            // 비밀번호 해시 비교 (wjsqh -> 113170967)
             let h = 0;
             for (let j = 0; j < val.length; j++) h = ((h << 5) - h) + val.charCodeAt(j), h |= 0;
             
-            if (h === 113170967 || h === 1635696) {
+            if (h === 113170967) {
                 const o = document.getElementById('auth-overlay');
                 o.style.transition = 'opacity 0.5s ease';
                 o.style.opacity = '0';
@@ -6024,11 +6025,6 @@
             }
             if (currentPage === 'compare' && typeof RENDERERS.compare === 'function') {
                 RENDERERS.compare();
-            }
-            if (document.getElementById('modal-compare-full') && document.getElementById('modal-compare-full').classList.contains('on')) {
-                if (typeof renderFullScreenCompare === 'function') {
-                    renderFullScreenCompare();
-                }
             }
         }
 
@@ -9922,7 +9918,7 @@ function clearPlan() {
             return html;
         }
 
-        function buildGradeTableHtml(isExcel) {
+        function buildGradeTableHtml() {
             var cols = STATION_LIST_43;
             var postAct = getPlannedAct() || [];
             var grades = ['2급', '3급', '4급', '5급', '6급', '7급', '8급', '9급'];
@@ -9964,21 +9960,13 @@ function clearPlan() {
                 return sum;
             }
 
-            var tableStyle = isExcel 
-                ? 'border-collapse: collapse; font-family: sans-serif; font-size: 11px;' 
-                : 'border-collapse: separate; border-spacing: 0; width: max-content; font-size: 11px;';
-            var labelStyle = isExcel 
-                ? 'background-color: #f1f5f9; font-weight: bold; border: 1px solid #cbd5e1; text-align: center; color: #1e293b;' 
-                : 'background-color: var(--bg4); font-weight: bold; border: 1px solid var(--bd); text-align: center; min-width: 110px; color: var(--tx2);';
-            var stationHeaderStyle = isExcel 
-                ? 'background-color: #f1f5f9; font-weight: bold; border: 1px solid #cbd5e1; text-align: center; color: #1e293b;' 
-                : 'background-color: var(--bg4); font-weight: bold; border: 1px solid var(--bd); text-align: center;';
-            var cellStyle = isExcel 
-                ? 'border: 1px solid #cbd5e1; padding: 6px 4px; text-align: center; vertical-align: middle;' 
-                : 'border: 1px solid var(--bd); padding: 6px 4px; text-align: center; vertical-align: middle;';
-            var totalLabelStyle = isExcel 
-                ? 'background-color: #e2e8f0; font-weight: bold; border: 1px solid #cbd5e1; text-align: center; color: #0f172a;' 
-                : 'background: var(--bg3) !important; font-weight: bold; border: 1px solid var(--bd); border-right: 2px solid var(--ac) !important; text-align: center; position: sticky; left: 110px; z-index: 99 !important; color: var(--tx2); width: 75px; min-width: 75px; box-shadow: 2px 0 5px rgba(0,0,0,0.15);';
+            var tableStyle = 'border-collapse: separate; border-spacing: 0; width: max-content; font-size: 11px;';
+            var labelStyle = 'background-color: var(--bg4); font-weight: bold; border: 1px solid var(--bd); text-align: center; min-width: 110px; color: var(--tx2);';
+            var stationHeaderStyle = 'background-color: var(--bg4); font-weight: bold; border: 1px solid var(--bd); text-align: center;';
+            var cellStyle = 'border: 1px solid var(--bd); padding: 6px 4px; text-align: center; vertical-align: middle;';
+            
+            // Styled total label next to the grade column
+            var totalLabelStyle = 'background: var(--bg3) !important; font-weight: bold; border: 1px solid var(--bd); border-right: 2px solid var(--ac) !important; text-align: center; position: sticky; left: 110px; z-index: 99 !important; color: var(--tx2); width: 75px; min-width: 75px; box-shadow: 2px 0 5px rgba(0,0,0,0.15);';
 
             var MGMT_COLORS = {
                 '장산관리역': '#2b5c8f',
@@ -10019,10 +10007,10 @@ function clearPlan() {
             var html = '<table style="' + tableStyle + '" border="1">';
             
             html += '<colgroup>';
-            html += '<col style="width: ' + (isExcel ? '120' : '110') + 'px;"/>';
+            html += '<col style="width: 110px;"/>';
             html += '<col style="width: 75px;"/>';
             for (var idx = 0; idx < cols.length; idx++) {
-                html += '<col style="width: ' + (isExcel ? '110' : '95') + 'px;"/>';
+                html += '<col style="width: 95px;"/>';
             }
             html += '</colgroup>';
 
@@ -10030,7 +10018,7 @@ function clearPlan() {
             html += '<tr><td class="sticky-col" style="' + labelStyle + '">관리역 묶음</td>';
             html += '<td class="sticky-col" style="' + totalLabelStyle + '">전체합</td>';
             headerGroups.forEach(function (g, gIdx) {
-                var mgmtStyle = 'background-color: ' + g.color + '; color: #ffffff; font-weight: bold; border: 1px solid ' + (isExcel ? '#cbd5e1' : 'var(--bd)') + '; text-align: center;';
+                var mgmtStyle = 'background-color: ' + g.color + '; color: #ffffff; font-weight: bold; border: 1px solid var(--bd); text-align: center;';
                 var extraCls = (gIdx < headerGroups.length - 1) ? ' class="comp-group-end"' : '';
                 html += '<td colspan="' + g.colspan + '"' + extraCls + ' style="' + mgmtStyle + '">' + g.name + '</td>';
             });
@@ -10060,11 +10048,9 @@ function clearPlan() {
 
             // Helper to build a headcount row
             function buildTotalRow(label) {
-                var rowHtml = isExcel
-                    ? '<tr style="background-color: #f8fafc; font-weight: bold;">'
-                    : '<tr style="background: rgba(59, 130, 246, 0.08); font-weight: bold;">';
-                rowHtml += '<td class="sticky-col" style="' + labelStyle + '; color: ' + (isExcel ? '#0284c7' : 'var(--ac2)') + ';">' + label + '</td>';
-                rowHtml += '<td class="sticky-col" style="' + totalLabelStyle + '; color: ' + (isExcel ? '#0284c7' : 'var(--ac2)') + '; font-weight: 800;">' + grandTotal + '</td>';
+                var rowHtml = '<tr style="background: rgba(59, 130, 246, 0.08); font-weight: bold;">';
+                rowHtml += '<td class="sticky-col" style="' + labelStyle + '; color: var(--ac2);">' + label + '</td>';
+                rowHtml += '<td class="sticky-col" style="' + totalLabelStyle + '; color: var(--ac2); font-weight: 800; font-family:\'JetBrains Mono\';">' + grandTotal + '</td>';
                 cols.forEach(function (st, idx) {
                     var isEnd = false;
                     var currG = getStationGroupName(st);
@@ -10074,9 +10060,7 @@ function clearPlan() {
 
                     var displayVal = '';
                     var isMgmt = st.endsWith('관리역');
-                    var currentCellStyle = isExcel 
-                        ? 'border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; padding: 6px 4px;' 
-                        : 'border: 1px solid var(--bd); text-align: center; vertical-align: middle;';
+                    var currentCellStyle = 'border: 1px solid var(--bd); text-align: center; vertical-align: middle;';
 
                     if (isMgmt) {
                         var group = MGMTG.find(function (g) { return g.name === st; });
@@ -10093,26 +10077,20 @@ function clearPlan() {
                             selfTotal += (countMap[st][g] || 0);
                         });
 
-                        if (isExcel) {
-                            displayVal = '<span style="color: #b7791f; font-weight: bold;">' + groupTotal + '</span> / <span style="color: #0369a1; font-weight: bold;">' + selfTotal + '</span>';
-                        } else {
-                            currentCellStyle += ' padding: 0; height: 30px;';
-                            displayVal = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">' +
-                                         '  <div style="flex: 1; text-align: center; font-weight: 800; color: var(--warn);" title="그룹 전체 합 (산하 일반역 포함)">' + groupTotal + '</div>' +
-                                         '  <div style="width: 0; border-left: 1px dashed var(--bd2); height: 100%;"></div>' +
-                                         '  <div style="flex: 1; text-align: center; font-weight: 800; color: var(--ac2);" title="관리역 자체 인원">' + selfTotal + '</div>' +
-                                         '</div>';
-                        }
+                        currentCellStyle += ' padding: 0; height: 30px;';
+                        displayVal = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">' +
+                                     '  <div style="flex: 1; text-align: center; font-weight: 800; color: var(--warn);" title="그룹 전체 합 (산하 일반역 포함)">' + groupTotal + '</div>' +
+                                     '  <div style="width: 0; border-left: 1px dashed var(--bd2); height: 100%;"></div>' +
+                                     '  <div style="flex: 1; text-align: center; font-weight: 800; color: var(--ac2);" title="관리역 자체 인원">' + selfTotal + '</div>' +
+                                     '</div>';
                     } else {
                         var val = 0;
                         grades.forEach(function (g) {
                             val += (countMap[st][g] || 0);
                         });
-                        var color = ['수영역', '덕천역', '사상역'].indexOf(st) >= 0 
-                            ? (isExcel ? '#b7791f' : 'var(--warn)') 
-                            : (isExcel ? '#0369a1' : 'var(--ac2)');
-                        displayVal = '<strong style="color:' + color + ';">' + val + '</strong>';
-                        if (!isExcel) currentCellStyle += ' padding: 6px 4px;';
+                        var color = ['수영역', '덕천역', '사상역'].indexOf(st) >= 0 ? 'var(--warn)' : 'var(--ac2)';
+                        displayVal = '<strong style="color:' + color + '; font-family:\'JetBrains Mono\';">' + val + '</strong>';
+                        currentCellStyle += ' padding: 6px 4px;';
                     }
 
                     rowHtml += '<td' + extraCls + ' style="' + currentCellStyle + '">' + displayVal + '</td>';
@@ -10133,7 +10111,7 @@ function clearPlan() {
 
                 html += '<tr class="comp-row-hover">';
                 html += '<td class="sticky-col" style="' + labelStyle + '">' + gradeKey + '</td>';
-                html += '<td class="sticky-col" style="' + totalLabelStyle + '; font-weight: 700; color: ' + (isExcel ? '#0f172a' : 'var(--tx)') + ';">' + gradeTotalSum + '</td>';
+                html += '<td class="sticky-col" style="' + totalLabelStyle + '; font-weight: 700; font-family:\'JetBrains Mono\'; color: var(--tx);">' + gradeTotalSum + '</td>';
 
                 cols.forEach(function (st, idx) {
                     var isEnd = false;
@@ -10150,26 +10128,20 @@ function clearPlan() {
                         var groupTotal = getGroupGradeCount(st, gradeKey);
                         var selfTotal = countMap[st][gradeKey] || 0;
                         if (groupTotal > 0 || selfTotal > 0) {
-                            if (isExcel) {
-                                displayVal = '<span style="color: #b7791f; font-weight: bold;">' + groupTotal + '</span> / <span style="color: #0369a1; font-weight: bold;">' + selfTotal + '</span>';
-                            } else {
-                                currentCellStyle = 'border: 1px solid var(--bd); padding: 0; text-align: center; vertical-align: middle; height: 30px;';
-                                displayVal = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">' +
-                                             '  <div style="flex: 1; text-align: center; font-weight: 700; color: var(--warn);" title="그룹 전체 합 (산하 일반역 포함)">' + groupTotal + '</div>' +
-                                             '  <div style="width: 0; border-left: 1px dashed var(--bd2); height: 100%;"></div>' +
-                                             '  <div style="flex: 1; text-align: center; font-weight: 700; color: var(--ac2);" title="관리역 자체 인원">' + selfTotal + '</div>' +
-                                             '</div>';
-                            }
+                            currentCellStyle = 'border: 1px solid var(--bd); padding: 0; text-align: center; vertical-align: middle; height: 30px;';
+                            displayVal = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%;">' +
+                                         '  <div style="flex: 1; text-align: center; font-weight: 700; color: var(--warn);" title="그룹 전체 합 (산하 일반역 포함)">' + groupTotal + '</div>' +
+                                         '  <div style="width: 0; border-left: 1px dashed var(--bd2); height: 100%;"></div>' +
+                                         '  <div style="flex: 1; text-align: center; font-weight: 700; color: var(--ac2);" title="관리역 자체 인원">' + selfTotal + '</div>' +
+                                         '</div>';
                         } else {
                             displayVal = '-';
                         }
                     } else {
                         var val = countMap[st][gradeKey] || 0;
                         if (val > 0) {
-                            var color = ['수영역', '덕천역', '사상역'].indexOf(st) >= 0 
-                                ? (isExcel ? '#b7791f' : 'var(--warn)') 
-                                : (isExcel ? '#0369a1' : 'var(--ac2)');
-                            displayVal = '<strong style="color:' + color + ';">' + val + '</strong>';
+                            var color = ['수영역', '덕천역', '사상역'].indexOf(st) >= 0 ? 'var(--warn)' : 'var(--ac2)';
+                            displayVal = '<strong style="color:' + color + '; font-family:\'JetBrains Mono\';">' + val + '</strong>';
                         } else {
                             displayVal = '-';
                         }
@@ -10220,10 +10192,7 @@ function clearPlan() {
             }
         };
 
-        window.renderFullScreenCompare = function() {
-            var wrapper = document.getElementById('compare-full-wrapper');
-            if (!wrapper) return;
-            
+        window.openFullScreenCompare = function() {
             var html = '<div style="border:1px solid var(--bd); border-radius:8px; background:var(--bg3); margin-bottom:20px;">' +
                        buildCompareTableHtml(false) +
                        '</div>';
@@ -10240,18 +10209,17 @@ function clearPlan() {
                     '<div style="border:1px solid var(--bd); border-radius:8px; background:var(--bg3);">' +
                     gradeHtml +
                     '</div>';
-            
-            wrapper.innerHTML = html;
-        };
 
-        window.openFullScreenCompare = function() {
-            renderFullScreenCompare();
-            document.getElementById('modal-compare-full').classList.add('on');
-            
-            // 한 화면에 들어오도록 자동 스케일 조정 (기본 60% 시도)
-            adjustCompareScale(60);
-            var sl = document.querySelector('#modal-compare-full input[type="range"]');
-            if(sl) sl.value = 60;
+            var wrapper = document.getElementById('compare-full-wrapper');
+            if (wrapper) {
+                wrapper.innerHTML = html;
+                document.getElementById('modal-compare-full').classList.add('on');
+                
+                // 한 화면에 들어오도록 자동 스케일 조정 (기본 60% 시도)
+                adjustCompareScale(60);
+                var sl = document.querySelector('#modal-compare-full input[type="range"]');
+                if(sl) sl.value = 60;
+            }
         };
 
         window.closeFullScreenCompare = function() {
@@ -10270,13 +10238,6 @@ function clearPlan() {
 
         function exportCompareToExcel() {
             var html = buildCompareTableHtml(true);
-            if (html.endsWith('</body></html>')) {
-                html = html.substring(0, html.length - 14);
-            }
-            html += '<br/><br/><h3 style="font-family: sans-serif; color: #1e293b; margin-left: 10px;">역별 급수별 배치 현황</h3>';
-            html += buildGradeTableHtml(true);
-            html += '</body></html>';
-            
             var blob = new Blob(['\ufeff' + html], {
                 type: 'application/vnd.ms-excel;charset=utf-8;'
             });
@@ -11205,14 +11166,8 @@ function clearPlan() {
         window.INITIAL_ACT = ACT.slice();
         initStats();
         RENDERERS.overview();
-        try {
-            if (document.getElementById("current-file-path")) {
-                document.getElementById("current-file-path").innerText = decodeURIComponent(window.location.pathname || window.location.href);
-            }
-        } catch (err) {
-            if (document.getElementById("current-file-path")) {
-                document.getElementById("current-file-path").innerText = window.location.pathname || window.location.href;
-            }
+        if (document.getElementById("current-file-path")) {
+            document.getElementById("current-file-path").innerText = decodeURIComponent(window.location.pathname || window.location.href);
         }
         var WORK_HISTORIES = {};
 
@@ -11231,4 +11186,16 @@ function clearPlan() {
             }
             if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
                 e.preventDefault();
-               
+                return false;
+            }
+            if (e.ctrlKey && (e.key === 'C' || e.key === 'c' || e.key === 'S' || e.key === 's' || e.keyCode === 67 || e.keyCode === 83)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+
+
+</body>
+
+</html>
