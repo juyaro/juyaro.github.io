@@ -492,6 +492,10 @@ tbody tr.tr-conflict td .td-name {
 
 <!-- ===== 평정 자료 (점수 입력/업로드) ===== -->
 <div id="tab-scores" class="panel">
+  <div id="scores-back-bar" style="display:none; align-items:center; gap:8px; background:#f0f5fa; border:1px solid #c2daf8; border-radius:6px; padding:8px 12px; margin-bottom:15px;">
+    <button class="btn btn-sm btn-navy" onclick="goBackFromScoresDetail()" style="margin:0;"><i class="ti ti-arrow-back-up"></i> 이전 평정 화면으로 돌아가기</button>
+    <span style="font-size:12px; color:var(--blue); font-weight:700;" id="scores-back-bar-desc"></span>
+  </div>
   <div class="g2 mb2">
     <div>
       <div class="section-label"><i class="ti ti-upload"></i> 활동 점수 업로드</div>
@@ -1716,7 +1720,7 @@ function renderFirst() {
       h+=`<tr draggable="true" ondragstart="handleFirstDragStart(event, '${e.id}', '${grade}', '${rater}')" ondragover="handleFirstDragOver(event)" ondragenter="handleFirstDragEnter(event)" ondragleave="handleFirstDragLeave(event)" ondrop="handleFirstDrop(event, '${e.id}', '${grade}', '${rater}')" style="cursor: grab;">
       <td><span class="rank ${rCls}">${rankVal}</span></td>
       <td class="td-name">${e.name}</td><td>${e.position}</td><td class="td-unit">${e.parentUnit}(${e.unit})</td>
-      <td class="score-total">${cs.총점}</td>
+      <td class="score-total" onclick="showScoreDetailWithBack('${e.id}', '${e.grade}', '${e.parentUnit}', 'first', '${rater}', '${grade}')" style="cursor:pointer; text-decoration:underline;" title="클릭하여 동일직급 평정군 세부 정보 조회">${cs.총점}</td>
       <td class="score-pos">+${cs.가점}</td>
       <td class="score-neg">${cs.감점}</td>
       <td><input type="number" class="editable" id="f1-disc-${e.id}" value="${cs.재량}" min="${CRITERIA.재량점수.min}" max="${CRITERIA.재량점수.max}" onchange="updateFirstDiscretion('${e.id}', this.value, '${grade}', '${rater}')" style="width:50px"></td>
@@ -2299,7 +2303,7 @@ function renderSecond(){
         <td>${displayParentUnit}</td><td class="td-unit">${e.unit}</td>
         <td>${fr.unitRank||'-'}위</td>
         <td class="score-total">${fr.score||0}</td>
-        <td>${actTotal}</td>
+        <td onclick="showScoreDetailWithBack('${e.id}', '${e.grade}', '${e.parentUnit}', 'second', '', '${grade}')" style="cursor:pointer; text-decoration:underline; font-weight:700; color:var(--blue-mid);" title="클릭하여 동일직급 평정군 세부 정보 조회">${actTotal}</td>
         <td><input type="number" class="editable" id="f2-disc-${e.id}" value="${disc}" min="-10" max="10" onchange="updateSecondDiscretion('${e.id}', this.value, '${grade}')" style="width:55px"></td>
         <td style="font-weight:700">${sumVal}</td>
         <td><span class="eg ${egCls}">${sr.evalGrade||'-'}</span></td>
@@ -2620,7 +2624,27 @@ function renderResult(){
       return matchesGrade && matchesUnit;
     }).sort((a,b)=>(secondR[a.id]?.rank||99)-(secondR[b.id]?.rank||99));
     if(!emps.length)return;
-    h+=`<div class="card mb2"><div class="card-header"><h3><span class="badge b-blue">${grade}</span> 평정 결과 <span style="font-weight:400;font-size:12px;color:var(--text3);margin-left:8px">${emps.length}명</span></h3></div><div class="card-body" style="padding:0"><div class="tbl-wrap"><table><thead><tr><th>연번</th><th>2차순위</th><th>등급</th><th>성명</th><th>직위</th><th>소속단위</th><th>역</th><th>생년</th><th>현직급근속</th><th>입사구분</th><th>가점</th><th>감점</th><th>재량</th><th>활동총점</th><th>1차단위순위</th><th>1차점수</th><th>2차점수</th></tr></thead><tbody>`;
+    h+=`<div class="card mb2"><div class="card-header"><h3><span class="badge b-blue">${grade}</span> 평정 결과 <span style="font-weight:400;font-size:12px;color:var(--text3);margin-left:8px">${emps.length}명</span></h3></div><div class="card-body" style="padding:0"><div class="tbl-wrap"><table>
+    <colgroup>
+      <col style="width: 3.5%;">
+      <col style="width: 4.5%;">
+      <col style="width: 4.5%;">
+      <col style="width: 6.5%;">
+      <col style="width: 5.5%;">
+      <col style="width: 10.5%;">
+      <col style="width: 7.5%;">
+      <col style="width: 4.5%;">
+      <col style="width: 7.5%;">
+      <col style="width: 8.5%;">
+      <col style="width: 5.0%;">
+      <col style="width: 5.0%;">
+      <col style="width: 5.0%;">
+      <col style="width: 6.0%;">
+      <col style="width: 7.0%;">
+      <col style="width: 5.0%;">
+      <col style="width: 5.0%;">
+    </colgroup>
+    <thead><tr><th>연번</th><th>2차순위</th><th>등급</th><th>성명</th><th>직위</th><th>소속단위</th><th>역</th><th>생년</th><th>현직급근속</th><th>입사구분</th><th>가점</th><th>감점</th><th>재량</th><th>활동총점</th><th>1차단위순위</th><th>1차점수</th><th>2차점수</th></tr></thead><tbody>`;
     emps.forEach((e,i)=>{
       const fr=firstR[e.id]||{};
       const sr=secondR[e.id]||{};
@@ -2660,12 +2684,15 @@ function dlExcel(type){
   if(type==='grade'||type==='all'){
     grades.forEach(grade=>{
       const emps=employees.filter(e=>e.grade===grade).sort((a,b)=>(secondR[a.id]?.rank||99)-(secondR[b.id]?.rank||99));
-      const rows=[['연번','2차순위','등급','성명','직위','소속단위','역','생년','현직급근속','입사구분','가점','감점','재량','활동총점','1차단위순위','1차점수','2차점수']];
+      const rows=[['연번','사번','2차순위','등급','성명','직위','소속단위','역','생년','현직급근속','입사구분','가점','감점','재량','활동총점','1차단위순위','1차점수','2차점수']];
       emps.forEach((e,i)=>{
         const fr=firstR[e.id]||{},sr=secondR[e.id]||{},cs=calcScores[e.id]||{};
-        rows.push([i+1,sr.rank||'',sr.evalGrade||'',e.name,e.position,e.parentUnit,e.unit,e.birthYear,e.gradeYears,e.entryType,cs.가점||0,cs.감점||0,cs.재량||0,cs.총점||0,fr.unitRank||'',fr.score||0,sr.score||0]);
+        rows.push([i+1,e.id,sr.rank||'',sr.evalGrade||'',e.name,e.position,e.parentUnit,e.unit,e.birthYear,e.gradeYears,e.entryType,cs.가점||0,cs.감점||0,cs.재량||0,cs.총점||0,fr.unitRank||'',fr.score||0,sr.score||0]);
       });
-      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),grade+'_평정표');
+      // 엑셀 시트명은 31자를 초과할 수 없으며 /, \ , ?, *, :, [ , ] 문자를 포함할 수 없습니다.
+      let sheetName = grade.replace(/[\/\\?*:\[\]]/g, '_');
+      sheetName = (sheetName + '_평정표').substring(0, 31);
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),sheetName);
     });
   }
 
@@ -2688,7 +2715,124 @@ function dlExcel(type){
 }
 
 function printResult(){
+  // 2차 평정 대상 직급 (3급 ~ 9급)만 필터링하여 인쇄
+  const evalGrades = [
+    '3급(부장/관리역장/환승역장)', '3급(팀장/역장/운영역장)',
+    '4급', '5급', '6급', '7급', '8급', '9급'
+  ];
+
+  const targetEmps = employees.filter(e => evalGrades.includes(e.grade));
+  if(!targetEmps.length){
+    alert('인쇄할 2차 평정 대상 데이터가 없습니다.');
+    return;
+  }
+
+  const tempDiv = document.createElement('div');
+  tempDiv.id = 'print-temp-container';
+  
+  let printHtml = `<h1 class="print-main-title" style="text-align:center; font-size:20px; font-weight:800; color:#0D2B55; margin-bottom: 20px;">제2여객사업소 2차 인사평정 결과표 (2차 평정 대상)</h1>`;
+
+  const printedGrades = evalGrades.filter(grade => targetEmps.some(e => e.grade === grade));
+
+  printedGrades.forEach((grade, idx) => {
+    const gradeEmps = targetEmps.filter(e => e.grade === grade);
+    if (!gradeEmps.length) return;
+
+    // 2차 순위 정렬
+    gradeEmps.sort((a,b) => (secondR[a.id]?.rank||999)-(secondR[b.id]?.rank||999));
+
+    const isLast = (idx === printedGrades.length - 1);
+    const pbStyle = isLast ? '' : 'page-break-after: always;';
+
+    printHtml += `
+      <div class="print-page-block" style="${pbStyle} margin-bottom: 30px;">
+        <h2 style="font-size: 14px; font-weight:700; color:#0D2B55; border-bottom: 2px solid #0d2b55; padding-bottom:6px; margin: 15px 0 10px 0; display:flex; justify-content:space-between;">
+          <span>[직급: ${grade.replace('3급(부장/관리역장/환승역장)', '3급(부장급)').replace('3급(팀장/역장/운영역장)', '3급(팀장급)')}] 2차 평정 결과 (${gradeEmps.length}명)</span>
+          <span style="font-size:12px; font-weight:normal; color:#555;">제2여객사업소</span>
+        </h2>
+        <table class="print-table" style="width:100%; border-collapse:collapse; font-size:11px;">
+          <thead>
+            <tr style="background:#0D2B55; color:#fff; height:26px;">
+              <th style="border:1px solid #ddd; padding:4px;">2차순위</th>
+              <th style="border:1px solid #ddd; padding:4px;">사번</th>
+              <th style="border:1px solid #ddd; padding:4px;">성명</th>
+              <th style="border:1px solid #ddd; padding:4px;">직위</th>
+              <th style="border:1px solid #ddd; padding:4px;">소속단위</th>
+              <th style="border:1px solid #ddd; padding:4px;">역</th>
+              <th style="border:1px solid #ddd; padding:4px;">1차단위순위</th>
+              <th style="border:1px solid #ddd; padding:4px;">1차점수</th>
+              <th style="border:1px solid #ddd; padding:4px;">활동총점</th>
+              <th style="border:1px solid #ddd; padding:4px;">재량점수</th>
+              <th style="border:1px solid #ddd; padding:4px;">합계점수</th>
+              <th style="border:1px solid #ddd; padding:4px;">2차등급</th>
+              <th style="border:1px solid #ddd; padding:4px;">2차점수</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    gradeEmps.forEach(e => {
+      const fr = firstR[e.id]||{};
+      const sr = secondR[e.id]||{};
+      const actTotal = calcScores[e.id]?.총점||0;
+      const disc = sr.discretion||0;
+      const sumVal = actTotal + disc;
+      const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+
+      printHtml += `
+        <tr style="height:23px; text-align:center;">
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sr.rank||'-'}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${e.id}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${e.name}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${e.position}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-size:10px;">${displayParentUnit}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${e.unit}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${fr.unitRank||'-'}위</td>
+          <td style="border:1px solid #ddd; padding:3px;">${fr.score||0}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${actTotal}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${disc}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sumVal}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sr.evalGrade||'-'}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sr.score||'-'}</td>
+        </tr>
+      `;
+    });
+
+    printHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  });
+
+  tempDiv.innerHTML = printHtml;
+  document.body.appendChild(tempDiv);
+
+  const styleEl = document.createElement('style');
+  styleEl.id = 'print-temp-style';
+  styleEl.innerHTML = `
+    @media print {
+      body > * { display: none !important; }
+      #print-temp-container { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; }
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+      .print-table th { background-color: #0D2B55 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-table td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  `;
+  document.head.appendChild(styleEl);
+
+  const originalTitle = document.title;
+  document.title = '';
   window.print();
+  document.title = originalTitle;
+
+  setTimeout(() => {
+    if (tempDiv) tempDiv.remove();
+    if (styleEl) styleEl.remove();
+  }, 1000);
 }
 
 function printScoreTable() {
@@ -2872,7 +3016,7 @@ function dlScoreExcel(){
 
   const wb=XLSX.utils.book_new();
 
-  const header = ['연번', '성명', '직급', '소속(역)', '1차평정단위', '생년', '현직급근속', '입사구분', '수송순위', '수송가점', '부정승차단속 건수', '사회공헌 회원', '사회공헌 참여횟수', '안전리더 회원', '안전리더 활동횟수', '칭찬미담 건수', '신호기자격 유무', '감사 수입금 건수', '기타 지적 건수', '재량 점수', '총점'];
+  const header = ['연번', '사번', '성명', '직급', '소속(역)', '1차평정단위', '생년', '현직급근속', '입사구분', '수송순위', '수송가점', '부정승차단속 건수', '사회공헌 회원', '사회공헌 참여횟수', '안전리더 회원', '안전리더 활동횟수', '칭찬미담 건수', '신호기자격 유무', '감사 수입금 건수', '기타 지적 건수', '재량 점수', '총점'];
 
   // 1. 전체직급 탭 생성
   const allRows = [header];
@@ -2880,7 +3024,7 @@ function dlScoreExcel(){
     const raw=empScores[e.id]||{};
     const cs=calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
     allRows.push([
-      i+1, e.name, e.grade, e.unit, e.parentUnit, e.birthYear, e.gradeYears, e.entryType,
+      i+1, e.id, e.name, e.grade, e.unit, e.parentUnit, e.birthYear, e.gradeYears, e.entryType,
       raw['수송순위']||'', applyRangeCriteria(raw['수송순위']||0, CRITERIA.가점.수송순위),
       raw['부정승차단속']||0, raw['사회공헌_회원']?'✓':'-', raw['사회공헌_참여횟수']||0,
       raw['안전리더_회원']?'✓':'-', raw['안전리더_활동횟수']||0, raw['칭찬미담']||0,
@@ -2920,7 +3064,7 @@ function dlScoreExcel(){
       const raw=empScores[e.id]||{};
       const cs=calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
       gradeRows.push([
-        idx+1, e.name, e.grade, e.unit, e.parentUnit, e.birthYear, e.gradeYears, e.entryType,
+        idx+1, e.id, e.name, e.grade, e.unit, e.parentUnit, e.birthYear, e.gradeYears, e.entryType,
         raw['수송순위']||'', applyRangeCriteria(raw['수송순위']||0, CRITERIA.가점.수송순위),
         raw['부정승차단속']||0, raw['사회공헌_회원']?'✓':'-', raw['사회공헌_참여횟수']||0,
         raw['안전리더_회원']?'✓':'-', raw['안전리더_활동횟수']||0, raw['칭찬미담']||0,
@@ -3162,7 +3306,10 @@ function printSecondWithReference() {
   `;
   document.head.appendChild(styleEl);
 
+  const originalTitle = document.title;
+  document.title = '';
   window.print();
+  document.title = originalTitle;
 
   // 인쇄 완료 후 임시 마크업 및 스타일 복원
   setTimeout(() => {
@@ -3178,9 +3325,8 @@ function dlSecondExcel() {
   
   const wb=XLSX.utils.book_new();
 
-  const header = ['2차순위', '성명', '직위', '1차평정단위', '역', '1차단위순위', '1차점수', '활동총점', '재량점수', '합계점수', '2차등급', '2차점수'];
+  const header = ['사번', '성명', '직위', '1차평정단위', '역', '1차단위순위', '1차점수', '활동총점', '재량점수', '합계점수', '2차순위', '2차등급', '2차점수'];
 
-  // 1. 전체 탭 생성
   const allRows = [header];
   list.forEach(e => {
     const fr=firstR[e.id]||{};
@@ -3189,44 +3335,48 @@ function dlSecondExcel() {
     const disc = sr.discretion||0;
     const sumVal = actTotal + disc;
     allRows.push([
-      sr.rank||'-', e.name, e.position, e.parentUnit, e.unit,
+      e.id, e.name, e.position, e.parentUnit, e.unit,
       fr.unitRank ? fr.unitRank+'위' : '-', fr.score||0,
-      actTotal, disc, sumVal, sr.evalGrade||'-', sr.score||'-'
+      actTotal, disc, sumVal, sr.rank||'-', sr.evalGrade||'-', sr.score||'-'
     ]);
   });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allRows), '전체직급_2차');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allRows), '전체_2차');
 
-  // 2. 직급별 탭 생성
-  const gradeOrder = [
-    '3급(팀장/역장/운영역장)', '4급', '5급', '6급', '7급', '8급', '9급'
+  const unitOrder = [
+    '운영부', '장산관리역', '센텀시티관리역', '수영역', '광안관리역',
+    '경성대부경대관리역', '문현관리역', '전포관리역', '동의대관리역',
+    '냉정관리역', '사상역', '모덕관리역', '구명관리역', '덕천역',
+    '화명관리역', '호포관리역', '양산관리역'
   ];
 
-  gradeOrder.forEach(grade => {
-    const gradeEmps = list.filter(e => e.grade === grade);
-    if (!gradeEmps.length) return;
+  unitOrder.forEach(unit => {
+    const unitEmps = list.filter(e => e.parentUnit === unit);
+    if (!unitEmps.length) return;
 
-    // 2차 순위 순 정렬
-    gradeEmps.sort((a,b)=>(secondR[a.id]?.rank||999)-(secondR[b.id]?.rank||999));
+    unitEmps.sort((a, b) => {
+      const rA = secondR[a.id]?.rank || 9999;
+      const rB = secondR[b.id]?.rank || 9999;
+      if (rA !== rB) return rA - rB;
+      return String(a.id).localeCompare(b.id);
+    });
 
-    const gradeRows = [header];
-    gradeEmps.forEach(e => {
+    const unitRows = [header];
+    unitEmps.forEach(e => {
       const fr=firstR[e.id]||{};
       const sr=secondR[e.id]||{};
       const actTotal = calcScores[e.id]?.총점||0;
       const disc = sr.discretion||0;
       const sumVal = actTotal + disc;
-      gradeRows.push([
-        sr.rank||'-', e.name, e.position, e.parentUnit, e.unit,
+      unitRows.push([
+        e.id, e.name, e.position, e.parentUnit, e.unit,
         fr.unitRank ? fr.unitRank+'위' : '-', fr.score||0,
-        actTotal, disc, sumVal, sr.evalGrade||'-', sr.score||'-'
+        actTotal, disc, sumVal, sr.rank||'-', sr.evalGrade||'-', sr.score||'-'
       ]);
     });
 
-    let sheetName = grade;
-    if (sheetName === '3급(팀장/역장/운영역장)') sheetName = '3급(팀장_역장)';
-    sheetName = sheetName.substring(0, 31);
-
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(gradeRows), sheetName);
+    let sheetName = unit.replace('관리역', '').replace('역', '');
+    sheetName = (sheetName + '_평정').substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(unitRows), sheetName);
   });
 
   XLSX.writeFile(wb, '2차평정결과_추출.xlsx');
@@ -3538,6 +3688,106 @@ document.addEventListener('dragstart', e => {
     e.preventDefault();
   }
 });
+
+// 1/2차 평정 <-> 평정자료 탭 연동 및 이전 위치 복원 메모리 상태 변수
+window.scoresTabBackState = null;
+
+function showScoreDetailWithBack(sabun, grade, parentUnit, sourceTab, rater, gradeFilter) {
+  // 1. 현재 화면의 스크롤 위치 및 복원용 상세 정보 저장
+  window.scoresTabBackState = {
+    sourceTab: sourceTab,
+    scrollY: window.scrollY,
+    rater: rater,
+    gradeFilter: gradeFilter,
+    sabun: sabun
+  };
+
+  // 2. 평정자료(scores) 탭의 조회 필터를 클릭한 직원의 직급 및 평가단위(소속단위)로 세팅
+  const scoreGradeFilter = document.getElementById('score-grade-f');
+  const scoreUnitFilter = document.getElementById('score-unit-f');
+  const scoreNameFilter = document.getElementById('score-name-f');
+
+  if (scoreGradeFilter) scoreGradeFilter.value = grade;
+  
+  // 2차 평정(소장 평정)의 경우 단위 구분 없이 동일 직급 전체가 비교군이므로 단위를 '전체'("")로 설정
+  if (scoreUnitFilter) {
+    scoreUnitFilter.value = (sourceTab === 'second') ? '' : parentUnit;
+  }
+  if (scoreNameFilter) scoreNameFilter.value = ''; // 성명 검색은 초기화
+
+  // 3. 평정자료 테이블을 해당 필터 기준으로 갱신 렌더링
+  renderScoreTable();
+
+  // 4. 클릭한 대상 직원 행(Tr)에 강조 표시 스타일링 및 포커스 스크롤
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#score-tbl tbody tr');
+    let targetRow = null;
+    rows.forEach(tr => {
+      // tr 내부 이름 및 사번 매칭 검사
+      const sabunText = tr.cells[1] ? tr.cells[1].innerText : '';
+      if (tr.innerText.includes(sabun) || sabunText.includes(sabun)) {
+        targetRow = tr;
+      }
+    });
+
+    if (targetRow) {
+      // 행 주위에 시각적으로 확실히 띄는 테두리 강조 표시 추가
+      targetRow.style.outline = '3px solid var(--blue-mid)';
+      targetRow.style.outlineOffset = '-3px';
+      targetRow.style.background = '#e7f0fa';
+      targetRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, 150);
+
+  // 5. 상단 복원 안내 바 표시 및 정보 주입
+  const emp = employees.find(e => e.id === sabun);
+  const empName = emp ? emp.name : '';
+  const backBar = document.getElementById('scores-back-bar');
+  const backBarDesc = document.getElementById('scores-back-bar-desc');
+  if (backBar && backBarDesc) {
+    backBarDesc.innerText = `현재 조회 대상: ${empName} (${grade.replace('3급(부장/관리역장/환승역장)', '3급(부장급)').replace('3급(팀장/역장/운영역장)', '3급(팀장급)')} · ${parentUnit})`;
+    backBar.style.display = 'flex';
+  }
+
+  // 6. 평정 자료(scores) 탭으로 이동
+  gotoTab('scores');
+}
+
+function goBackFromScoresDetail() {
+  if (!window.scoresTabBackState) {
+    gotoTab('first');
+    return;
+  }
+
+  const state = window.scoresTabBackState;
+  
+  // 1. 평정 자료 탭의 강조 안내 바 숨김
+  const backBar = document.getElementById('scores-back-bar');
+  if (backBar) backBar.style.display = 'none';
+
+  // 2. 원래 출발했던 탭('first' 혹은 'second')으로 귀환
+  gotoTab(state.sourceTab);
+
+  // 3. 이전 탭 화면 갱신 완료 후 저장되어 있던 스크롤 좌표(Y) 위치로 즉시 스크롤 복원
+  setTimeout(() => {
+    window.scrollTo({
+      top: state.scrollY,
+      behavior: 'auto'
+    });
+    
+    // 포커스 복원: 1차의 경우 f1-disc-사번, 2차의 경우 f2-disc-사번 등으로 마지막 클릭 셀 강조
+    const inputId = state.sourceTab === 'first' ? `f1-disc-${state.sabun}` : `f2-disc-${state.sabun}`;
+    const inputEl = document.getElementById(inputId);
+    if (inputEl) {
+      inputEl.focus();
+      inputEl.style.outline = '2px solid var(--gold)';
+      setTimeout(() => { inputEl.style.outline = ''; }, 2000);
+    }
+    
+    // 상태값 초기화
+    window.scoresTabBackState = null;
+  }, 100);
+}
 
 // 개발자 도구 및 소스보기 단축키 차단 (F12, Ctrl+U, Ctrl+Shift+I/J/C 등)
 document.addEventListener('keydown', e => {
