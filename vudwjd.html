@@ -160,10 +160,10 @@ colgroup col:nth-child(20) { width: 5%; }
 
 /* EVAL GRADE */
 .eg{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-size:13px;font-weight:800}
-.eg-수{background:#1A4A8A;color:#fff}
-.eg-우{background:#2563AB;color:#fff}
-.eg-미{background:#6B8099;color:#fff}
-.eg-양{background:#B0BAC5;color:#fff}
+.eg-수{background:#1A4A8A;color:#fff} /* Deep Navy */
+.eg-우{background:#2E7D32;color:#fff} /* Green */
+.eg-미{background:#EF6C00;color:#fff} /* Amber/Orange */
+.eg-양{background:#C62828;color:#fff} /* Red */
 .eg-none{background:#EEF1F5;color:#B0BAC5}
 
 /* BUTTONS */
@@ -219,9 +219,9 @@ input[type=number].rank {
 
 /* GRADE BORDER ON RANK BADGE */
 .rank.border-eg-수 { background: #1A4A8A !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
-.rank.border-eg-우 { background: #2563AB !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
-.rank.border-eg-미 { background: #6B8099 !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
-.rank.border-eg-양 { background: #B0BAC5 !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
+.rank.border-eg-우 { background: #2E7D32 !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
+.rank.border-eg-미 { background: #EF6C00 !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
+.rank.border-eg-양 { background: #C62828 !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
 
 /* BUTTONS */
 .btn{padding:7px 16px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .15s;font-weight:500}
@@ -398,6 +398,11 @@ tbody tr.tr-conflict td .td-name {
       <option value="상반기">상반기 평정</option>
       <option value="하반기">하반기 평정</option>
     </select>
+    <span style="width:1px; height:18px; background:rgba(255,255,255,0.2); margin:0 4px;"></span>
+    <button onclick="exportProject()" style="background:#2563AB;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11px;font-weight:700;border-radius:18px;padding:4px 10px;cursor:pointer;outline:none;display:inline-flex;align-items:center;gap:4px;transition:background 0.15s;" onmouseover="this.style.background='#3B82C4'" onmouseout="this.style.background='#2563AB'"><i class="ti ti-file-export"></i> 프로젝트 내보내기</button>
+    <button onclick="triggerImport()" style="background:#2563AB;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11px;font-weight:700;border-radius:18px;padding:4px 10px;cursor:pointer;outline:none;display:inline-flex;align-items:center;gap:4px;transition:background 0.15s;" onmouseover="this.style.background='#3B82C4'" onmouseout="this.style.background='#2563AB'"><i class="ti ti-file-import"></i> 프로젝트 불러오기</button>
+    <button onclick="resetDashboard()" style="background:#B81C1C;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11px;font-weight:700;border-radius:18px;padding:4px 10px;cursor:pointer;outline:none;display:inline-flex;align-items:center;gap:4px;transition:background 0.15s;" onmouseover="this.style.background='#E83A3A'" onmouseout="this.style.background='#B81C1C'"><i class="ti ti-trash"></i> 초기화</button>
+    <input type="file" id="projectFileSelect" accept=".peval" onchange="handleImportProject(event)" style="display:none">
   </div>
 </div>
 
@@ -589,7 +594,7 @@ tbody tr.tr-conflict td .td-name {
       <button class="btn btn-navy btn-sm" onclick="dlExcel('all')"><i class="ti ti-download"></i> 전체 다운로드</button>
     </div>
   </div>
-  <div id="result-summary" class="g3 mb2"></div>
+  <div id="result-summary" class="metric" style="display:flex; align-items:center; justify-content:space-around; flex-wrap:wrap; gap:16px; padding:12px 20px; margin-bottom:1.5rem;"></div>
   <div id="result-tbl"><div style="padding:3rem;text-align:center;color:var(--text3)">2차 평정을 확정한 후 결과를 확인하세요</div></div>
 </div>
 
@@ -2179,13 +2184,16 @@ function assignEvalGrades(sortedEmps) {
   if (total <= 10) {
     counts = { ...GRADE_DIST_MATRIX[total] };
   } else {
-    // 10명을 초과하는 경우: 10명 기준의 분포비율에 맞춰 배분하고 남은 인원은 아래 규칙 또는 소수점 기준 추가 배분
-    // 수: 20%, 우: 30%, 미: 30%, 양: 20%
-    counts.수 = Math.round(total * 0.20);
-    counts.우 = Math.round(total * 0.30);
-    counts.미 = Math.round(total * 0.30);
-    counts.양 = total - (counts.수 + counts.우 + counts.미);
-    if (counts.양 < 0) counts.양 = 0;
+    // 10명을 초과하는 경우: 10명 때의 분포인원수에 그 초과하는 인원에 해당하는 분포인원수를 가산
+    const dist10 = GRADE_DIST_MATRIX[10];
+    const Q = Math.floor(total / 10);
+    const R = total % 10;
+    const distR = R > 0 ? GRADE_DIST_MATRIX[R] : { 수: 0, 우: 0, 미: 0, 양: 0 };
+
+    counts.수 = Q * dist10.수 + distR.수;
+    counts.우 = Q * dist10.우 + distR.우;
+    counts.미 = Q * dist10.미 + distR.미;
+    counts.양 = Q * dist10.양 + distR.양;
   }
 
   let index = 0;
@@ -2256,36 +2264,128 @@ function autoSecondRank(targetGrade){
   const runGrades = targetGrade ? [targetGrade] : targetGrades;
 
   runGrades.forEach(grade=>{
-    const emps=employees.filter(e=>e.grade===grade).sort((a,b)=>{
-      const scoreA = firstR[a.id]?.score||0;
-      const scoreB = firstR[b.id]?.score||0;
-      if (scoreB !== scoreA) {
-        return scoreB - scoreA;
-      }
-      
-      const rankA = firstR[a.id]?.unitRank||999;
-      const rankB = firstR[b.id]?.unitRank||999;
-      if (rankA !== rankB) {
-        return rankA - rankB; // 순위는 작을수록(1위에 가까울수록) 우선순위가 높으므로 오름차순 정렬
-      }
+    const emps = employees.filter(e => e.grade === grade);
+    if (!emps.length) return;
 
-      // 최종 타이 브레이커: 사번 기준 정렬
+    // 1. 모든 직원의 재량점수를 일단 0으로 세팅
+    emps.forEach(e => {
+      if (!secondR[e.id]) secondR[e.id] = { discretion: 0 };
+      secondR[e.id].discretion = 0;
+    });
+
+    // 1차 평정단위 기준으로 그룹 분류하는 헬퍼 (renderSecond와 동일하게 적용)
+    function getConflictGroupKey(e) {
+      const cleanUnit = String(e.parentUnit || '').replace(/관리역$/, '').replace(/역$/, '').trim();
+      const isOperatingDept = ['지원팀', '운영팀', '운영', '지원'].includes(e.unit) || ['지원팀', '운영팀', '운영', '지원'].includes(e.parentUnit) || cleanUnit === '운영부';
+      const is3rdGrade = e.grade.includes('3급');
+      
+      if (cleanUnit === '사상역' || cleanUnit === '사상') {
+        if (is3rdGrade) return '부장_평정그룹';
+        return '사상역';
+      }
+      if (isOperatingDept) return '부장_평정그룹';
+      return e.parentUnit;
+    }
+
+    // 2. 그룹별로 1차 순위에 맞게 정렬하여 갈등 해결 (최소 재량점수로 순위 역전 보정)
+    const groups = {};
+    emps.forEach(e => {
+      const gKey = getConflictGroupKey(e) || '기타';
+      if (!groups[gKey]) groups[gKey] = [];
+      groups[gKey].push(e);
+    });
+
+    Object.keys(groups).forEach(gKey => {
+      const groupEmps = groups[gKey];
+      if (groupEmps.length < 2) return;
+
+      // groupEmps를 1차 순위에 맞춰 정렬
+      groupEmps.sort((a, b) => {
+        const scoreA = firstR[a.id]?.score||0;
+        const scoreB = firstR[b.id]?.score||0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        
+        const rankA = firstR[a.id]?.unitRank||999;
+        const rankB = firstR[b.id]?.unitRank||999;
+        if (rankA !== rankB) return rankA - rankB;
+
+        return String(a.id).localeCompare(b.id);
+      });
+
+      // 그룹 내 갈등(역전) 해소 루프
+      for (let pass = 0; pass < 20; pass++) {
+        let changed = false;
+        for (let i = 0; i < groupEmps.length - 1; i++) {
+          const a = groupEmps[i];
+          const b = groupEmps[i + 1];
+
+          const actA = calcScores[a.id]?.총점 || 0;
+          const actB = calcScores[b.id]?.총점 || 0;
+
+          const totalA = actA + (secondR[a.id].discretion || 0);
+          const totalB = actB + (secondR[b.id].discretion || 0);
+
+          // 만약 1차 앞선 사람(a)의 총점이 뒤선 사람(b)보다 작다면 (즉 역전 갈등이 발생하면)
+          if (totalA < totalB) {
+            const gap = totalB - totalA;
+            const maxAddA = 10 - (secondR[a.id].discretion || 0);
+            const maxSubB = (secondR[b.id].discretion || 0) - (-10);
+
+            if (maxAddA <= 0 && maxSubB <= 0) continue;
+
+            let adjA = Math.ceil(gap / 2);
+            let adjB = Math.floor(gap / 2);
+
+            if (adjA > maxAddA) {
+              adjA = maxAddA;
+              adjB = gap - adjA;
+            }
+            if (adjB > maxSubB) {
+              adjB = maxSubB;
+              adjA = gap - adjB;
+            }
+
+            adjA = Math.min(Math.max(adjA, 0), maxAddA);
+            adjB = Math.min(Math.max(adjB, 0), maxSubB);
+
+            if (adjA > 0 || adjB > 0) {
+              secondR[a.id].discretion = (secondR[a.id].discretion || 0) + adjA;
+              secondR[b.id].discretion = (secondR[b.id].discretion || 0) - adjB;
+              changed = true;
+            }
+          }
+        }
+        if (!changed) break;
+      }
+    });
+
+    // 3. 재량점수가 보정된 합계점수 기준으로 전체 리스트 정렬
+    emps.sort((a,b)=>{
+      const totalA = (calcScores[a.id]?.총점||0) + (secondR[a.id]?.discretion||0);
+      const totalB = (calcScores[b.id]?.총점||0) + (secondR[b.id]?.discretion||0);
+      if (totalB !== totalA) return totalB - totalA;
+
+      const r1A = firstR[a.id]?.unitRank||999;
+      const r1B = firstR[b.id]?.unitRank||999;
+      if (r1A !== r1B) return r1A - r1B;
+
       return String(a.id).localeCompare(b.id);
     });
-    
-    const assigned=assignEvalGrades(emps);
-    assigned.forEach(({emp,evalGrade,rank,score})=>{
-      if (!secondR[emp.id]) secondR[emp.id] = { discretion: 0 };
+
+    // 4. 정렬된 최종 합계점수 순서대로 2차순위 및 수우미양 등급 배분 부여
+    const assigned = assignEvalGrades(emps);
+    assigned.forEach(({emp, evalGrade, rank, score}) => {
       secondR[emp.id].rank = rank;
       secondR[emp.id].evalGrade = evalGrade;
       secondR[emp.id].score = score;
     });
   });
+
   renderSecond();
   if (targetGrade) {
     alert(`[${targetGrade}] 직급에 대해 자동 순위 및 등급 배분이 완료되었습니다.`);
   } else {
-    alert('모든 직급에 대해 자동 순위 및 등급 배분이 완료되었습니다. 동점자 발생 시 1차 순위 및 사번 기준으로 고유한 순위가 차등 부여되었습니다.');
+    alert('모든 직급에 대해 자동 순위 및 등급 배되었습니다.');
   }
 }
 
@@ -2347,13 +2447,39 @@ function renderSecond(){
     // 가상의 평정 그룹 키를 구하는 함수
     function getConflictGroupKey(e) {
       const cleanUnit = String(e.parentUnit || '').replace(/관리역$/, '').replace(/역$/, '').trim();
-      if (cleanUnit === '운영부' || cleanUnit === '사상역' || cleanUnit === '사상' || cleanUnit === '운영' || cleanUnit === '지원') {
+      const isOperatingDept = ['지원팀', '운영팀', '운영', '지원'].includes(e.unit) || ['지원팀', '운영팀', '운영', '지원'].includes(e.parentUnit) || cleanUnit === '운영부';
+      const is3rdGrade = e.grade.includes('3급');
+      
+      if (cleanUnit === '사상역' || cleanUnit === '사상') {
+        // 3급(사상역장)만 운영부장(부장)의 1차 피평정대상이 되므로 부장_평정그룹으로 묶임
+        if (is3rdGrade) {
+          return '부장_평정그룹';
+        }
+        // 4급부터 9급까지는 사상역장이 평정하므로 사상역 별도 그룹
+        return '사상역';
+      }
+      
+      if (isOperatingDept) {
         return '부장_평정그룹';
       }
       return e.parentUnit;
     }
 
-    const cGroupKeys = [...new Set(emps.map(e => getConflictGroupKey(e)))];
+    const cGroupKeys = [...new Set(emps.map(e => getConflictGroupKey(e)))].filter(Boolean);
+    // 1차 평정단위 공식 순서 (운영부, 장산 ~ 양산순) 정렬
+    const unitOrder = [
+      '운영부', '장산관리역', '센텀시티관리역', '수영역', '광안관리역',
+      '경성대부경대관리역', '문현관리역', '전포관리역', '동의대관리역',
+      '냉정관리역', '사상역', '모덕관리역', '구명관리역', '덕천역',
+      '화명관리역', '호포관리역', '양산관리역'
+    ];
+    cGroupKeys.sort((a, b) => {
+      let ia = unitOrder.indexOf(a === '부장_평정그룹' ? '운영부' : a);
+      let ib = unitOrder.indexOf(b === '부장_평정그룹' ? '운영부' : b);
+      if (ia === -1) ia = 999;
+      if (ib === -1) ib = 999;
+      return ia - ib; // 순서 정렬
+    });
     
     cGroupKeys.forEach(gKey => {
       const unitEmps = emps.filter(e => getConflictGroupKey(e) === gKey);
@@ -2382,18 +2508,35 @@ function renderSecond(){
     const dist={수:0,우:0,미:0,양:0};
     emps.forEach(e=>{if(secondR[e.id]?.evalGrade)dist[secondR[e.id].evalGrade]++;});
     
+    // 1차 평정 그룹 필터링 적용
+    window.secondGroupFilters = window.secondGroupFilters || {};
+    const groupFilter = window.secondGroupFilters[grade] || '';
+    const displayedEmps = groupFilter ? emps.filter(e => getConflictGroupKey(e) === groupFilter) : emps;
+
+    const countText = groupFilter 
+      ? `필터됨: ${displayedEmps.length}명 / 전체 ${emps.length}명` 
+      : `${emps.length}명`;
+
     const wrapClass = gf ? 'tbl-wrap no-vscroll' : 'tbl-wrap';
 
     h+=`<div class="card mb2">
       <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;width:100%">
-        <h3 style="margin:0"><span class="badge b-blue">${grade}</span> &nbsp; ${emps.length}명 &nbsp; <span style="font-size:12px;color:var(--text3)">수${dist.수} / 우${dist.우} / 미${dist.미} / 양${dist.양}</span></h3>
-        <div style="display:flex; gap:6px;">
+        <h3 style="margin:0"><span class="badge b-blue">${grade}</span> &nbsp; <span style="font-size:12.5px;font-weight:700;color:var(--blue-mid)">${countText}</span> &nbsp; <span style="font-size:12px;color:var(--text3)">수${dist.수} / 우${dist.우} / 미${dist.미} / 양${dist.양}</span></h3>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <select onchange="filterSecondByGroup('${grade}', this.value)" style="background:var(--surface2); color:var(--text); border:1px solid var(--border2); font-size:11.5px; font-weight:700; border-radius:18px; padding:4px 8px; cursor:pointer; outline:none">
+            <option value="">모든 1차 그룹 필터</option>
+            ${cGroupKeys.map(k => {
+              const displayK = k === '부장_평정그룹' ? '부장 소관 그룹' : k;
+              const selected = (groupFilter === k) ? 'selected' : '';
+              return `<option value="${k}" ${selected}>${displayK}</option>`;
+            }).join('')}
+          </select>
           <button class="btn btn-sm" style="background:#e7f0fa; color:#0d2b55; border:1px solid #c2daf8;" onclick="resetSecondDiscretion('${grade}')"><i class="ti ti-rotate-clockwise"></i> 재량점수 초기화</button>
           <button class="btn btn-sm btn-navy" onclick="autoSecondRank('${grade}')"><i class="ti ti-wand"></i> 이 직급만 자동 배분</button>
         </div>
       </div>
       <div class="card-body" style="padding:0"><div class="${wrapClass}"><table><thead><tr><th>2차순위</th><th>성명</th><th>직위</th><th>소속단위</th><th>역</th><th>1차단위순위</th><th>1차점수</th><th>활동총점</th><th>재량점수</th><th>합계점수</th><th>2차등급</th><th>2차점수</th></tr></thead><tbody>`;
-    emps.forEach(e=>{
+    displayedEmps.forEach(e=>{
       const fr=firstR[e.id]||{};
       const sr=secondR[e.id]||{};
       const rank=sr.rank||'-';
@@ -2405,13 +2548,15 @@ function renderSecond(){
       
       const borderCls = sr.evalGrade ? `border-eg-${sr.evalGrade}` : 'border-eg-none';
       const trCls = conflictIds.has(e.id) ? 'class="tr-conflict"' : '';
-      const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+      const is3rdGrade = e.grade.includes('3급');
+      const displayParentUnit = (e.parentUnit === '운영부' || (e.parentUnit === '사상역' && is3rdGrade)) ? '부장평정단위' : e.parentUnit;
+      const conflictLabel = conflictIds.has(e.id) ? ' <span style="color:var(--danger); font-weight:bold; font-size:10px; margin-left:4px;" class="no-print">⚠️역전</span>' : '';
 
       h+=`<tr ${trCls} draggable="true" ondragstart="handleSecondDragStart(event, '${e.id}', '${grade}')" ondragover="handleSecondDragOver(event)" ondragenter="handleSecondDragEnter(event)" ondragleave="handleSecondDragLeave(event)" ondrop="handleSecondDrop(event, '${e.id}', '${grade}')" style="cursor: grab;">
         <td><input type="number" class="editable rank ${rCls} ${borderCls}" id="f2-rank-${e.id}" value="${rank}" min="1" max="${emps.length}" onchange="updateSecondRankInput('${e.id}', this.value, '${grade}')" draggable="true" ondragstart="event.stopPropagation()" onclick="event.stopPropagation()" style="border:none; text-align:center; padding:0; cursor:pointer; outline:none; font-family:inherit;"></td>
         <td class="td-name">${e.name}</td><td>${e.position}</td>
         <td>${displayParentUnit}</td><td class="td-unit">${e.unit}</td>
-        <td>${fr.unitRank||'-'}위</td>
+        <td>${fr.unitRank||'-'}위${conflictLabel}</td>
         <td class="score-total">${fr.score||0}</td>
         <td onclick="showScoreDetailWithBack('${e.id}', '${e.grade}', '${e.parentUnit}', 'second', '', '${grade}')" style="cursor:pointer; text-decoration:underline; font-weight:700; color:var(--blue-mid);" title="클릭하여 동일직급 평정군 세부 정보 조회">${actTotal}</td>
         <td><input type="number" class="editable" id="f2-disc-${e.id}" value="${disc}" min="-10" max="10" onchange="updateSecondDiscretion('${e.id}', this.value, '${grade}')" style="width:55px"></td>
@@ -2424,6 +2569,12 @@ function renderSecond(){
   });
   document.getElementById('second-tbl').innerHTML=h||'<div style="padding:2rem;text-align:center;color:var(--text3)">1차 평정을 저장한 후 자동 순위를 산출하세요 (평정 대상 직급 없음)</div>';
   restoreFocus();
+}
+
+function filterSecondByGroup(grade, groupKey) {
+  window.secondGroupFilters = window.secondGroupFilters || {};
+  window.secondGroupFilters[grade] = groupKey;
+  renderSecond();
 }
 
 function resetSecondDiscretion(grade) {
@@ -2583,39 +2734,74 @@ function updateSecondRankInput(id, val, grade) {
   const [draggedEmp] = emps.splice(sourceIdx, 1);
   emps.splice(targetIdx, 0, draggedEmp);
 
-  // 3. 재배치된 순서대로 재량점수를 역산하여 부여
-  let prevSumVal = null;
-
+  // 3. 재배치된 순서대로 재량점수를 최소화하며 부여하는 최적화 알고리즘
+  const discretions = {};
+  
+  // Forward pass (하향 조율)
+  let prevTotal = Infinity;
   for (let i = 0; i < emps.length; i++) {
     const curr = emps[i];
     const actScore = calcScores[curr.id]?.총점 || 0;
     
-    if (i === 0) {
-      secondR[curr.id].discretion = 10;
-      prevSumVal = actScore + 10;
-    } else {
+    let isCurrBetterTie = false;
+    if (i > 0) {
       const prev = emps[i - 1];
       const r1_prev = firstR[prev.id]?.unitRank || 999;
       const r1_curr = firstR[curr.id]?.unitRank || 999;
-
-      let isCurrBetterTie = false;
       if (r1_curr < r1_prev) {
         isCurrBetterTie = true;
       } else if (r1_curr === r1_prev && String(curr.id).localeCompare(prev.id) < 0) {
         isCurrBetterTie = true;
       }
+    }
 
-      let maxSumVal = isCurrBetterTie ? (prevSumVal - 1) : prevSumVal;
+    const maxAllowed = i === 0 ? Infinity : prevTotal - (isCurrBetterTie ? 1 : 0);
+    
+    if (actScore <= maxAllowed) {
+      discretions[curr.id] = 0;
+    } else {
+      discretions[curr.id] = maxAllowed - actScore;
+    }
+    
+    if (discretions[curr.id] < -10) {
+      discretions[curr.id] = -10;
+    }
+    
+    prevTotal = actScore + discretions[curr.id];
+  }
 
-      let reqDisc = maxSumVal - actScore;
+  // Backward pass (상향 조율)
+  for (let i = emps.length - 1; i > 0; i--) {
+    const curr = emps[i];
+    const prev = emps[i - 1];
+    
+    const r1_prev = firstR[prev.id]?.unitRank || 999;
+    const r1_curr = firstR[curr.id]?.unitRank || 999;
+    let isCurrBetterTie = false;
+    if (r1_curr < r1_prev) {
+      isCurrBetterTie = true;
+    } else if (r1_curr === r1_prev && String(curr.id).localeCompare(prev.id) < 0) {
+      isCurrBetterTie = true;
+    }
 
-      if (reqDisc > 10) reqDisc = 10;
-      if (reqDisc < -10) reqDisc = -10;
-
-      secondR[curr.id].discretion = reqDisc;
-      prevSumVal = actScore + reqDisc;
+    const currTotal = (calcScores[curr.id]?.총점 || 0) + discretions[curr.id];
+    const prevAct = calcScores[prev.id]?.총점 || 0;
+    const prevTotal = prevAct + discretions[prev.id];
+    
+    const minRequiredPrevTotal = currTotal + (isCurrBetterTie ? 1 : 0);
+    
+    if (prevTotal < minRequiredPrevTotal) {
+      discretions[prev.id] = minRequiredPrevTotal - prevAct;
+      if (discretions[prev.id] > 10) {
+        discretions[prev.id] = 10;
+      }
     }
   }
+
+  // 최적 재량점수 반영
+  emps.forEach(e => {
+    secondR[e.id].discretion = discretions[e.id];
+  });
 
   // 4. 모델 및 화면 갱신
   renderSecond();
@@ -2641,13 +2827,20 @@ function checkConflicts(isSilent = false){
   const gradeOrder = ['3급(팀장/역장/운영역장)', '4급', '5급', '6급', '7급', '8급', '9급'];
   
   function getConflictGroupKey(e) {
-    // 1차 평정권자가 '부장'인 대상자 그룹화
-    // 1) 소속이 '운영부'('운영', '지원' 등 포함)인 전직원
-    // 2) 독립역인 '사상역' 소속이면서 직위가 '역장'(3급)인 직원
-    const isOperatingDept = ['지원팀', '운영팀', '운영', '지원'].includes(e.unit) || ['지원팀', '운영팀', '운영', '지원'].includes(e.parentUnit) || e.parentUnit === '운영부';
-    const isSasangStationMaster = (e.parentUnit === '사상역' || e.parentUnit === '사상') && e.position === '역장';
+    const cleanUnit = String(e.parentUnit || '').replace(/관리역$/, '').replace(/역$/, '').trim();
+    const isOperatingDept = ['지원팀', '운영팀', '운영', '지원'].includes(e.unit) || ['지원팀', '운영팀', '운영', '지원'].includes(e.parentUnit) || cleanUnit === '운영부';
+    const is3rdGrade = e.grade.includes('3급');
     
-    if (isOperatingDept || isSasangStationMaster) {
+    if (cleanUnit === '사상역' || cleanUnit === '사상') {
+      // 3급(사상역장)만 운영부장(부장)의 피평정대상이 되므로 부장_평정그룹으로 묶임
+      if (is3rdGrade) {
+        return '부장_평정그룹';
+      }
+      // 4급부터 9급까지는 사상역장이 평정하므로 별도 그룹
+      return '사상역';
+    }
+    
+    if (isOperatingDept) {
       return '부장_평정그룹';
     }
     return e.parentUnit || '';
@@ -2721,18 +2914,56 @@ function saveSecond(){
 function renderResult(){
   const gf=document.getElementById('r-grade-f')?.value||'';
   const uf=document.getElementById('r-unit-f')?.value||'';
-  const grades=gf?[gf]:[...new Set(employees.map(e=>e.grade))];
+  
+  const gradeOrder = [
+    '2급', '3급(부장/관리역장/환승역장)', '3급(팀장/역장/운영역장)',
+    '4급', '5급', '6급', '7급', '8급', '9급'
+  ];
+  let grades = [];
+  if (gf) {
+    grades = [gf];
+  } else {
+    grades = gradeOrder.filter(g => employees.some(e => e.grade === g));
+  }
 
   // summary
   let sumH='';
   const tot=employees.length;
   const dist={수:0,우:0,미:0,양:0};
   Object.values(secondR).forEach(r=>{if(r.evalGrade)dist[r.evalGrade]++;});
-  sumH+=`<div class="metric accent"><div class="metric-label">전체 직원</div><div class="metric-value">${tot}</div><div class="metric-sub">명</div></div>`;
-  sumH+=`<div class="metric"><div class="metric-label">수</div><div class="metric-value" style="color:var(--gold)">${dist.수}</div><div class="metric-sub">명 (${tot?Math.round(dist.수/tot*100):0}%)</div></div>`;
-  sumH+=`<div class="metric"><div class="metric-label">우</div><div class="metric-value" style="color:var(--blue)">${dist.우}</div><div class="metric-sub">명</div></div>`;
-  sumH+=`<div class="metric"><div class="metric-label">미</div><div class="metric-value">${dist.미}</div><div class="metric-sub">명</div></div>`;
-  sumH+=`<div class="metric"><div class="metric-label">양</div><div class="metric-value" style="color:var(--text3)">${dist.양}</div><div class="metric-sub">명</div></div>`;
+
+  const pct수 = tot ? Math.round(dist.수 / tot * 100) : 0;
+  const pct우 = tot ? Math.round(dist.우 / tot * 100) : 0;
+  const pct미 = tot ? Math.round(dist.미 / tot * 100) : 0;
+  const pct양 = tot ? Math.round(dist.양 / tot * 100) : 0;
+
+  sumH = `
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:13px; font-weight:700; color:var(--text3);">전체 인원:</span>
+      <span style="font-size:22px; font-weight:800; color:var(--text);">${tot}</span><span style="font-size:12px; color:var(--text2); font-weight:600;">명</span>
+    </div>
+    <div style="width:1.5px; height:24px; background:var(--border);"></div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:14px; font-weight:900; color:#fff; background:#1A4A8A; padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;">수</span>
+      <span style="font-size:22px; font-weight:800; color:var(--text);">${dist.수}</span><span style="font-size:12px; color:var(--text2);">명</span>
+      <span style="font-size:13px; font-weight:700; color:var(--text3); margin-left:2px;">(${pct수}%)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:14px; font-weight:900; color:#fff; background:#2E7D32; padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;">우</span>
+      <span style="font-size:22px; font-weight:800; color:var(--text);">${dist.우}</span><span style="font-size:12px; color:var(--text2);">명</span>
+      <span style="font-size:13px; font-weight:700; color:var(--text3); margin-left:2px;">(${pct우}%)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:14px; font-weight:900; color:#fff; background:#EF6C00; padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;">미</span>
+      <span style="font-size:22px; font-weight:800; color:var(--text);">${dist.미}</span><span style="font-size:12px; color:var(--text2);">명</span>
+      <span style="font-size:13px; font-weight:700; color:var(--text3); margin-left:2px;">(${pct미}%)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:14px; font-weight:900; color:#fff; background:#C62828; padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;">양</span>
+      <span style="font-size:22px; font-weight:800; color:var(--text);">${dist.양}</span><span style="font-size:12px; color:var(--text2);">명</span>
+      <span style="font-size:13px; font-weight:700; color:var(--text3); margin-left:2px;">(${pct양}%)</span>
+    </div>
+  `;
   document.getElementById('result-summary').innerHTML=sumH;
 
   let h='';
@@ -3054,14 +3285,15 @@ function printScoreTable() {
     const cs = calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
     const v = k => raw[k]!==undefined?raw[k]:'-';
     const cleanAudit = raw.감사수입금_원문 || '-';
-    const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+    const is3rdGrade = e.grade.includes('3급');
+    const displayParentUnit = (e.parentUnit === '운영부' || (e.parentUnit === '사상역' && is3rdGrade)) ? '부장평정단위' : e.parentUnit;
 
     printHtml += `
       <tr style="height:19px; font-size:8.5px;">
         <td style="border:1px solid #ddd; padding:2px 1px;">${idx+1}</td>
         <td style="border:1px solid #ddd; padding:2px 1px; font-weight:700; white-space:nowrap;">${e.name}</td>
         <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.grade.replace('(부장/관리역장/환승역장)', '').replace('(팀장/역장/운영역장)', '')}</td>
-        <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayParentUnit.replace('부장평정단위(운영부/사상역)', '부장평정(운영부/사상)')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayParentUnit}</td>
         <td style="border:1px solid #ddd; padding:2px 1px;">${e.birthYear}</td>
         <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.gradeYears.replace(/\s+/g,'')}</td>
         <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.entryType.replace(/공단공채\s*/g, '공채')}</td>
@@ -3279,7 +3511,8 @@ function printSecondWithReference() {
       const actTotal = calcScores[e.id]?.총점||0;
       const disc = sr.discretion||0;
       const sumVal = actTotal + disc;
-      const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+      const is3rdGrade = e.grade.includes('3급');
+      const displayParentUnit = (e.parentUnit === '운영부' || (e.parentUnit === '사상역' && is3rdGrade)) ? '부장평정단위' : e.parentUnit;
 
       printHtml += `
         <tr style="height:23px; text-align:center;">
@@ -3368,12 +3601,13 @@ function printSecondWithReference() {
       const cs = calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
       const v = k => raw[k]!==undefined?raw[k]:'-';
       const cleanAudit = raw.감사수입금_원문 || '-';
-      const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+      const is3rdGrade = e.grade.includes('3급');
+      const displayParentUnit = (e.parentUnit === '운영부' || (e.parentUnit === '사상역' && is3rdGrade)) ? '부장평정단위' : e.parentUnit;
 
       printHtml += `
         <tr style="height:19px; font-size:8.5px;">
           <td style="border:1px solid #ddd; padding:2px 1px; font-weight:700; white-space:nowrap;">${e.name}</td>
-          <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayParentUnit.replace('부장평정단위(운영부/사상역)', '부장평정(운영부/사상)')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayParentUnit}</td>
           <td style="border:1px solid #ddd; padding:2px 1px;">${e.birthYear}</td>
           <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.gradeYears.replace(/\s+/g,'')}</td>
           <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.entryType.replace(/공단공채\s*/g, '공채')}</td>
@@ -3927,6 +4161,280 @@ document.addEventListener('keydown', e => {
     return false;
   }
 });
+
+// ============================================================
+// PROJECT IMPORT/EXPORT & RESET FUNCTIONS
+// ============================================================
+async function encryptData(dataString) {
+  const enc = new TextEncoder();
+  const salt = enc.encode("BusanMetroSalt2026");
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const FIXED_SECRET = "BusanMetroEvaluationSystemSecretKey2026!";
+
+  const passwordKey = await window.crypto.subtle.importKey(
+    "raw",
+    enc.encode(FIXED_SECRET),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  const aesKey = await window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 10000,
+      hash: "SHA-256"
+    },
+    passwordKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+
+  const ciphertext = await window.crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: iv
+    },
+    aesKey,
+    enc.encode(dataString)
+  );
+
+  const combined = new Uint8Array(iv.byteLength + ciphertext.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(ciphertext), iv.byteLength);
+
+  return combined;
+}
+
+async function decryptData(combinedBuffer) {
+  const enc = new TextDecoder();
+  const iv = new Uint8Array(combinedBuffer, 0, 12);
+  const ciphertext = new Uint8Array(combinedBuffer, 12);
+  const salt = new TextEncoder().encode("BusanMetroSalt2026");
+  const FIXED_SECRET = "BusanMetroEvaluationSystemSecretKey2026!";
+
+  const passwordKey = await window.crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(FIXED_SECRET),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  const aesKey = await window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 10000,
+      hash: "SHA-256"
+    },
+    passwordKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+
+  const decrypted = await window.crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: iv
+    },
+    aesKey,
+    ciphertext
+  );
+
+  return enc.decode(decrypted);
+}
+
+async function exportProject() {
+  if (!employees.length) {
+    alert("내보낼 데이터가 없습니다. 먼저 데이터를 등록하세요.");
+    return;
+  }
+
+  try {
+    const projectData = {
+      version: '1.0',
+      employees: employees,
+      empScores: empScores,
+      calcScores: calcScores,
+      firstR: firstR,
+      secondR: secondR,
+      criteria: CRITERIA
+    };
+    const jsonStr = JSON.stringify(projectData);
+    const encryptedBytes = await encryptData(jsonStr);
+    
+    const blob = new Blob([encryptedBytes], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    
+    const now = new Date();
+    const dateStr = now.getFullYear() + 
+                    String(now.getMonth()+1).padStart(2,'0') + 
+                    String(now.getDate()).padStart(2,'0') + '_' +
+                    String(now.getHours()).padStart(2,'0') + 
+                    String(now.getMinutes()).padStart(2,'0') + 
+                    String(now.getSeconds()).padStart(2,'0');
+    
+    a.href = url;
+    a.download = `평정프로젝트_${dateStr}.peval`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert("프로젝트 데이터가 안전하게 암호화되어 내보내졌습니다.");
+  } catch (err) {
+    alert("프로젝트 내보내기 중 오류가 발생했습니다: " + err.message);
+  }
+}
+
+function triggerImport() {
+  document.getElementById('projectFileSelect').click();
+}
+
+async function handleImportProject(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const combinedBuffer = e.target.result;
+      const decryptedJson = await decryptData(combinedBuffer);
+      const projectData = JSON.parse(decryptedJson);
+
+      if (projectData && projectData.employees) {
+        employees = projectData.employees || [];
+        empScores = projectData.empScores || {};
+        calcScores = projectData.calcScores || {};
+        firstR = projectData.firstR || {};
+        secondR = projectData.secondR || {};
+        CRITERIA = projectData.criteria || CRITERIA;
+
+        refreshFilters();
+        renderRoster();
+        renderCriteriaView();
+        renderScoreTable();
+        
+        // Active tab refresh
+        const activeTab = document.querySelector('.nav-tab.active');
+        if (activeTab) {
+          const tabText = activeTab.innerText.trim();
+          if (tabText.includes('조직')) gotoTab('org');
+          else if (tabText.includes('명부')) gotoTab('roster');
+          else if (tabText.includes('기준')) gotoTab('criteria');
+          else if (tabText.includes('자료')) gotoTab('scores');
+          else if (tabText.includes('1차')) gotoTab('first');
+          else if (tabText.includes('2차')) gotoTab('second');
+          else if (tabText.includes('결과')) gotoTab('result');
+        }
+
+        alert("프로젝트를 성공적으로 불러왔습니다.");
+      } else {
+        alert("올바르지 않은 프로젝트 파일 구조입니다.");
+      }
+    } catch (err) {
+      alert("프로젝트 파일 복호화에 실패했습니다. 올바른 평정 프로젝트 파일이 아니거나 손상된 파일입니다.");
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetDashboard() {
+  if (confirm("대시보드를 초기화하시겠습니까?\n모든 직원 정보, 점수 입력 내역, 1/2차 평정 결과 및 변경된 배점 기준이 초기값으로 완전히 지워집니다.")) {
+    employees = [];
+    empScores = {};
+    calcScores = {};
+    firstR = {};
+    secondR = {};
+    CRITERIA = {
+      가점: {
+        수송순위: [
+          {from:1,to:5,score:5,label:'1위'},
+          {from:6,to:10,score:4,label:'2위'},
+          {from:11,to:15,score:3,label:'3위'},
+          {from:16,to:20,score:2,label:'4~5위'},
+          {from:21,to:999,score:1,label:'6위 이하'},
+        ],
+        부정승차단속: [
+          {from:20,to:9999,score:5,label:'20건 이상'},
+          {from:15,to:19,score:4,label:'15~19건'},
+          {from:10,to:14,score:3,label:'10~14건'},
+          {from:5,to:9,score:2,label:'5~9건'},
+          {from:1,to:4,score:1,label:'1~4건'},
+        ],
+        사회공헌_회원: [{is:true,score:1,label:'회원'}],
+        사회공헌_참여횟수: [
+          {from:10,to:999,score:3,label:'10회 이상'},
+          {from:5,to:9,score:2,label:'5~9회'},
+          {from:1,to:4,score:1,label:'1~4회'},
+        ],
+        안전리더_회원: [{is:true,score:1,label:'회원'}],
+        안전리더_활동횟수: [
+          {from:10,to:999,score:3,label:'10회 이상'},
+          {from:5,to:9,score:2,label:'5~9회'},
+          {from:1,to:4,score:1,label:'1~4회'},
+        ],
+        칭찬미담: [
+          {from:3,to:999,score:2,label:'3건 이상'},
+          {from:1,to:2,score:1,label:'1~2건'},
+        ],
+        신호기자격: [{is:true,score:1,label:'자격 보유'}],
+        승진경과: [
+          {from:5,to:999,score:5,label:'5년 이상'},
+          {from:4,to:4,score:4,label:'4년'},
+          {from:3,to:3,score:3,label:'3년'},
+          {from:2,to:2,score:2,label:'2년'},
+          {from:1,to:1,score:1,label:'1년'},
+        ],
+      },
+      감점: {
+        감사수입금: [
+          {from:3,to:999,score:-3,label:'3건 이상'},
+          {from:2,to:2,score:-2,label:'2건'},
+          {from:1,to:1,score:-1,label:'1건'},
+        ],
+        기타지적사항: [
+          {from:3,to:999,score:-3,label:'3건 이상'},
+          {from:2,to:2,score:-2,label:'2건'},
+          {from:1,to:1,score:-1,label:'1건'},
+        ],
+      },
+      재량점수: {min:-10, max:10, label:'평정권자 재량'},
+    };
+    
+    const rosterFile = document.getElementById('rosterFile');
+    if (rosterFile) rosterFile.value = '';
+    const scoreFile = document.getElementById('scoreFile');
+    if (scoreFile) scoreFile.value = '';
+    const firstRankFile = document.getElementById('firstRankFile');
+    if (firstRankFile) firstRankFile.value = '';
+
+    refreshFilters();
+    renderRoster();
+    renderCriteriaView();
+    renderScoreTable();
+    
+    const activeTab = document.querySelector('.nav-tab.active');
+    if (activeTab) {
+      const tabText = activeTab.innerText.trim();
+      if (tabText.includes('조직')) gotoTab('org');
+      else if (tabText.includes('명부')) gotoTab('roster');
+      else if (tabText.includes('기준')) gotoTab('criteria');
+      else if (tabText.includes('자료')) gotoTab('scores');
+      else if (tabText.includes('1차')) gotoTab('first');
+      else if (tabText.includes('2차')) gotoTab('second');
+      else if (tabText.includes('결과')) gotoTab('result');
+    }
+    
+    alert("대시보드가 성공적으로 초기화되었습니다.");
+  }
+}
 </script>
 </div> <!-- /#app-content-wrapper -->
 </body>
