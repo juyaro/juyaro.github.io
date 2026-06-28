@@ -1,0 +1,3564 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부산도시철도 평정 관리 시스템</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --navy: #0D2B55;
+  --blue: #1A4A8A;
+  --blue-mid: #2563AB;
+  --blue-light: #3B82C4;
+  --sky: #E8F2FB;
+  --sky2: #C8DFF5;
+  --gold: #C4922A;
+  --gold-light: #F5E6C8;
+  --surface: #F7F9FC;
+  --surface2: #FFFFFF;
+  --border: #C0D0E0; /* 명도 조절을 통해 경계 시인성 개선 */
+  --border2: #A0B5C9;
+  --text: #0D1B2A;
+  --text2: #2E3E52;
+  --text3: #586F8A;
+  --success: #1E7B40;
+  --success-bg: #E6F5EC;
+  --warning: #A05C00;
+  --warning-bg: #FEF3E0;
+  --danger: #B81C1C;
+  --danger-bg: #FDEAEA;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 4px rgba(13,43,85,0.08);
+  --shadow-md: 0 4px 16px rgba(13,43,85,0.12);
+
+  /* 시인성 개선 동적 변수 선언 */
+  --custom-fs: 11.5px;
+  --custom-fw: 500;
+  --custom-fw-bold: 700;
+  --custom-border-w: 1px;
+  --custom-border-color: var(--border);
+}
+
+[data-theme="dark"] {
+  --navy: #102A45;
+  --blue: #2563AB;
+  --blue-mid: #3B82C4;
+  --blue-light: #60A5FA;
+  --sky: #1E293B;
+  --sky2: #334155;
+  --gold: #D9A74A;
+  --gold-light: #45331E;
+  --surface: #0F172A;
+  --surface2: #1E293B;
+  --border: #334155;
+  --border2: #475569;
+  --text: #F8FAFC;
+  --text2: #CBD5E1;
+  --text3: #94A3B8;
+  --success: #34D399;
+  --success-bg: #064E3B;
+  --danger: #F87171;
+  --danger-bg: #7F1D1D;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--surface);color:var(--text);min-height:100vh;font-size:14px;transition: background-color 0.2s, color 0.2s;}
+
+/* HEADER */
+.app-header{background:var(--navy);color:#fff;padding:0 2rem;display:flex;align-items:center;height:56px;gap:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+.app-header .logo{font-size:13px;font-weight:700;letter-spacing:0.04em;color:#fff;border-right:1px solid rgba(255,255,255,0.2);padding-right:1rem;white-space:nowrap}
+.app-header h1{font-size:15px;font-weight:600;color:#E8F2FB}
+.app-header .period-badge{margin-left:auto;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:99px;padding:4px 14px;font-size:12px;color:#C8DFF5}
+
+/* NAV TABS */
+.nav-tabs{background:var(--surface2);border-bottom:1.5px solid var(--border);display:flex;gap:0;padding:0 2rem;overflow-x:auto}
+.nav-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text3);border:none;background:none;cursor:pointer;border-bottom:2.5px solid transparent;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s}
+.nav-tab:hover{color:var(--blue)}
+.nav-tab.active{color:var(--blue-mid);border-bottom-color:var(--blue-mid)}
+.nav-tab i{font-size:15px}
+
+/* LAYOUT */
+.main{padding:0.5rem 0.8rem;max-width:96%;margin:0 auto}
+.panel{display:none}.panel.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow)}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-header h3{font-size:14px;font-weight:600;color:var(--navy)}
+.card-body{padding:16px 18px}
+
+/* METRIC GRID */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+.metric{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.metric-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.metric-value{font-size:26px;font-weight:700;color:var(--navy);line-height:1}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.metric.accent{background:linear-gradient(135deg,var(--navy),var(--blue));border-color:transparent}
+.metric.accent .metric-label,.metric.accent .metric-value,.metric.accent .metric-sub{color:#fff}
+
+/* SECTION TITLE */
+.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;max-height:560px;position:relative;border:var(--custom-border-w) solid var(--custom-border-color);border-radius:6px;}
+.tbl-wrap.no-vscroll{max-height:none !important;overflow-y:visible !important;}
+table{width:100%;border-collapse:collapse;font-size:var(--custom-fs);letter-spacing:-0.02em;table-layout:fixed}
+thead th{background:var(--navy);color:#E8F2FB;padding:6px 4px;text-align:center;font-weight:700;font-size:calc(var(--custom-fs) - 0.5px);white-space:nowrap;position:sticky;top:0;z-index:10;background-clip:padding-box;border:var(--custom-border-w) solid var(--border2)}
+.sub-th{position:sticky;top:31px;z-index:9;background:#1A3A5C !important;background-clip:padding-box;border:var(--custom-border-w) solid var(--border2)}
+thead th:first-child{text-align:center}
+tbody td{padding:5px 4.5px;border-bottom:var(--custom-border-w) solid var(--custom-border-color);border-right:var(--custom-border-w) solid var(--custom-border-color);vertical-align:middle;text-align:center;background:var(--surface2);color:var(--text);font-weight:var(--custom-fw)}
+tbody td:last-child{border-right:none}
+tbody tr:hover td{background:var(--sky)}
+tbody tr:last-child td{border-bottom:none}
+.td-name{font-weight:var(--custom-fw-bold);color:var(--text);font-size:calc(var(--custom-fs) + 0.5px);white-space:nowrap}
+.td-unit{font-size:calc(var(--custom-fs) - 0.5px);color:var(--text2);white-space:nowrap}
+.score-pos{color:var(--success);font-weight:var(--custom-fw-bold)}
+.score-neg{color:var(--danger);font-weight:var(--custom-fw-bold)}
+.score-total{font-weight:var(--custom-fw-bold);color:var(--blue-mid);font-size:calc(var(--custom-fs) + 1px)}
+
+/* TABLE COLUMN WIDTHS FOR FIXED LAYOUT (NO SCROLL, ORIGINAL PROPORTIONS) */
+colgroup col:nth-child(1) { width: 3%; }
+colgroup col:nth-child(2) { width: 6%; }
+colgroup col:nth-child(3) { width: 5%; }
+colgroup col:nth-child(4) { width: 8%; }
+colgroup col:nth-child(5) { width: 5%; }
+colgroup col:nth-child(6) { width: 7%; }
+colgroup col:nth-child(7) { width: 8%; }
+colgroup col:nth-child(8) { width: 4%; }
+colgroup col:nth-child(9) { width: 4%; }
+colgroup col:nth-child(10) { width: 5%; }
+colgroup col:nth-child(11) { width: 4%; }
+colgroup col:nth-child(12) { width: 4%; }
+colgroup col:nth-child(13) { width: 4%; }
+colgroup col:nth-child(14) { width: 4%; }
+colgroup col:nth-child(15) { width: 5%; }
+colgroup col:nth-child(16) { width: 5%; }
+colgroup col:nth-child(17) { width: 8%; }
+colgroup col:nth-child(18) { width: 5%; }
+colgroup col:nth-child(19) { width: 5%; }
+colgroup col:nth-child(20) { width: 5%; }
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-navy{background:var(--navy);color:#fff}
+.b-blue{background:var(--sky2);color:var(--blue)}
+.b-gold{background:var(--gold-light);color:var(--gold)}
+.b-green{background:var(--success-bg);color:var(--success)}
+.b-gray{background:var(--sky);color:var(--text2);border:1px solid var(--border)}
+.b-red{background:var(--danger-bg);color:var(--danger)}
+
+/* RANK BADGE */
+.rank{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:700}
+.rank-1{background:#FAC829;color:#3D2800}
+.rank-2{background:#C0C5CC;color:#1A1A1A}
+.rank-3{background:#E8967A;color:#3D0C00}
+.rank-n{background:var(--sky);color:var(--blue);border:1px solid var(--sky2)}
+
+/* EVAL GRADE */
+.eg{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-size:13px;font-weight:800}
+.eg-수{background:#1A4A8A;color:#fff}
+.eg-우{background:#2563AB;color:#fff}
+.eg-미{background:#6B8099;color:#fff}
+.eg-양{background:#B0BAC5;color:#fff}
+.eg-none{background:#EEF1F5;color:#B0BAC5}
+
+/* BUTTONS */
+.btn{padding:7px 16px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .15s;font-weight:500}
+.btn:hover{background:var(--sky);border-color:var(--blue-light)}
+.btn-primary{background:var(--blue-mid);color:#fff;border-color:var(--blue-mid)}
+.btn-primary:hover{background:var(--blue)}
+.btn-navy{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-navy:hover{background:var(--blue)}
+.btn-gold{background:var(--gold);color:#fff;border-color:var(--gold)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:2rem 1.5rem;text-align:center;cursor:pointer;display:block;background:var(--sky);transition:border-color .15s}
+.upload-zone:hover{border-color:var(--blue-mid)}
+.upload-zone i{font-size:36px;color:var(--blue-light);display:block;margin-bottom:10px}
+.upload-zone p{font-size:13px;font-weight:600;color:var(--blue);margin-bottom:4px}
+.upload-zone small{font-size:11.5px;color:var(--text3)}
+input[type=file]{display:none}
+
+/* FILTERS */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+select,input[type=text],input[type=number]{padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit}
+select:focus,input:focus{outline:none;border-color:var(--blue-mid)}
+.editable{border:1px solid var(--border2);border-radius:4px;width:52px;text-align:center;background:var(--surface2);color:var(--text);font-size:12.5px;padding:2px 4px}
+.editable:focus{outline:none;border-color:var(--blue-mid)}
+
+/* RANK BADGE */
+.rank{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:700}
+.rank-1{background:#FAC829;color:#3D2800}
+.rank-2{background:#C0C5CC;color:#1A1A1A}
+.rank-3{background:#E8967A;color:#3D0C00}
+.rank-n{background:var(--sky);color:var(--blue);border:1px solid var(--sky2)}
+
+/* HIDE ARROWS FOR EDITABLE CIRCLE BADGES */
+input[type=number].rank::-webkit-outer-spin-button,
+input[type=number].rank::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number].rank {
+  -moz-appearance: textfield;
+}
+
+/* EVAL GRADE */
+.eg{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-size:13px;font-weight:800}
+.eg-수{background:#1A4A8A;color:#fff}
+.eg-우{background:#2563AB;color:#fff}
+.eg-미{background:#6B8099;color:#fff}
+.eg-양{background:#B0BAC5;color:#fff}
+.eg-none{background:#EEF1F5;color:#B0BAC5}
+
+/* GRADE BORDER ON RANK BADGE */
+.rank.border-eg-수 { background: #1A4A8A !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
+.rank.border-eg-우 { background: #2563AB !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
+.rank.border-eg-미 { background: #6B8099 !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
+.rank.border-eg-양 { background: #B0BAC5 !important; color: #fff !important; border-radius: 6px !important; border: none !important; }
+
+/* BUTTONS */
+.btn{padding:7px 16px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .15s;font-weight:500}
+.btn:hover{background:var(--sky);border-color:var(--blue-light)}
+.btn-primary{background:var(--blue-mid);color:#fff;border-color:var(--blue-mid)}
+.btn-primary:hover{background:var(--blue)}
+.btn-navy{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-navy:hover{background:var(--blue)}
+.btn-gold{background:var(--gold);color:#fff;border-color:var(--gold)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:2rem 1.5rem;text-align:center;cursor:pointer;display:block;background:var(--sky);transition:border-color .15s}
+.upload-zone:hover{border-color:var(--blue-mid)}
+.upload-zone i{font-size:36px;color:var(--blue-light);display:block;margin-bottom:10px}
+.upload-zone p{font-size:13px;font-weight:600;color:var(--blue);margin-bottom:4px}
+.upload-zone small{font-size:11.5px;color:var(--text3)}
+input[type=file]{display:none}
+
+/* FILTERS */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+select,input[type=text],input[type=number]{padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit}
+select:focus,input:focus{outline:none;border-color:var(--blue-mid)}
+.editable{border:1px solid var(--border2);border-radius:4px;width:52px;text-align:center;background:var(--surface2);color:var(--text);font-size:12.5px;padding:2px 4px}
+.editable:focus{outline:none;border-color:var(--blue-mid)}
+
+/* ORG TREE */
+.org-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:1rem}
+.org-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.org-card-head{background:var(--navy);color:#fff;padding:8px 14px;font-size:12.5px;font-weight:700}
+.org-card-head.blue{background:var(--blue)}
+.org-card-body{padding:8px 14px}
+.org-card-body .sub{font-size:11.5px;color:var(--text2);padding:3px 0;border-bottom:1px dashed var(--border)}
+.org-card-body .sub:last-child{border:none}
+
+/* STEP */
+.steps{display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem}
+.step{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.step.done{border-color:var(--success);background:var(--success-bg)}
+.step.active{border-color:var(--blue-mid);background:var(--sky)}
+.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.step.done .step-num{background:var(--success);color:#fff}
+.step.active .step-num{background:var(--blue-mid);color:#fff}
+.step.pending .step-num{background:var(--border);color:var(--text3)}
+.step-title{font-size:13.5px;font-weight:600;color:var(--navy);margin-bottom:2px}
+.step.pending .step-title{color:var(--text3)}
+.step-desc{font-size:12px;color:var(--text2)}
+
+/* INFO BOX */
+.info-box{background:var(--sky);border:1px solid var(--sky2);border-radius:var(--radius);padding:10px 14px;font-size:12.5px;color:var(--blue);display:flex;gap:8px;align-items:flex-start;margin-bottom:12px}
+.warn-box{background:var(--warning-bg);border:1px solid #F0D5A0;border-radius:var(--radius);padding:10px 14px;font-size:12.5px;color:var(--warning);margin-bottom:12px}
+.err-box{background:var(--danger-bg);border:1px solid #F5BABA;border-radius:var(--radius);padding:10px 14px;font-size:12.5px;color:var(--danger);margin-bottom:12px}
+
+/* MODAL OVERLAY */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,27,42,0.55);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface2);border-radius:14px;box-shadow:var(--shadow-md);width:min(640px,95vw);max-height:88vh;overflow:hidden;display:flex;flex-direction:column}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.modal-header h3{font-size:15px;font-weight:700;color:var(--navy);flex:1}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+/* SCORE CRITERIA */
+.criteria-group{margin-bottom:18px}
+.criteria-group-title{font-size:12px;font-weight:700;color:var(--navy);background:var(--sky);padding:6px 12px;border-radius:6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.criteria-row{display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;margin-bottom:6px;align-items:center}
+.criteria-row label{font-size:12px;color:var(--text2)}
+.criteria-row input{padding:5px 8px;font-size:12px}
+.criteria-add{font-size:11.5px;color:var(--blue-mid);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:4px}
+.criteria-add:hover{text-decoration:underline}
+
+/* PRINT */
+@media print{
+  .app-header,.nav-tabs,.filter-bar,.btn,.btn-sm,.no-print{display:none!important}
+  .main{padding:0}
+  .panel{display:block!important}
+  table{font-size:10px}
+  thead th{background:#0D2B55!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .main{padding:1rem}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .nav-tabs{padding:0 1rem}
+}
+
+/* DIVIDER */
+hr.div{border:none;border-top:1px solid var(--border);margin:1rem 0}
+
+/* GRID UTILS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.flex{display:flex;align-items:center;gap:8px}
+.ml-auto{margin-left:auto}
+.mt1{margin-top:10px}.mt2{margin-top:16px}.mb1{margin-bottom:10px}.mb2{margin-bottom:16px}
+.text-right{text-align:right}
+
+/* SCORE DISTRIBUTION BAR */
+.dist-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:6px 0}
+.dist-수{background:#1A4A8A}.dist-우{background:#2563AB}.dist-미{background:#6B8099}.dist-양{background:#B0BAC5}
+
+/* CONFLICT HIGHLIGHT */
+tbody tr.tr-conflict td {
+  background: #FFE8E8 !important;
+  color: #D32F2F !important;
+  border-bottom: 1.5px solid #F5BABA;
+}
+tbody tr.tr-conflict td .td-name {
+  color: #D32F2F !important;
+}
+</style>
+</head>
+<body>
+
+<!-- 보안 인증 화면 (vudwjd) -->
+<div id="auth-gate" style="position:fixed; inset:0; background:#0B0E14; display:flex; align-items:center; justify-content:center; z-index:99999; font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;">
+  <div style="background:#131924; border:1px solid #1E293B; border-radius:10px; width:300px; padding:36px 28px; box-shadow:0 10px 30px rgba(0,0,0,0.4); text-align:center; box-sizing:border-box;">
+    <!-- J 배지 (클릭 시 링크 이동) -->
+    <a href="https://juyaro.github.io" style="text-decoration:none; display:inline-block; margin-bottom:20px;">
+      <div style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; background:#1A8CFF; color:#fff; font-size:16px; font-weight:800; border-radius:6px; box-shadow:0 0 12px rgba(26,140,255,0.4); cursor:pointer;">J</div>
+    </a>
+    
+    <h2 style="color:#fff; font-size:16px; font-weight:700; margin:0 0 10px 0; letter-spacing:-0.03em;">시스템 보안 인증</h2>
+    <p style="color:#94A3B8; font-size:11px; line-height:1.5; margin:0 0 20px 0; word-break:keep-all;">이동 관리 대시보드에 접근하기 위해<br>비밀번호를 입력해 주십시오.</p>
+    
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <input type="password" id="gate-password" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter') verifyGatePassword()" style="width:100%; padding:10px 12px; background:#1E293B; border:1px solid #2A3547; border-radius:4px; color:#fff; font-size:12.5px; outline:none; text-align:center; box-sizing:border-box; transition:border-color 0.15s;">
+      <div id="gate-error" style="color:#EF4444; font-size:11px; display:none; margin-top:2px; font-weight:500;">비밀번호가 올바르지 않습니다.</div>
+      <button onclick="verifyGatePassword()" style="width:100%; padding:9px; background:#3B82F6; border:none; border-radius:4px; color:#fff; font-size:13px; font-weight:700; cursor:pointer; margin-top:4px; box-sizing:border-box; transition:background 0.15s;">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 실제 시스템 레이아웃 감싸는 래퍼 (기본 display:none) -->
+<div id="app-content-wrapper" style="display:none;">
+
+<div class="app-header">
+  <span class="logo">제2여객사업소</span>
+  <h1>인사 평정 관리 시스템</h1>
+  <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+    <!-- 글자 크기 조절 -->
+    <span style="font-size:11px; color:#C8DFF5; font-weight:600; white-space:nowrap;"><i class="ti ti-typography"></i> 크기</span>
+    <select id="font-size-select" onchange="changeFontScale(this.value)" style="background:#1A4A8A;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11.5px;font-weight:700;border-radius:18px;padding:4px 8px;cursor:pointer;outline:none">
+      <option value="10.5">작게</option>
+      <option value="11.5" selected>보통</option>
+      <option value="13">크게</option>
+      <option value="14.5">아주 크게</option>
+    </select>
+
+    <!-- 글자 두께 조절 -->
+    <span style="font-size:11px; color:#C8DFF5; font-weight:600; white-space:nowrap;"><i class="ti ti-bold"></i> 진하기</span>
+    <select id="font-weight-select" onchange="changeFontWeightScale(this.value)" style="background:#1A4A8A;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11.5px;font-weight:700;border-radius:18px;padding:4px 8px;cursor:pointer;outline:none">
+      <option value="normal" selected>보통</option>
+      <option value="medium">약간 진하게</option>
+      <option value="bold">매우 진하게</option>
+    </select>
+
+    <!-- 선 굵기 조절 -->
+    <span style="font-size:11px; color:#C8DFF5; font-weight:600; white-space:nowrap;"><i class="ti ti-border-all"></i> 테두리</span>
+    <select id="border-width-select" onchange="changeBorderWidthScale(this.value)" style="background:#1A4A8A;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11.5px;font-weight:700;border-radius:18px;padding:4px 8px;cursor:pointer;outline:none">
+      <option value="1" selected>얇게</option>
+      <option value="1.5">보통</option>
+      <option value="2">두껍게</option>
+    </select>
+
+    <select id="theme-select" onchange="changeThemeMode(this.value)" style="background:#1A4A8A;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11.5px;font-weight:700;border-radius:18px;padding:4px 8px;cursor:pointer;outline:none">
+      <option value="light">일반 모드</option>
+      <option value="dark">다크 모드</option>
+      <option value="system">시스템 설정</option>
+    </select>
+    <select id="period-select" onchange="alert(this.value + ' 평정 모드로 전환되었습니다.')" style="background:#1A4A8A;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11.5px;font-weight:700;border-radius:18px;padding:4px 8px;cursor:pointer;outline:none">
+      <option value="상반기">상반기 평정</option>
+      <option value="하반기">하반기 평정</option>
+    </select>
+  </div>
+</div>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" onclick="gotoTab('org')"><i class="ti ti-sitemap"></i> 조직 구성</button>
+  <button class="nav-tab" onclick="gotoTab('roster')"><i class="ti ti-users"></i> 직원 명부</button>
+  <button class="nav-tab" onclick="gotoTab('criteria')"><i class="ti ti-adjustments"></i> 배점 기준</button>
+  <button class="nav-tab" onclick="gotoTab('scores')"><i class="ti ti-clipboard-list"></i> 평정 자료</button>
+  <button class="nav-tab" onclick="gotoTab('first')"><i class="ti ti-award"></i> 1차 평정</button>
+  <button class="nav-tab" onclick="gotoTab('second')"><i class="ti ti-trophy"></i> 2차 평정</button>
+  <button class="nav-tab" onclick="gotoTab('result')"><i class="ti ti-chart-bar"></i> 결과·출력</button>
+</nav>
+
+<div class="main">
+
+<!-- ===== 조직 구성 ===== -->
+<div id="tab-org" class="panel active">
+  <div class="section-label"><i class="ti ti-building"></i> 사업소 조직 구성</div>
+  <div class="org-grid" id="org-grid"></div>
+  <div class="section-label mt2"><i class="ti ti-info-circle"></i> 평정 그룹 체계</div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-header"><h3><span class="badge b-navy">1차 평정</span> 평정권자별 그룹</h3></div>
+      <div class="card-body">
+        <div class="mb1"><span class="badge b-gold">소장</span> <span style="font-size:12.5px;color:var(--text2)"> 2급·3급 부장/관리역장/환승역장</span></div>
+        <div class="mb1"><span class="badge b-blue">관리역장·환승역장·독립역장</span> <span style="font-size:12.5px;color:var(--text2)"> 소속 직원 (급수별)</span></div>
+        <div><span class="badge b-gray">운영부장</span> <span style="font-size:12.5px;color:var(--text2)"> 지원팀·운영팀·사상역장·사원 (급수별)</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3><span class="badge b-navy">2차 평정</span> 소장 평정</h3></div>
+      <div class="card-body">
+        <div class="mb1" style="font-size:12.5px;color:var(--text2)">부장급 제외 전 직원 · 급수별 수우미양 인원 배분</div>
+        <div class="dist-bar"><div class="dist-수" style="width:20%"></div><div class="dist-우" style="width:30%"></div><div class="dist-미" style="width:30%"></div><div class="dist-양" style="width:20%"></div></div>
+        <div style="display:flex;gap:8px;font-size:11px;color:var(--text3)">
+          <span><span class="eg eg-수" style="width:16px;height:16px;font-size:10px">수</span> 20%</span>
+          <span><span class="eg eg-우" style="width:16px;height:16px;font-size:10px">우</span> 30%</span>
+          <span><span class="eg eg-미" style="width:16px;height:16px;font-size:10px">미</span> 30%</span>
+          <span><span class="eg eg-양" style="width:16px;height:16px;font-size:10px">양</span> 20%</span>
+        </div>
+        <div class="mt1" style="font-size:12px;color:var(--text2)">※ 1차 단위 내 순위 역전 금지</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 직원 명부 ===== -->
+<div id="tab-roster" class="panel">
+  <div class="g2 mb2">
+    <div>
+      <div class="section-label"><i class="ti ti-upload"></i> 명부 업로드</div>
+      <label class="upload-zone" style="height:106px; padding:10px 14px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center;" for="rosterFile">
+        <i class="ti ti-file-spreadsheet" style="font-size:24px; color:var(--blue-light); margin-bottom:4px;"></i>
+        <p style="margin:0 0 2px 0; font-size:12.5px;">직원 명부 엑셀 업로드</p>
+        <small style="font-size:10.5px; line-height:1.2; display:block; max-width:95%;">A열=사번 / M열=성명 / I열=직위 / G열=직렬 / H열=직급 / F열=소속 / Q열=생년 / AG열=현직급근속 / V열=입사구분</small>
+      </label>
+      <input type="file" id="rosterFile" accept=".xlsx,.xls,.csv" onchange="handleRosterUpload(event)">
+    </div>
+    <div>
+      <div class="section-label"><i class="ti ti-sparkles"></i> 빠른 시작</div>
+      <div class="card" style="height:106px; padding:12px 16px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center;">
+        <p style="font-size:12.5px; color:var(--text2); margin:0 0 8px 0;">샘플 데이터로 시스템을 체험하세요</p>
+        <div>
+          <button class="btn btn-navy btn-sm" onclick="loadSampleData()" style="padding:4px 10px;"><i class="ti ti-database-import"></i> 샘플 데이터 불러오기</button>
+        </div>
+        <p style="font-size:10.5px; color:var(--text3); margin:6px 0 0 0;">실제 직원 명부 엑셀로 교체 가능</p>
+      </div>
+    </div>
+  </div>
+  <div class="flex mb1">
+    <div class="section-label" style="margin:0"><i class="ti ti-table"></i> 직원 명부</div>
+    <span class="badge b-blue ml-auto" id="roster-count">0명</span>
+    <select id="roster-unit-f" onchange="renderRoster()"><option value="">전체 단위</option></select>
+    <select id="roster-grade-f" onchange="renderRoster()"><option value="">전체 직급</option></select>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="tbl-wrap" style="max-height:520px;overflow-y:auto">
+      <div id="roster-tbl"><div style="padding:3rem;text-align:center;color:var(--text3)">직원 명부를 업로드하거나 샘플 데이터를 불러오세요</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 배점 기준 ===== -->
+<div id="tab-criteria" class="panel">
+  <div class="flex mb2">
+    <div class="section-label" style="margin:0"><i class="ti ti-adjustments"></i> 항목별 배점 기준 설정</div>
+    <button class="btn btn-primary ml-auto" onclick="openCriteriaModal()"><i class="ti ti-settings"></i> 배점 기준 편집</button>
+    <button class="btn btn-gold" onclick="saveCriteria()"><i class="ti ti-device-floppy"></i> 저장</button>
+  </div>
+  <div id="criteria-view"></div>
+</div>
+
+<!-- ===== 평정 자료 (점수 입력/업로드) ===== -->
+<div id="tab-scores" class="panel">
+  <div class="g2 mb2">
+    <div>
+      <div class="section-label"><i class="ti ti-upload"></i> 활동 점수 업로드</div>
+      <label class="upload-zone" style="height:106px; padding:10px 14px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center;" for="scoreFile">
+        <i class="ti ti-file-spreadsheet" style="font-size:24px; color:var(--blue-light); margin-bottom:4px;"></i>
+        <p style="margin:0 0 2px 0; font-size:12.5px;">활동 점수 엑셀 업로드</p>
+        <small style="font-size:10.5px; line-height:1.2; display:block; max-width:95%;">A열=사번 / J열=수송순위 / L열=부정승차 / N,O열=사회공헌 / Q,R열=안전리더 / T열=칭찬미담 / U열=신호기자격 / AA열=감사수입금 / AC열=기타지적</small>
+      </label>
+      <input type="file" id="scoreFile" accept=".xlsx,.xls,.csv" onchange="handleScoreUpload(event)">
+    </div>
+    <div>
+      <div class="section-label"><i class="ti ti-filter"></i> 조회 필터</div>
+      <div class="card" style="height:106px; padding:10px 14px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:5px;">
+        <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; width:100%;">
+          <div style="display:flex; align-items:center; flex:1; gap:4px;">
+            <label style="min-width:30px; font-weight:600; color:var(--text2);">직급</label>
+            <select id="score-grade-f" onchange="renderScoreTable()" style="padding:4px 6px; font-size:11.5px; flex:1;"><option value="">전체</option></select>
+          </div>
+          <div style="display:flex; align-items:center; flex:1; gap:4px;">
+            <label style="min-width:30px; font-weight:600; color:var(--text2);">단위</label>
+            <select id="score-unit-f" onchange="renderScoreTable()" style="padding:4px 6px; font-size:11.5px; flex:1;"><option value="">전체</option></select>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:4px; font-size:11.5px; width:100%;">
+          <label style="min-width:30px; font-weight:600; color:var(--text2);">성명</label>
+          <input type="text" id="score-name-f" placeholder="이름 검색" oninput="renderScoreTable()" style="padding:4px 8px; font-size:11.5px; flex:1;">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="flex mb1">
+    <div class="section-label" style="margin:0"><i class="ti ti-clipboard-data"></i> 평정 참고 자료</div>
+    <button class="btn btn-sm ml-auto" onclick="printScoreTable()"><i class="ti ti-printer"></i> 인쇄·PDF</button>
+    <button class="btn btn-sm" onclick="dlScoreExcel()"><i class="ti ti-download"></i> 엑셀 다운로드</button>
+    <button class="btn btn-navy btn-sm" onclick="recalcAllScores()"><i class="ti ti-calculator"></i> 전체 점수 재산출</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="tbl-wrap" style="max-height:560px;overflow-y:auto">
+      <div id="score-tbl"><div style="padding:3rem;text-align:center;color:var(--text3)">직원 명부를 먼저 등록하세요</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 1차 평정 ===== -->
+<div id="tab-first" class="panel">
+  <div class="info-box"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i><span>단위(평정권자)별로 같은 직급 직원에게 단위 내 순위와 1차 점수를 부여합니다. 활동 총점이 자동 반영됩니다.</span></div>
+  <div class="filter-bar">
+    <select id="f1-group-f" onchange="renderFirst()">
+      <option value="">전체 평정 그룹</option>
+      <option value="소장">소장 평정 대상</option>
+      <option value="부장">부장 평정 대상</option>
+    </select>
+    <select id="f1-grade-f" onchange="renderFirst()"><option value="">전체 직급</option></select>
+    <button class="btn btn-sm ml-auto" onclick="autoFirstRank()"><i class="ti ti-wand"></i> 자동 순위·등급 배분</button>
+    <button class="btn btn-primary btn-sm" onclick="saveFirst()"><i class="ti ti-device-floppy"></i> 1차 저장</button>
+  </div>
+  <div id="first-tbl"><div style="padding:3rem;text-align:center;color:var(--text3)">직원 명부를 먼저 등록하세요</div></div>
+</div>
+
+<!-- ===== 2차 평정 ===== -->
+<div id="tab-second" class="panel">
+  <div class="info-box"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i><span>소장 평정 — 직급별 전체 인원을 수·우·미·양으로 배분하고 순위를 확정합니다. 1차 단위 내 순위 역전은 허용되지 않습니다.</span></div>
+  <div class="filter-bar">
+    <select id="f2-grade-f" onchange="renderSecond()"><option value="">전체 직급</option></select>
+    <button class="btn btn-sm" onclick="autoSecondRank()"><i class="ti ti-wand"></i> 자동 순위·등급 배분</button>
+    <button class="btn btn-sm" onclick="checkConflicts()"><i class="ti ti-alert-triangle"></i> 역전 검사</button>
+    
+    <label class="btn btn-sm btn-navy" style="margin:0;cursor:pointer">
+      <i class="ti ti-upload"></i> 1차 순위 엑셀 업로드
+      <input type="file" id="firstRankFile" accept=".xlsx,.xls,.csv" onchange="handleFirstRankUpload(event)" multiple style="display:none">
+    </label>
+
+    <button class="btn btn-sm" onclick="printSecondWithReference()"><i class="ti ti-printer"></i> 인쇄·PDF</button>
+    <button class="btn btn-sm btn-navy" onclick="dlSecondExcel()"><i class="ti ti-download"></i> 엑셀 다운로드</button>
+
+    <button class="btn btn-gold btn-sm ml-auto" onclick="saveSecond()"><i class="ti ti-circle-check"></i> 2차 확정</button>
+  </div>
+  <div id="conflict-msg" style="display:none"></div>
+  <div id="second-tbl"><div style="padding:3rem;text-align:center;color:var(--text3)">1차 평정을 먼저 저장하세요</div></div>
+</div>
+
+<!-- ===== 결과·출력 ===== -->
+<div id="tab-result" class="panel">
+  <div class="filter-bar">
+    <select id="r-grade-f" onchange="renderResult()"><option value="">전체 직급</option></select>
+    <select id="r-unit-f" onchange="renderResult()"><option value="">전체 단위</option></select>
+    <div class="ml-auto flex">
+      <button class="btn btn-sm" onclick="printResult()"><i class="ti ti-printer"></i> 인쇄·PDF</button>
+      <button class="btn btn-primary btn-sm" onclick="dlExcel('grade')"><i class="ti ti-download"></i> 직급별 평정표</button>
+      <button class="btn btn-sm" onclick="dlExcel('basis')"><i class="ti ti-download"></i> 평정근거</button>
+      <button class="btn btn-navy btn-sm" onclick="dlExcel('all')"><i class="ti ti-download"></i> 전체 다운로드</button>
+    </div>
+  </div>
+  <div id="result-summary" class="g3 mb2"></div>
+  <div id="result-tbl"><div style="padding:3rem;text-align:center;color:var(--text3)">2차 평정을 확정한 후 결과를 확인하세요</div></div>
+</div>
+
+</div><!-- /main -->
+
+<!-- ===== 배점기준 모달 ===== -->
+<div class="modal-overlay" id="criteria-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <i class="ti ti-adjustments" style="color:var(--blue-mid);font-size:20px"></i>
+      <h3>항목별 배점 기준 편집</h3>
+      <button class="btn btn-sm" onclick="closeCriteriaModal()" style="margin-left:auto"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="criteria-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeCriteriaModal()">취소</button>
+      <button class="btn btn-primary" onclick="applyAndCloseCriteria()"><i class="ti ti-check"></i> 적용</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const ORG = {
+  '운영부': {type:'부', subs:['지원팀','운영팀'], rater:'운영부장'},
+  '장산관리역': {type:'관리역', subs:['장산','중동','해운대'], rater:'관리역장'},
+  '센텀시티관리역': {type:'관리역', subs:['동백','벡스코','센텀시티'], rater:'관리역장'},
+  '수영역': {type:'환승역', subs:['수영'], rater:'환승역장'},
+  '광안관리역': {type:'관리역', subs:['민락','광안','금련산'], rater:'관리역장'},
+  '경성대부경대관리역': {type:'관리역', subs:['남천','경성대부경대','대연'], rater:'관리역장'},
+  '문현관리역': {type:'관리역', subs:['못골','제게골','문현'], rater:'관리역장'},
+  '전포관리역': {type:'관리역', subs:['국제금융센터부산은행','전포','부암'], rater:'관리역장'},
+  '동의대관리역': {type:'관리역', subs:['동의대','가야','개금'], rater:'관리역장'},
+  '냉정관리역': {type:'관리역', subs:['냉정','주례','감전'], rater:'관리역장'},
+  '사상역': {type:'독립역', subs:['사상'], rater:'독립역장'},
+  '모덕관리역': {type:'관리역', subs:['덕포','모덕','모라'], rater:'관리역장'},
+  '구명관리역': {type:'관리역', subs:['구남','구명','수정'], rater:'관리역장'},
+  '덕천역': {type:'독립역', subs:['덕천'], rater:'독립역장'},
+  '화명관리역': {type:'관리역', subs:['화명','율리','동원'], rater:'관리역장'},
+  '호포관리역': {type:'관리역', subs:['금곡','호포','증산'], rater:'관리역장'},
+  '양산관리역': {type:'관리역', subs:['부산대양산캠퍼스','남양산','양산'], rater:'관리역장'},
+};
+
+const TYPE_COLOR = {'부':'b-gold','관리역':'b-blue','환승역':'b-green','독립역':'b-gray'};
+
+// 기본 배점 기준
+let CRITERIA = {
+  가점: {
+    수송순위: [
+      {from:1,to:3,score:5,label:'1~3위'},
+      {from:4,to:7,score:3,label:'4~7위'},
+      {from:8,to:999,score:1,label:'8위 이하'},
+    ],
+    부정승차단속: [
+      {from:10,to:9999,score:5,label:'10건 이상'},
+      {from:5,to:9,score:3,label:'5~9건'},
+      {from:1,to:4,score:1,label:'1~4건'},
+    ],
+    사회공헌_회원: [{is:true,score:2,label:'회원'}],
+    사회공헌_참여횟수: [
+      {from:5,to:999,score:3,label:'5회 이상'},
+      {from:1,to:4,score:1,label:'1~4회'},
+    ],
+    안전리더_회원: [{is:true,score:2,label:'회원'}],
+    안전리더_활동횟수: [
+      {from:5,to:999,score:3,label:'5회 이상'},
+      {from:1,to:4,score:1,label:'1~4회'},
+    ],
+    칭찬미담: [
+      {from:3,to:999,score:5,label:'3건 이상'},
+      {from:1,to:2,score:2,label:'1~2건'},
+    ],
+    신호기자격: [{is:true,score:3,label:'자격 보유'}],
+  },
+  감점: {
+    감사수입금: [{from:1,to:999,score:-5,label:'1건 이상'}],
+    기타지적사항: [{from:1,to:999,score:-2,label:'1건 이상'}],
+  },
+  재량점수: {min:-10, max:10, label:'평정권자 재량'},
+};
+
+let employees = [];
+let activityRaw = [];
+let empScores = {};   // id → {항목:값}
+let calcScores = {};  // id → {가점:n, 감점:n, 재량:n, 총점:n}
+let firstR = {};      // id → {unitRank, score}
+let secondR = {};     // id → {rank, grade, score}
+
+// Excel 열 문자 -> 0-based 인덱스 변환 함수 (A -> 0, B -> 1, ..., Z -> 25, AA -> 26 등)
+function colToIdx(colStr) {
+  let name = colStr.toUpperCase().trim();
+  let idx = 0;
+  for (let i = 0; i < name.length; i++) {
+    idx = idx * 26 + (name.charCodeAt(i) - 64);
+  }
+  return idx - 1;
+}
+
+function applyRangeCriteria(val, ranges) {
+  if(!ranges||!val) return 0;
+  for(const r of ranges) {
+    if(r.is !== undefined) { if(val>=1) return r.score; continue; }
+    if(val>=r.from && val<=r.to) return r.score;
+  }
+  return 0;
+}
+
+// ============================================================
+// ORG RENDER
+// ============================================================
+function renderOrg() {
+  const grid = document.getElementById('org-grid');
+  let html = '';
+  Object.entries(ORG).forEach(([name, info]) => {
+    const colorCls = TYPE_COLOR[info.type] || 'b-gray';
+    html += `<div class="org-card"><div class="org-card-head ${info.type==='부'?'blue':''}">${name} <span style="font-weight:400;font-size:11px;opacity:.8">(${info.type})</span></div><div class="org-card-body">`;
+    info.subs.forEach(s => { html += `<div class="sub">${s}</div>`; });
+    html += `</div></div>`;
+  });
+  grid.innerHTML = html;
+}
+
+// ============================================================
+// SAMPLE DATA
+// ============================================================
+function loadSampleData() {
+  const units = Object.entries(ORG);
+  const grades = ['2급','3급','4급','5급','6급','7급'];
+  const positions = {
+    '2급':['부장','관리역장'],
+    '3급':['부역장','역무관리원'],
+    '4급':['역무주임'],
+    '5급':['역무원'],
+    '6급':['역무원'],
+    '7급':['역무보조원']
+  };
+  const names = ['김민준','이서연','박지호','최수아','정현우','강예진','조민서','임태양','한소희','오도현','서지우','윤채원','장기준','권나은','문지수','남도윤','배수빈','신우진','양하은','엄준혁','홍성민','황지영','류다영','송현철','안수진','노태준','윤서현','박소율','김예진','이도현','최민호','정수빈','강태민','조예원','임지훈','한민우','오소영','서태준','윤민서','장은비','권현준','문은서','남지우','배태양','신소연','양현우','엄지원','홍민지','황성현','류은비'];
+  
+  let id = 1;
+  employees = [];
+  units.forEach(([unitName, info]) => {
+    info.subs.forEach(sub => {
+      const count = Math.floor(Math.random()*3)+2;
+      for (let i=0;i<count;i++) {
+        const g = grades[Math.min(i+Math.floor(Math.random()*2), grades.length-1)];
+        const pos = positions[g]?.[0] || '역무원';
+        employees.push({
+          id: String(id).padStart(5,'0'),
+          name: names[(id-1)%names.length],
+          position: pos,
+          series: Math.random() > 0.5 ? '운영' : '업무', // 운영/업무 직렬 할당
+          grade: g,
+          unit: sub,
+          parentUnit: unitName,
+          unitType: info.type,
+          rater: info.rater,
+          birthYear: 1970+Math.floor(Math.random()*25),
+          gradeYears: (Math.floor(Math.random()*15)+1) + '년 6월', // X년 Y월 형식
+          entryType: Math.random()>0.3?'공채':'경채',
+        });
+        id++;
+      }
+    });
+  });
+  
+  // 샘플 활동 점수
+  empScores = {};
+  employees.forEach(e => {
+    empScores[e.id] = {
+      수송순위: Math.floor(Math.random()*15)+1,
+      부정승차단속: Math.floor(Math.random()*12),
+      사회공헌_회원: Math.random()>0.4?1:0,
+      사회공헌_참여횟수: Math.floor(Math.random()*8),
+      안전리더_회원: Math.random()>0.5?1:0,
+      안전리더_활동횟수: Math.floor(Math.random()*6),
+      칭찬미담: Math.floor(Math.random()*5),
+      신호기자격: Math.random()>0.7?1:0,
+      감사수입금: Math.random()>0.8?1:0,
+      기타지적사항: Math.floor(Math.random()*2),
+      재량점수: 5,
+    };
+  });
+  
+  recalcAllScores();
+  refreshFilters();
+  renderRoster();
+  renderCriteriaView();
+  renderScoreTable();
+  updateSteps();
+  alert(`샘플 데이터 ${employees.length}명 로드 완료`);
+}
+
+// ============================================================
+// ROSTER
+// ============================================================
+function handleRosterUpload(ev) {
+  const f = ev.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result,{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(raw.length<2){alert('데이터 없음');return;}
+      
+      // 첫 행(헤더)을 참고하여 매칭할 수도 있지만, 사용자 지정 열에 맞추어 인덱스를 고정 지정합니다.
+      // - A열: 사번
+      // - M열: 성명
+      // - I열: 직위
+      // - G열: 직렬
+      // - H열: 직급
+      // - F열: 소속
+      // - Q열: 생년 (년도만 추출)
+      // - AG열: 현직급근속 임용일 (예: 2020-05-15 형태에서 평정기준일까지의 기간을 'X년 Y월'로 변환)
+      // - V열: 입사구분
+
+      if (!raw || raw.length === 0 || !raw[0]) { alert('올바른 엑셀 형식이 아닙니다.'); return; }
+      const header = raw[0].map(h => String(h || '').trim());
+      
+      const idxA = colToIdx('A'); // 사번
+      const idxM = colToIdx('M'); // 성명
+      const idxI = colToIdx('I'); // 직위
+      const idxG = colToIdx('G'); // 직렬
+      const idxH = colToIdx('H'); // 직급
+      const idxF = colToIdx('F'); // 소속
+      const idxQ = colToIdx('Q'); // 생년
+      const idxAG = colToIdx('AG'); // 현직급근속 임용일
+      const idxV = colToIdx('V'); // 입사구분
+
+      // 평정 기준일 자동 판단 또는 입력 (현재 시점의 월에 따라 상반기는 3월 31일, 하반기는 9월 30일로 산정)
+      // 9월 31일은 실재하지 않으므로 보통 9월 30일을 평정기준일로 삼습니다.
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      // 현재 월이 4월~9월 사이이면 상반기 평정기준일 3월 31일, 그 외에는 하반기 평정기준일 9월 30일로 설정
+      const isFirstHalf = now.getMonth() >= 3 && now.getMonth() <= 8;
+      const baseYear = isFirstHalf ? currentYear : (now.getMonth() < 3 ? currentYear - 1 : currentYear);
+      const baseDate = isFirstHalf ? new Date(baseYear, 2, 31) : new Date(baseYear, 8, 30); // 2는 3월, 8은 9월
+
+      // 날짜 파싱 및 기간(X년 Y월) 계산 함수 (X년 Y월 형식에서 년을 삭제하고 'X Y월' 혹은 'X년 Y월'에서 마지막 년을 삭제하고 'X Y월'로 표기)
+      // 사용자 요청: 마지막 "년" 삭제해줘 -> 예: "X Y월" 로 표기
+      function parseAndCalcDuration(dateVal, targetDate) {
+        if (!dateVal) return '-';
+        let parsedDate = null;
+        
+        if (typeof dateVal === 'number' || (!isNaN(dateVal) && !isNaN(parseFloat(dateVal)))) {
+          const utc_days = Math.floor(parseFloat(dateVal) - 25569);
+          parsedDate = new Date(utc_days * 86400 * 1000);
+        } else {
+          const cleanStr = String(dateVal).replace(/[^0-9]/g, '');
+          if (cleanStr.length === 8) {
+            const y = parseInt(cleanStr.substring(0, 4));
+            const m = parseInt(cleanStr.substring(4, 6)) - 1;
+            const d = parseInt(cleanStr.substring(6, 8));
+            parsedDate = new Date(y, m, d);
+          } else {
+            parsedDate = new Date(dateVal);
+          }
+        }
+        
+        if (!parsedDate || isNaN(parsedDate.getTime())) {
+          return String(dateVal);
+        }
+
+        let years = targetDate.getFullYear() - parsedDate.getFullYear();
+        let months = targetDate.getMonth() - parsedDate.getMonth();
+        let days = targetDate.getDate() - parsedDate.getDate();
+
+        if (days < 0) {
+          months--;
+        }
+        if (months < 0) {
+          years--;
+          months += 12;
+        }
+
+        if (years < 0) return '0년 0월';
+        // 'x년 y월'로 표기
+        return `${years}년 ${months}월`;
+      }
+
+      // 동적 공로연수 배제 기준연도 산정: 평정기준일 기준 공로연수 대상 (평정기준일이 속하는 해가 YYYY일 때, YYYY - 60 년도 출생자 배제)
+      // 예: 2026년 기준 1966년생 제외, 2027년 기준 1967년생 제외 -> targetDate.getFullYear() - 60
+      const retireYearLimit = baseDate.getFullYear() - 60;
+
+      const dataRows = raw.slice(1).filter(r=>r.some(c=>c!==''));
+      employees = dataRows.map((r,i)=>{
+        const sabun = String(r[idxA] || '').trim();
+        const name = String(r[idxM] || '').trim();
+        const position = String(r[idxI] || '').trim();
+        const series = String(r[idxG] || '').trim(); // G열 직렬
+        let grade = String(r[idxH] || '').trim(); // H열 직급
+        const parentUnit = String(r[idxF] || '').trim(); // F열 소속
+        
+        // Q열에서 생년(4자리 연도)만 추출 (날짜 객체나 날짜 숫자 형식 모두 처리)
+        let birthVal = r[idxQ];
+        let birthYear = '';
+        if (birthVal !== undefined && birthVal !== null && birthVal !== '') {
+          if (typeof birthVal === 'number') {
+            // Excel 날짜 형식인 경우
+            if (birthVal > 10000) {
+              const utc_days = Math.floor(birthVal - 25569);
+              const dObj = new Date(utc_days * 86400 * 1000);
+              birthYear = String(dObj.getFullYear());
+            } else {
+              birthYear = String(birthVal);
+            }
+          } else {
+            const birthStr = String(birthVal).replace(/['"]/g, '').trim();
+            const match = birthStr.match(/\d{4}/);
+            if (match) {
+              birthYear = match[0];
+            } else {
+              birthYear = birthStr.substring(0, 4);
+            }
+          }
+        }
+        
+        // 3급 직급 세분화: 3급(부장/관리역장/환승역장) vs 3급(팀장/역장/운영역장)
+        if (grade === '3급') {
+          if (['부장', '관리역장', '환승역장'].includes(position)) {
+            grade = '3급(부장/관리역장/환승역장)';
+          } else if (['팀장', '역장', '운영역장'].includes(position)) {
+            grade = '3급(팀장/역장/운영역장)';
+          } else {
+            // 그 외 예외 상황은 관리직 유형으로 디폴트 분류하거나 직급 유지
+            grade = '3급(팀장/역장/운영역장)';
+          }
+        }
+        
+        // AG열의 날짜로부터 평정기준일까지의 경과 기간 계산 (년 제외 표기)
+        const rawAG = r[idxAG];
+        const gradeYears = parseAndCalcDuration(rawAG, baseDate);
+        
+        // V열 입사구분
+        const entryType = String(r[idxV] || '').trim();
+        
+        // 소속 국문 정규화 및 상위 parentUnit 맵핑 규칙 적용
+        const rawUnit = String(r[idxF] || '').trim();
+        let normalizedUnit = rawUnit;
+        let matchedParentUnit = '';
+        let orgInfo = { type: '', rater: '' };
+
+        const cleanRaw = rawUnit.replace(/역$/, '').replace(/·/g, '').trim();
+        
+        if (!cleanRaw || cleanRaw === '지원' || cleanRaw === '운영' || cleanRaw === '운영팀' || cleanRaw === '지원팀') {
+          matchedParentUnit = '운영부';
+          normalizedUnit = rawUnit || '지원';
+          orgInfo = ORG['운영부'];
+        } else {
+          if (cleanRaw.includes('경성대') || cleanRaw.includes('부경대')) {
+            matchedParentUnit = '경성대부경대관리역';
+            normalizedUnit = rawUnit;
+            orgInfo = ORG['경성대부경대관리역'];
+          } else if (cleanRaw.includes('지게골')) {
+            matchedParentUnit = '문현관리역';
+            normalizedUnit = '지게골';
+            orgInfo = ORG['문현관리역'];
+          } else if (cleanRaw.includes('국제금융') || cleanRaw.includes('부산은행')) {
+            matchedParentUnit = '전포관리역';
+            normalizedUnit = '국제금융센터부산은행';
+            orgInfo = ORG['전포관리역'];
+          } else {
+            for (const [pUnit, pInfo] of Object.entries(ORG)) {
+              const matchSub = pInfo.subs.some(s => {
+                const cleanSub = s.replace(/역$/, '').replace(/·/g, '');
+                return cleanSub === cleanRaw || cleanRaw.startsWith(cleanSub) || cleanSub.startsWith(cleanRaw);
+              });
+              
+              if (pUnit.replace(/관리역$/, '').replace(/역$/, '').replace(/·/g, '') === cleanRaw || matchSub) {
+                matchedParentUnit = pUnit;
+                orgInfo = pInfo;
+                const foundSub = pInfo.subs.find(s => s.replace(/역$/, '').replace(/·/g, '') === cleanRaw || cleanRaw.startsWith(s.replace(/역$/, '').replace(/·/g, '')));
+                normalizedUnit = foundSub || rawUnit;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!matchedParentUnit || !ORG[matchedParentUnit]) {
+          matchedParentUnit = '운영부';
+          normalizedUnit = rawUnit || '지원';
+          orgInfo = ORG['운영부'];
+        }
+        
+        return {
+          id: sabun || `E${String(i+1).padStart(4,'0')}`,
+          name: name,
+          position: position,
+          series: series,
+          grade: grade,
+          unit: normalizedUnit,
+          parentUnit: matchedParentUnit,
+          unitType: orgInfo.type || '',
+          rater: orgInfo.rater || '',
+          birthYear: birthYear,
+          gradeYears: gradeYears,
+          entryType: entryType,
+        };
+      }).filter(e => {
+        if (!e.name) return false;
+        
+        // 직위가 "소장" 인 경우 피평정 대상에서 제외
+        if (e.position === '소장') return false;
+        
+        // 직위가 "-" 이고, 1966년생(2026년 기준 공로연수 대상)은 피평정 대상에서 제외
+        if (e.position === '-' && e.birthYear === '1966') return false;
+
+        // 직렬이 '운영', '업무'인 경우만 포함 (통신 등 제외)
+        const seriesNormalized = e.series.trim();
+        return (seriesNormalized.includes('운영') || seriesNormalized.includes('업무')) && !seriesNormalized.includes('통신');
+      });
+      
+      refreshFilters(); renderRoster(); updateSteps();
+      alert(`${employees.length}명 업로드 완료 (필터링 조건 및 3급 직급 세분화 완료)`);
+    } catch(err){alert('오류: '+err.message);}
+  };
+  rd.readAsArrayBuffer(f);
+}
+
+function handleScoreUpload(ev) {
+  const f = ev.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result,{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const dataRows = raw.slice(1).filter(r=>r.some(c=>c!==''));
+      
+      // 사번(A), 수송순위(J), 부정승차(L), 사회공헌(회원 N, 횟수 O), 안전리더(회원 Q, 횟수 R), 칭찬미담(T), 신호기(U), 기타지적(AC), 감사 수입금(AA)
+      const idxA = colToIdx('A');
+      const idxJ = colToIdx('J');
+      const idxL = colToIdx('L');
+      const idxN = colToIdx('N');
+      const idxO = colToIdx('O');
+      const idxQ = colToIdx('Q');
+      const idxR = colToIdx('R');
+      const idxT = colToIdx('T');
+      const idxU = colToIdx('U');
+      const idxAC = colToIdx('AC');
+      const idxAA = colToIdx('AA');
+
+      // 초기화
+      empScores = {};
+      
+      dataRows.forEach(r=>{
+        const id = String(r[idxA] || '').trim();
+        if(!id) return;
+        
+        if(!empScores[id]) {
+          empScores[id] = {
+            수송순위: 0,
+            부정승차단속: 0,
+            사회공헌_회원: 0,
+            사회공헌_참여횟수: 0,
+            안전리더_회원: 0,
+            안전리더_활동횟수: 0,
+            칭찬미담: 0,
+            신호기자격: 0,
+            감사수입금: 0,
+            기타지적사항: 0,
+            재량점수: 0
+          };
+        }
+
+        // O/X 및 Y/N 등 회원 여부 판별 도우미 함수
+        function parseBooleanCell(cellVal) {
+          const s = String(cellVal || '').trim().toLowerCase();
+          if (!s || s === 'x' || s === 'no' || s === 'n' || s === '0' || s === '-' || s === 'x') {
+            return 0;
+          }
+          if (s === 'o' || s === 'yes' || s === 'y' || s === '1' || s === 'v' || s === '✓') {
+            return 1;
+          }
+          // 그 외 값이나 내용이 존재하면 Y로 인정
+          return 1;
+        }
+
+        // 감사수입금 건수 판별 함수 (값이나 내용이 존재하면 감점 요인 건수)
+        function parseAuditCell(cellVal) {
+          const s = String(cellVal || '').trim();
+          if (!s || s === '0' || s === '-' || s.toLowerCase() === 'x') {
+            return 0;
+          }
+          // 숫자만 추출
+          const num = parseInt(s.replace(/[^0-9]/g, ''));
+          if (!isNaN(num)) {
+            return num;
+          }
+          // 숫자가 아니지만 텍스트 내용이 존재하면 최소 1건 감점으로 판정
+          return 1;
+        }
+
+        // 수송순위는 일반적으로 숫자 순위 그대로 보존
+        empScores[id].수송순위 = Number(r[idxJ] || 0);
+        empScores[id].부정승차단속 = Number(r[idxL] || 0);
+        
+        // 사회공헌 회원 (O/X 판별)
+        empScores[id].사회공헌_회원 = parseBooleanCell(r[idxN]);
+        empScores[id].사회공헌_참여횟수 = Number(r[idxO] || 0);
+        
+        // 안전리더 회원 (O/X 판별)
+        empScores[id].안전리더_회원 = parseBooleanCell(r[idxQ]);
+        empScores[id].안전리더_활동횟수 = Number(r[idxR] || 0);
+        
+        empScores[id].칭찬미담 = Number(r[idxT] || 0);
+        
+        // 신호기자격 (O/X 판별)
+        empScores[id].신호기자격 = parseBooleanCell(r[idxU]);
+        
+        // 감사수입금 감점 (텍스트 내용이 있거나 숫자가 존재하면 감점 건수로 파싱)
+        empScores[id].감사수입금 = parseAuditCell(r[idxAA]);
+        empScores[id].감사수입금_원문 = String(r[idxAA] || '').trim();
+        empScores[id].기타지적사항 = Number(r[idxAC] || 0);
+      });
+
+      recalcAllScores();
+      renderScoreTable();
+      alert(`활동 점수 엑셀 ${dataRows.length}건 반영 완료 (사번, 수송순위, 부정승차, 사회공헌, 안전리더, 칭찬미담, 신호기자격, 감사수입금, 기타지적사항 매칭 적용)`);
+    } catch(err){alert('오류: '+err.message);}
+  };
+  rd.readAsArrayBuffer(f);
+}
+
+function handleFirstRankUpload(ev) {
+  const files = ev.target.files;
+  if (!files || files.length === 0) return;
+
+  let filePromises = [];
+  let totalSuccessCount = 0;
+  let fileCount = files.length;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    filePromises.push(new Promise((resolve, reject) => {
+      const rd = new FileReader();
+      rd.onload = e => {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          if (raw.length < 2) {
+            resolve(0);
+            return;
+          }
+
+          let dataStartRow = 1;
+          let idxA = 0;
+          let idxRank = 5;
+          let idxScore = 7;
+
+          if (raw.length > 1) {
+            const row1 = raw[1].map(v => String(v || '').trim());
+            if (row1.includes('사번') || row1.includes('성명') || row1.includes('평정부서')) {
+              dataStartRow = 2;
+              idxA = row1.indexOf('사번') !== -1 ? row1.indexOf('사번') : 0;
+              if (row1[5] === '순위') idxRank = 5;
+              if (row1[7] === '점수') idxScore = 7;
+            }
+          }
+
+          const dataRows = raw.slice(dataStartRow);
+          let successCount = 0;
+          
+          dataRows.forEach(r => {
+            const sabun = String(r[idxA] || '').trim();
+            if (!sabun) return;
+
+            const emp = employees.find(e => e.id === sabun);
+            if (emp) {
+              const rankVal = parseInt(String(r[idxRank] || '').replace(/[^0-9]/g, ''));
+              const scoreVal = parseFloat(String(r[idxScore] || '').replace(/[^0-9.]/g, ''));
+
+              if (!firstR[sabun]) firstR[sabun] = {};
+              if (!isNaN(rankVal)) firstR[sabun].unitRank = rankVal;
+              if (!isNaN(scoreVal)) firstR[sabun].score = scoreVal;
+              
+              const rater = getFirstGroup(emp);
+              const groupEmps = employees.filter(e => getFirstGroup(e) === rater && e.grade === emp.grade);
+              
+              groupEmps.sort((a, b) => {
+                const rA = firstR[a.id]?.unitRank || 9999;
+                const rB = firstR[b.id]?.unitRank || 9999;
+                if (rA !== rB) return rA - rB;
+                return String(a.id).localeCompare(b.id);
+              });
+
+              const assigned = assignEvalGrades(groupEmps);
+              assigned.forEach(({emp: ge, evalGrade}) => {
+                if (!firstR[ge.id]) firstR[ge.id] = {};
+                firstR[ge.id].evalGrade = evalGrade;
+              });
+
+              successCount++;
+            }
+          });
+          resolve(successCount);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      rd.onerror = () => reject(new Error('파일 읽기 실패'));
+      rd.readAsArrayBuffer(file);
+    }));
+  }
+
+  Promise.all(filePromises)
+    .then(results => {
+      results.forEach(cnt => { totalSuccessCount += cnt; });
+      renderFirst();
+      renderSecond();
+      alert(`[1차 순위 엑셀 업로드] 총 ${fileCount}개 파일 처리 완료.\n총 ${totalSuccessCount}건의 직원 데이터가 정상 반영되었습니다.`);
+      document.getElementById('firstRankFile').value = '';
+    })
+    .catch(err => {
+      alert('1차 순위 엑셀 업로드 중 오류가 발생했습니다: ' + err.message);
+      document.getElementById('firstRankFile').value = '';
+    });
+}
+function calcEmpScore(id) {
+  const raw = empScores[id]||{};
+  let pos = 0, neg = 0;
+  // 가점
+  pos += applyRangeCriteria(raw['수송순위']||raw['수송승객수']||0, CRITERIA.가점.수송순위);
+  pos += applyRangeCriteria(raw['부정승차단속']||0, CRITERIA.가점.부정승차단속);
+  pos += applyRangeCriteria(raw['사회공헌_회원']||0, CRITERIA.가점.사회공헌_회원);
+  pos += applyRangeCriteria(raw['사회공헌_참여횟수']||0, CRITERIA.가점.사회공헌_참여횟수);
+  pos += applyRangeCriteria(raw['안전리더_회원']||0, CRITERIA.가점.안전리더_회원);
+  pos += applyRangeCriteria(raw['안전리더_활동횟수']||0, CRITERIA.가점.안전리더_활동횟수);
+  pos += applyRangeCriteria(raw['칭찬미담']||0, CRITERIA.가점.칭찬미담);
+  pos += applyRangeCriteria(raw['신호기자격']||0, CRITERIA.가점.신호기자격);
+  // 감점 (불만민원, 병가, 휴직 삭제)
+  neg += applyRangeCriteria(raw['감사수입금']||0, CRITERIA.감점.감사수입금);
+  neg += applyRangeCriteria(raw['기타지적사항']||0, CRITERIA.감점.기타지적사항);
+  const discretion = Number(raw['재량점수']||0);
+  return {가점:pos, 감점:neg, 재량:discretion, 총점:pos+neg+discretion};
+}
+
+function recalcAllScores() {
+  calcScores = {};
+  employees.forEach(e=>{ calcScores[e.id]=calcEmpScore(e.id); });
+}
+
+// ============================================================
+// SCORE TABLE
+// ============================================================
+// 평정 자료 탭 테이블 정렬 상태 변수
+window.scoreTableSortCol = 'default';
+window.scoreTableSortAsc = true;
+
+function toggleScoreSort(col) {
+  if (window.scoreTableSortCol === col) {
+    window.scoreTableSortAsc = !window.scoreTableSortAsc;
+  } else {
+    window.scoreTableSortCol = col;
+    window.scoreTableSortAsc = true;
+  }
+  renderScoreTable();
+}
+
+function renderScoreTable() {
+  const gf = document.getElementById('score-grade-f')?.value||'';
+  const uf = document.getElementById('score-unit-f')?.value||'';
+  const nf = (document.getElementById('score-name-f')?.value||'').trim();
+  const list = employees.filter(e=>{
+    const matchesGrade = !gf || e.grade === gf;
+    const matchesUnit = !uf || e.parentUnit === uf || (uf === '운영부' && (e.parentUnit === '운영' || e.parentUnit === '지원' || e.parentUnit === '운영부'));
+    const matchesName = !nf || e.name.includes(nf);
+    return matchesGrade && matchesUnit && matchesName;
+  });
+  if(!list.length){document.getElementById('score-tbl').innerHTML='<div style="padding:2rem;text-align:center;color:var(--text3)">조건에 맞는 직원 없음</div>';return;}
+
+  // 정렬 적용
+  if (window.scoreTableSortCol !== 'default') {
+    list.sort((a, b) => {
+      const rawA = empScores[a.id] || {};
+      const rawB = empScores[b.id] || {};
+      const csA = calcScores[a.id] || { 총점: 0 };
+      const csB = calcScores[b.id] || { 총점: 0 };
+
+      let valA, valB;
+
+      switch (window.scoreTableSortCol) {
+        case 'name':
+          valA = a.name; valB = b.name;
+          break;
+        case 'grade':
+          valA = a.grade; valB = b.grade;
+          break;
+        case 'unit':
+          valA = a.unit; valB = b.unit;
+          break;
+        case 'birthYear':
+          valA = Number(a.birthYear) || 0; valB = Number(b.birthYear) || 0;
+          break;
+        case 'gradeYears':
+          valA = a.gradeYears; valB = b.gradeYears;
+          break;
+        case 'entryType':
+          valA = a.entryType; valB = b.entryType;
+          break;
+        case 'transportRank':
+          valA = Number(rawA['수송순위']) || 999; valB = Number(rawB['수송순위']) || 999;
+          break;
+        case 'transportScore':
+          valA = applyRangeCriteria(rawA['수송순위']||0, CRITERIA.가점.수송순위);
+          valB = applyRangeCriteria(rawB['수송순위']||0, CRITERIA.가점.수송순위);
+          break;
+        case 'fareEvasion':
+          valA = Number(rawA['부정승차단속']) || 0; valB = Number(rawB['부정승차단속']) || 0;
+          break;
+        case 'socialMember':
+          valA = rawA['사회공헌_회원'] ? 1 : 0; valB = rawB['사회공헌_회원'] ? 1 : 0;
+          break;
+        case 'socialCount':
+          valA = Number(rawA['사회공헌_참여횟수']) || 0; valB = Number(rawB['사회공헌_참여횟수']) || 0;
+          break;
+        case 'safetyMember':
+          valA = rawA['안전리더_회원'] ? 1 : 0; valB = rawB['안전리더_회원'] ? 1 : 0;
+          break;
+        case 'safetyCount':
+          valA = Number(rawA['안전리더_활동횟수']) || 0; valB = Number(rawB['안전리더_활동횟수']) || 0;
+          break;
+        case 'praise':
+          valA = Number(rawA['칭찬미담']) || 0; valB = Number(rawB['칭찬미담']) || 0;
+          break;
+        case 'signal':
+          valA = rawA['신호기자격'] ? 1 : 0; valB = rawB['신호기자격'] ? 1 : 0;
+          break;
+        case 'auditReceipt':
+          valA = Number(rawA['감사수입금']) || 0; valB = Number(rawB['감사수입금']) || 0;
+          break;
+        case 'auditEtc':
+          valA = Number(rawA['기타지적사항']) || 0; valB = Number(rawB['기타지적사항']) || 0;
+          break;
+        case 'discretion':
+          valA = Number(rawA['재량점수']) || 0; valB = Number(rawB['재량점수']) || 0;
+          break;
+        case 'totalScore':
+          valA = csA.총점; valB = csB.총점;
+          break;
+        default:
+          valA = 0; valB = 0;
+      }
+
+      if (valA < valB) return window.scoreTableSortAsc ? -1 : 1;
+      if (valA > valB) return window.scoreTableSortAsc ? 1 : -1;
+      return String(a.id).localeCompare(b.id); // 차순 동일시 사번순 정렬
+    });
+  }
+
+  function getIndicator(col) {
+    if (window.scoreTableSortCol === col) {
+      return window.scoreTableSortAsc ? ' <span style="font-size:9px">▲</span>' : ' <span style="font-size:9px">▼</span>';
+    }
+    return ' <span style="font-size:9px;color:rgba(255,255,255,0.3)">▲</span>';
+  }
+
+  let h=`<table><colgroup>
+    <col style="width:3%">
+    <col style="width:5%">
+    <col style="width:5%">
+    <col style="width:8%">
+    <col style="width:5%">
+    <col style="width:7%">
+    <col style="width:7%">
+    <col style="width:4%">
+    <col style="width:4%">
+    <col style="width:5%">
+    <col style="width:4%">
+    <col style="width:4%">
+    <col style="width:4%">
+    <col style="width:4%">
+    <col style="width:5%">
+    <col style="width:5%">
+    <col style="width:7%">
+    <col style="width:5%">
+    <col style="width:5%">
+    <col style="width:5%">
+  </colgroup>
+  <thead><tr>
+    <th rowspan="2" style="cursor:pointer" onclick="toggleScoreSort('default')">연번${getIndicator('default')}</th>
+    <th rowspan="2" style="cursor:pointer" onclick="toggleScoreSort('name')">성명${getIndicator('name')}</th>
+    <th rowspan="2" style="cursor:pointer" onclick="toggleScoreSort('grade')">직급${getIndicator('grade')}</th>
+    <th rowspan="2" style="cursor:pointer" onclick="toggleScoreSort('unit')">소속(역)${getIndicator('unit')}</th>
+    <th rowspan="2" style="cursor:pointer" onclick="toggleScoreSort('birthYear')">생년${getIndicator('birthYear')}</th>
+    <th rowspan="2" style="cursor:pointer" onclick="toggleScoreSort('gradeYears')">근속${getIndicator('gradeYears')}</th>
+    <th rowspan="2" style="cursor:pointer" onclick="toggleScoreSort('entryType')">입사${getIndicator('entryType')}</th>
+    <th colspan="2" style="background:#14406B">수송순위</th>
+    <th colspan="1" style="background:#14406B">부정승차</th>
+    <th colspan="2" style="background:#1A5C3A">사회공헌</th>
+    <th colspan="2" style="background:#1A5C3A">안전리더</th>
+    <th rowspan="2" style="background:#1A5C3A;cursor:pointer" onclick="toggleScoreSort('praise')">칭찬미담${getIndicator('praise')}</th>
+    <th rowspan="2" style="background:#1A5C3A;cursor:pointer" onclick="toggleScoreSort('signal')">신호기${getIndicator('signal')}</th>
+    <th rowspan="2" style="background:#8B1A1A;cursor:pointer" onclick="toggleScoreSort('auditReceipt')">감사수입${getIndicator('auditReceipt')}</th>
+    <th rowspan="2" style="background:#8B1A1A;cursor:pointer" onclick="toggleScoreSort('auditEtc')">기타지적${getIndicator('auditEtc')}</th>
+    <th rowspan="2" style="background:#4A3A8B;cursor:pointer" onclick="toggleScoreSort('discretion')">재량${getIndicator('discretion')}</th>
+    <th rowspan="2" style="background:#0D2B55;font-size:13px;cursor:pointer" onclick="toggleScoreSort('totalScore')">총점${getIndicator('totalScore')}</th>
+  </tr>
+  <tr style="background:#1A3A5C;color:#C8DFF5;font-size:11px">
+    <th class="sub-th" style="cursor:pointer;background:#205282" onclick="toggleScoreSort('transportRank')">순위${getIndicator('transportRank')}</th>
+    <th class="sub-th" style="cursor:pointer;background:#205282" onclick="toggleScoreSort('transportScore')">가점${getIndicator('transportScore')}</th>
+    <th class="sub-th" style="cursor:pointer;background:#205282" onclick="toggleScoreSort('fareEvasion')">건수${getIndicator('fareEvasion')}</th>
+    <th class="sub-th" style="cursor:pointer;background:#246B46" onclick="toggleScoreSort('socialMember')">회원${getIndicator('socialMember')}</th>
+    <th class="sub-th" style="cursor:pointer;background:#246B46" onclick="toggleScoreSort('socialCount')">횟수${getIndicator('socialCount')}</th>
+    <th class="sub-th" style="cursor:pointer;background:#246B46" onclick="toggleScoreSort('safetyMember')">회원${getIndicator('safetyMember')}</th>
+    <th class="sub-th" style="cursor:pointer;background:#246B46" onclick="toggleScoreSort('safetyCount')">횟수${getIndicator('safetyCount')}</th>
+  </tr></thead><tbody>`;
+  list.forEach((e,i)=>{
+    const raw=empScores[e.id]||{};
+    const cs=calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
+    const v=k=>raw[k]!==undefined?raw[k]:'-';
+    h+=`<tr>
+      <td>${i+1}</td>
+      <td class="td-name">${e.name}</td>
+      <td><span class="badge b-blue" style="font-size:10.5px">
+        ${e.grade === '3급(부장/관리역장/환승역장)' ? '3급(부장급)' : (e.grade === '3급(팀장/역장/운영역장)' ? '3급(팀장급)' : e.grade)}
+      </span></td>
+      <td class="td-unit">${e.unit}</td>
+      <td>${e.birthYear}</td>
+      <td>${e.gradeYears}</td>
+      <td>${e.entryType}</td>
+      <td>${v('수송순위')}</td>
+      <td class="score-pos">+${applyRangeCriteria(raw['수송순위']||0,CRITERIA.가점.수송순위)}</td>
+      <td>${v('부정승차단속')}</td>
+      <td>${raw['사회공헌_회원']?'✓':'-'}</td>
+      <td>${v('사회공헌_참여횟수')}</td>
+      <td>${raw['안전리더_회원']?'✓':'-'}</td>
+      <td>${v('안전리더_활동횟수')}</td>
+      <td>${v('칭찬미담')}</td>
+      <td>${raw['신호기자격']?'✓':'-'}</td>
+      <td class="score-neg" style="font-size:11.5px">
+        ${(() => {
+          const orig = raw.감사수입금_원문 || '';
+          if (!orig || orig === '0' || orig === '-' || orig.toLowerCase() === 'x') return '-';
+          return orig.length > 8 ? `<span title="${orig}" style="cursor:help;border-bottom:1px dotted var(--danger)">${orig.substring(0, 8)}..</span>` : orig;
+        })()}
+      </td>
+      <td class="score-neg">${v('기타지적사항')||'-'}</td>
+      <td><input type="number" class="editable" id="score-disc-${e.id}" value="${raw['재량점수']||0}" min="${CRITERIA.재량점수.min}" max="${CRITERIA.재량점수.max}" onchange="updateDiscretion('${e.id}',this.value)"></td>
+      <td class="score-total">${cs.총점}점</td>
+    </tr>`;
+  });
+  h+='</tbody></table>';
+  document.getElementById('score-tbl').innerHTML=h;
+  restoreFocus();
+}
+
+function updateDiscretion(id, val) {
+  if(!empScores[id]) empScores[id]={};
+  let num = Number(val) || 0;
+  if (num > CRITERIA.재량점수.max) num = CRITERIA.재량점수.max;
+  if (num < CRITERIA.재량점수.min) num = CRITERIA.재량점수.min;
+  empScores[id]['재량점수'] = num;
+  calcScores[id] = calcEmpScore(id);
+  renderScoreTable();
+}
+
+// ============================================================
+// CRITERIA
+// ============================================================
+function renderCriteriaView() {
+  let h='';
+  // 가점
+  h+=`<div class="card mb2"><div class="card-header"><h3>가점 요인 배점 기준</h3></div><div class="card-body"><div class="g3">`;
+  Object.entries(CRITERIA.가점).forEach(([key,ranges])=>{
+    h+=`<div><div class="section-label">${key.replace(/_/g,' ')}</div>`;
+    ranges.forEach(r=>{
+      const pts = r.score>0?`<span class="badge b-green">+${r.score}점</span>`:`<span class="badge b-red">${r.score}점</span>`;
+      h+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px dashed var(--border)"><span>${r.label}</span>${pts}</div>`;
+    });
+    h+='</div>';
+  });
+  h+=`</div></div></div>`;
+  // 감점
+  h+=`<div class="card mb2"><div class="card-header"><h3>감점 요인 배점 기준</h3></div><div class="card-body"><div class="g3">`;
+  Object.entries(CRITERIA.감점).forEach(([key,ranges])=>{
+    h+=`<div><div class="section-label">${key}</div>`;
+    ranges.forEach(r=>{
+      h+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px dashed var(--border)"><span>${r.label}</span><span class="badge b-red">${r.score}점</span></div>`;
+    });
+    h+='</div>';
+  });
+  h+=`</div></div></div>`;
+  h+=`<div class="card"><div class="card-header"><h3>재량 점수</h3></div><div class="card-body"><span style="font-size:13px">평정권자 재량 최대 <strong>${CRITERIA.재량점수.max}점</strong></span></div></div>`;
+  document.getElementById('criteria-view').innerHTML=h;
+}
+
+function openCriteriaModal() {
+  let h='';
+  // 가점 섹션
+  h+=`<div class="criteria-group"><div class="criteria-group-title" style="background:#1A5C3A; color:#fff; font-size:13px;"><i class="ti ti-plus"></i> 가점 요인</div>`;
+  Object.entries(CRITERIA.가점).forEach(([key,ranges])=>{
+    h+=`
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:14px;">
+        <div style="font-size:13px; font-weight:700; color:var(--navy); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <span style="width:4px; height:12px; background:var(--blue-mid); display:inline-block; border-radius:2px;"></span>
+          ${key.replace(/_/g,' ')}
+        </div>
+        <div style="display:flex; font-size:11px; color:var(--text3); font-weight:700; margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px; text-align:center;">
+          <span style="flex:2; text-align:left;">상태/기준</span>
+          <span style="flex:3;">범위 설정</span>
+          <span style="flex:2; text-align:right;">부여 점수</span>
+        </div>
+    `;
+    ranges.forEach((r,i)=>{
+      if(r.is!==undefined){
+        h+=`
+          <div class="criteria-row" style="display:flex; align-items:center; margin-bottom:6px;">
+            <label style="flex:2; font-size:12px; font-weight:600; color:var(--text2); text-align:left;">${r.label}</label>
+            <span style="flex:3; font-size:12px; color:var(--text3); text-align:center;">해당 시 즉시 부여</span>
+            <div style="flex:2; text-align:right;">
+              <input type="number" class="editable" data-crit="가점.${key}.${i}.score" value="${r.score}" style="width:70px; text-align:center;">
+            </div>
+          </div>
+        `;
+      } else {
+        h+=`
+          <div class="criteria-row" style="display:flex; align-items:center; margin-bottom:6px;">
+            <label style="flex:2; font-size:12px; font-weight:600; color:var(--text2); text-align:left;">${r.from}~${r.to===9999||r.to===999?'이상':r.to}</label>
+            <div style="flex:3; display:flex; gap:6px; align-items:center; justify-content:center;">
+              <input type="number" class="editable" data-crit="가점.${key}.${i}.from" value="${r.from}" style="width:55px; text-align:center;">
+              <span style="color:var(--text3);">~</span>
+              <input type="number" class="editable" data-crit="가점.${key}.${i}.to" value="${r.to===9999||r.to===999?'':r.to}" placeholder="이상" style="width:55px; text-align:center;">
+            </div>
+            <div style="flex:2; text-align:right;">
+              <input type="number" class="editable" data-crit="가점.${key}.${i}.score" value="${r.score}" style="width:70px; text-align:center;">
+            </div>
+          </div>
+        `;
+      }
+    });
+    h+='</div>';
+  });
+  h+='</div>';
+  
+  // 감점 섹션
+  h+=`<div class="criteria-group"><div class="criteria-group-title" style="background:var(--danger-bg); color:var(--danger); font-size:13px;"><i class="ti ti-minus"></i> 감점 요인</div>`;
+  Object.entries(CRITERIA.감점).forEach(([key,ranges])=>{
+    h+=`
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:14px;">
+        <div style="font-size:13px; font-weight:700; color:var(--danger); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <span style="width:4px; height:12px; background:var(--danger); display:inline-block; border-radius:2px;"></span>
+          ${key}
+        </div>
+        <div style="display:flex; font-size:11px; color:var(--text3); font-weight:700; margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px; text-align:center;">
+          <span style="flex:2; text-align:left;">지적 사항</span>
+          <span style="flex:3;">건수 범위</span>
+          <span style="flex:2; text-align:right;">감점 점수</span>
+        </div>
+    `;
+    ranges.forEach((r,i)=>{
+      h+=`
+        <div class="criteria-row" style="display:flex; align-items:center; margin-bottom:6px;">
+          <label style="flex:2; font-size:12px; font-weight:600; color:var(--text2); text-align:left;">${r.label}</label>
+          <div style="flex:3; display:flex; gap:6px; align-items:center; justify-content:center;">
+            <input type="number" class="editable" data-crit="감점.${key}.${i}.from" value="${r.from}" style="width:55px; text-align:center;">
+            <span style="color:var(--text3);">~</span>
+            <input type="number" class="editable" data-crit="감점.${key}.${i}.to" value="${r.to===9999||r.to===999?'':r.to}" placeholder="이상" style="width:55px; text-align:center;">
+          </div>
+          <div style="flex:2; text-align:right;">
+            <input type="number" class="editable" data-crit="감점.${key}.${i}.score" value="${r.score}" style="width:70px; text-align:center;">
+          </div>
+        </div>
+      `;
+    });
+    h+='</div>';
+  });
+  h+='</div>';
+  
+  // 재량 점수
+  h+=`
+    <div class="criteria-group">
+      <div class="criteria-group-title" style="background:#4A3A8B; color:#fff; font-size:13px;"><i class="ti ti-stars"></i> 재량 점수</div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; align-items:center; justify-content:space-between;">
+        <label style="font-size:13px; font-weight:700; color:var(--navy);">재량점수 상한값 설정</label>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:12px; color:var(--text3);">최대점수:</span>
+          <input type="number" class="editable" data-crit="재량.max" value="${CRITERIA.재량점수.max}" style="width:80px; text-align:center;">
+          <span style="font-size:12px; color:var(--text2);">점</span>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('criteria-modal-body').innerHTML=h;
+  document.getElementById('criteria-modal').classList.add('open');
+}
+
+function applyAndCloseCriteria() {
+  document.querySelectorAll('[data-crit]').forEach(el=>{
+    const path = el.dataset.crit.split('.');
+    if(path[0]==='재량'){
+      CRITERIA.재량점수.max = Number(el.value)||10;
+      return;
+    }
+    const [type,key,idx,field] = path;
+    const val = Number(el.value);
+    if(CRITERIA[type]?.[key]?.[idx]) {
+      if(field==='to' && !el.value) CRITERIA[type][key][idx][field]=999;
+      else CRITERIA[type][key][idx][field] = val;
+    }
+  });
+  recalcAllScores();
+  renderScoreTable();
+  renderCriteriaView();
+  closeCriteriaModal();
+}
+
+function saveCriteria(){
+  recalcAllScores(); renderScoreTable(); renderCriteriaView();
+  alert('배점 기준이 저장되었습니다. 점수를 재산출합니다.');
+}
+
+function closeCriteriaModal(){document.getElementById('criteria-modal').classList.remove('open');}
+
+// ============================================================
+// 1차 평정
+// ============================================================
+function getFirstGroup(e) {
+  // 소장 평정 대상:
+  // 1) 2급 (부장, 관리역장, 환승역장) 전체
+  // 2) 3급(부장/관리역장/환승역장) 전체
+  if (e.grade === '2급' || e.grade === '3급(부장/관리역장/환승역장)') {
+    return '소장';
+  }
+  
+  // 부장 평정 대상:
+  // 1) 지원팀, 운영팀(운영, 지원 소속)의 모든 직원 (3급~9급)
+  const isOperatingDept = ['지원팀', '운영팀', '운영', '지원'].includes(e.unit) || ['지원팀', '운영팀', '운영', '지원'].includes(e.parentUnit) || e.parentUnit === '운영부';
+  if (isOperatingDept) {
+    return '부장';
+  }
+
+  // 2) 독립역(사상역)의 역장만 대상 (사상역의 역장을 제외한 나머지 사상역 직원은 대상이 아님)
+  const isSasang = e.unit === '사상역' || e.parentUnit === '사상역' || e.unit === '사상' || e.parentUnit === '사상';
+  if (isSasang && e.position === '역장') {
+    return '부장';
+  }
+
+  // 그 외 직원들은 1차 평정 대상 표기에서 제외
+  return '제외';
+}
+
+function renderFirst() {
+  const gf = document.getElementById('f1-grade-f')?.value||'';
+  const grpf = document.getElementById('f1-group-f')?.value||'';
+  let list = employees.filter(e=>(!gf||e.grade===gf));
+  
+  // 그룹별로 묶기
+  const byRaterUnit = {};
+  list.forEach(e=>{
+    const grp = getFirstGroup(e);
+    // 제외 대상이거나, 필터가 지정되었을 때 매칭되지 않는 경우 패스
+    if (grp === '제외') return;
+    if (grpf && grp !== grpf) return;
+    
+    // 키 정의: 평가권자__직급
+    const key = grp + '__' + e.grade;
+    if (!byRaterUnit[key]) {
+      byRaterUnit[key] = { rater: grp, grade: e.grade, emps: [] };
+    }
+    byRaterUnit[key].emps.push(e);
+  });
+
+  if(!Object.keys(byRaterUnit).length){document.getElementById('first-tbl').innerHTML='<div style="padding:2rem;text-align:center;color:var(--text3)">조건에 맞는 데이터 없음</div>';return;}
+
+  // 평가 단위 지정 순서
+  const unitOrder = [
+    '운영부', '장산관리역', '센텀시티관리역', '수영역', '광안관리역',
+    '경성대부경대관리역', '문현관리역', '전포관리역', '동의대관리역',
+    '냉정관리역', '사상역', '모덕관리역', '구명관리역', '덕천역',
+    '화명관리역', '호포관리역', '양산관리역'
+  ];
+
+  let h='';
+  Object.values(byRaterUnit).forEach(({rater,grade,emps})=>{
+    // [처음/기본 정렬] 활동 점수(활동총점)를 기준으로 순위를 우선 배열
+    emps.sort((a, b) => {
+      const totalA = calcScores[a.id]?.총점 || 0;
+      const totalB = calcScores[b.id]?.총점 || 0;
+      if (totalB !== totalA) return totalB - totalA;
+
+      let ia = unitOrder.indexOf(a.parentUnit);
+      let ib = unitOrder.indexOf(b.parentUnit);
+      if (ia === -1) ia = 999;
+      if (ib === -1) ib = 999;
+      if (ia !== ib) return ia - ib;
+      return String(a.id).localeCompare(b.id);
+    });
+
+    // 1차 순위가 아직 할당되지 않은 경우, 기본 정렬 순서대로 1차 순위를 임시 부여하여 정렬 유지
+    emps.forEach((e, idx) => {
+      if (!firstR[e.id]) firstR[e.id] = {};
+      if (!firstR[e.id].unitRank) {
+        firstR[e.id].unitRank = idx + 1;
+      }
+    });
+
+    // 화면 표시용 최종 정렬: 사용자가 수동 지정했거나 드래그하여 할당된 1차 순위(unitRank) 기준 정렬
+    emps.sort((a, b) => {
+      const rA = firstR[a.id]?.unitRank || 9999;
+      const rB = firstR[b.id]?.unitRank || 9999;
+      if (rA !== rB) return rA - rB;
+      return String(a.id).localeCompare(b.id);
+    });
+
+    const wrapClass = gf ? 'tbl-wrap no-vscroll' : 'tbl-wrap';
+
+    h+=`<div class="card mb2">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <h3 style="margin:0"><span class="badge b-gold" style="font-size:12px">${rater} 평정</span> &nbsp;·&nbsp; <span class="badge b-blue">${grade}</span> (${emps.length}명)</h3>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-sm" style="background:#e7f0fa; color:#0d2b55; border:1px solid #c2daf8;" onclick="resetFirstDiscretion('${rater}', '${grade}')"><i class="ti ti-rotate-clockwise"></i> 재량점수 초기화</button>
+          <button class="btn btn-sm btn-navy" onclick="autoFirstRank('${rater}', '${grade}')"><i class="ti ti-wand"></i> 이 직급만 자동 배분</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0"><div class="${wrapClass}"><table><thead><tr><th>순위</th><th>성명</th><th>직위</th><th>소속단위(역)</th><th>활동총점</th><th>가점</th><th>감점</th><th>재량</th><th>단위 내 1차 순위</th><th>평정 등급</th><th>1차 평정점수</th></tr></thead><tbody>`;
+    emps.forEach((e,i)=>{
+      const cs=calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
+      const r=firstR[e.id]||{};
+      const egCls=r.evalGrade?`eg-${r.evalGrade}`:'eg-none';
+      const rankVal = r.unitRank || (i + 1);
+      const rCls = rankVal <= 3 ? `rank-${rankVal}` : 'rank-n';
+      
+      h+=`<tr draggable="true" ondragstart="handleFirstDragStart(event, '${e.id}', '${grade}', '${rater}')" ondragover="handleFirstDragOver(event)" ondragenter="handleFirstDragEnter(event)" ondragleave="handleFirstDragLeave(event)" ondrop="handleFirstDrop(event, '${e.id}', '${grade}', '${rater}')" style="cursor: grab;">
+      <td><span class="rank ${rCls}">${rankVal}</span></td>
+      <td class="td-name">${e.name}</td><td>${e.position}</td><td class="td-unit">${e.parentUnit}(${e.unit})</td>
+      <td class="score-total">${cs.총점}</td>
+      <td class="score-pos">+${cs.가점}</td>
+      <td class="score-neg">${cs.감점}</td>
+      <td><input type="number" class="editable" id="f1-disc-${e.id}" value="${cs.재량}" min="${CRITERIA.재량점수.min}" max="${CRITERIA.재량점수.max}" onchange="updateFirstDiscretion('${e.id}', this.value, '${grade}', '${rater}')" style="width:50px"></td>
+      <td><input type="number" class="editable" id="f1-rank-${e.id}" value="${r.unitRank||''}" min="1" max="${emps.length}" onchange="updateFirstR('${e.id}','unitRank',this.value, '${grade}', '${rater}')" placeholder="순위" style="width:55px"></td>
+      <td><span class="eg ${egCls}">${r.evalGrade||'-'}</span></td>
+      <td><input type="number" class="editable" id="f1-score-${e.id}" value="${r.score||''}" min="0" max="100" onchange="updateFirstR('${e.id}','score',this.value, '${grade}', '${rater}')" placeholder="점수" style="width:65px"></td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div></div></div>`;
+  });
+  document.getElementById('first-tbl').innerHTML=h;
+  restoreFocus();
+}
+
+function resetFirstDiscretion(rater, grade) {
+  const targetEmps = employees.filter(e => getFirstGroup(e) === rater && e.grade === grade);
+  targetEmps.forEach(e => {
+    if (empScores[e.id]) {
+      empScores[e.id]['재량점수'] = 0;
+    }
+    calcScores[e.id] = calcEmpScore(e.id);
+    if (firstR[e.id]) {
+      firstR[e.id].unitRank = '';
+      firstR[e.id].evalGrade = '-';
+      firstR[e.id].score = '';
+    }
+  });
+  renderFirst();
+}
+
+/* 1차 평정 드래그 앤 드롭 순위 조정 및 재량점수 역산 */
+function handleFirstDragStart(ev, id, grade, rater) {
+  ev.dataTransfer.setData('text/plain', id);
+  ev.dataTransfer.setData('grade', grade);
+  ev.dataTransfer.setData('rater', rater);
+  ev.currentTarget.style.opacity = '0.4';
+  ev.currentTarget.style.background = 'var(--sky)';
+}
+
+function handleFirstDragOver(ev) {
+  ev.preventDefault();
+}
+
+function handleFirstDragEnter(ev) {
+  const tr = ev.currentTarget.closest('tr');
+  if (tr) {
+    tr.style.borderTop = '3px solid var(--gold)';
+  }
+}
+
+function handleFirstDragLeave(ev) {
+  const tr = ev.currentTarget.closest('tr');
+  if (tr) {
+    tr.style.borderTop = '';
+  }
+}
+
+function handleFirstDrop(ev, targetId, grade, rater) {
+  ev.preventDefault();
+  const tr = ev.currentTarget.closest('tr');
+  if (tr) {
+    tr.style.borderTop = '';
+  }
+
+  const sourceId = ev.dataTransfer.getData('text/plain');
+  const sourceGrade = ev.dataTransfer.getData('grade');
+  const sourceRater = ev.dataTransfer.getData('rater');
+
+  if (!sourceId || sourceId === targetId || sourceGrade !== grade || sourceRater !== rater) {
+    renderFirst();
+    return;
+  }
+
+  // 1. 해당 평정그룹 내 직원 목록 가져오기 및 현재 정렬 순서대로 획득
+  const emps = employees.filter(e => getFirstGroup(e) === rater && e.grade === grade);
+  
+  // 현재 순위 우선, 그 다음 총점 내림차순, 사번 오름차순 순서로 정렬
+  emps.sort((a,b) => {
+    const rA = firstR[a.id]?.unitRank || 9999;
+    const rB = firstR[b.id]?.unitRank || 9999;
+    if (rA !== rB) return rA - rB;
+    
+    const totalA = calcScores[a.id]?.총점 || 0;
+    const totalB = calcScores[b.id]?.총점 || 0;
+    if (totalB !== totalA) return totalB - totalA;
+    
+    return String(a.id).localeCompare(b.id);
+  });
+
+  const sourceIdx = emps.findIndex(e => e.id === sourceId);
+  const targetIdx = emps.findIndex(e => e.id === targetId);
+
+  if (sourceIdx === -1 || targetIdx === -1) return;
+
+  // 2. 드래그 앤 드롭 재배치
+  const [draggedEmp] = emps.splice(sourceIdx, 1);
+  emps.splice(targetIdx, 0, draggedEmp);
+
+  // 3. 재배치 순서 보장용 재량점수 역산 공식
+  let prevSumVal = null;
+  const maxDiscretion = CRITERIA.재량점수.max;
+  const minDiscretion = CRITERIA.재량점수.min;
+
+  for (let i = 0; i < emps.length; i++) {
+    const curr = emps[i];
+    // 순수 가/감점 합계
+    const baseScore = (calcScores[curr.id]?.가점 || 0) + (calcScores[curr.id]?.감점 || 0);
+
+    if (i === 0) {
+      // 1위는 가능한 최대 재량점수 부여
+      if(!empScores[curr.id]) empScores[curr.id] = {};
+      empScores[curr.id]['재량점수'] = maxDiscretion;
+      calcScores[curr.id] = calcEmpScore(curr.id);
+      prevSumVal = calcScores[curr.id].총점;
+    } else {
+      const prev = emps[i - 1];
+      
+      // 타이 브레이커 비교 (이전 직급과 사번 비교)
+      let isCurrBetterTie = false;
+      if (String(curr.id).localeCompare(prev.id) < 0) {
+        isCurrBetterTie = true;
+      }
+
+      // 2차 순위를 결정하는 활동총점
+      // 타이 브레이커가 더 우세하다면 이전 직원보다 합계 점수가 최소 1점 이상 낮아야 뒷순위로 정렬됨
+      let maxSumVal = isCurrBetterTie ? (prevSumVal - 1) : prevSumVal;
+
+      let reqDisc = maxSumVal - baseScore;
+
+      if (reqDisc > maxDiscretion) reqDisc = maxDiscretion;
+      if (reqDisc < minDiscretion) reqDisc = minDiscretion;
+
+      if(!empScores[curr.id]) empScores[curr.id] = {};
+      empScores[curr.id]['재량점수'] = reqDisc;
+      calcScores[curr.id] = calcEmpScore(curr.id);
+      prevSumVal = calcScores[curr.id].총점;
+    }
+  }
+
+  // 4. 순위 및 등급 분배 업데이트
+  const assigned = assignEvalGrades(emps);
+  assigned.forEach(({emp, evalGrade, rank, score}) => {
+    if(!firstR[emp.id]) firstR[emp.id] = {};
+    firstR[emp.id].unitRank = rank;
+    firstR[emp.id].evalGrade = evalGrade;
+    firstR[emp.id].score = score;
+  });
+
+  renderFirst();
+}
+
+function updateFirstDiscretion(id, val, grade, rater) {
+  if (!empScores[id]) empScores[id] = {};
+  let num = Number(val) || 0;
+  if (num > CRITERIA.재량점수.max) num = CRITERIA.재량점수.max;
+  if (num < CRITERIA.재량점수.min) num = CRITERIA.재량점수.min;
+  empScores[id]['재량점수'] = num;
+  calcScores[id] = calcEmpScore(id);
+  
+  autoFirstRank(rater, grade, true);
+}
+
+function updateFirstR(id,field,val,grade,rater){
+  if(!firstR[id])firstR[id]={};
+  
+  if (field === 'unitRank') {
+    const newRank = Number(val) || 0;
+    if (newRank <= 0) {
+      renderFirst();
+      return;
+    }
+
+    // 1. 해당 평정그룹 내 직원 목록 가져오기 및 현재 정렬 순서대로 획득
+    const emps = employees.filter(e => getFirstGroup(e) === rater && e.grade === grade);
+    
+    // 현재 순위 우선, 그 다음 총점 내림차순, 사번 오름차순 순서로 정렬
+    emps.sort((a,b) => {
+      const rA = firstR[a.id]?.unitRank || 9999;
+      const rB = firstR[b.id]?.unitRank || 9999;
+      if (rA !== rB) return rA - rB;
+      
+      const totalA = calcScores[a.id]?.총점 || 0;
+      const totalB = calcScores[b.id]?.총점 || 0;
+      if (totalB !== totalA) return totalB - totalA;
+      
+      return String(a.id).localeCompare(b.id);
+    });
+
+    const sourceIdx = emps.findIndex(e => e.id === id);
+    let targetIdx = newRank - 1;
+
+    if (targetIdx < 0) targetIdx = 0;
+    if (targetIdx >= emps.length) targetIdx = emps.length - 1;
+
+    if (sourceIdx === -1 || sourceIdx === targetIdx) {
+      renderFirst();
+      return;
+    }
+
+    // 2. 입력된 순위 위치로 재배치
+    const [draggedEmp] = emps.splice(sourceIdx, 1);
+    emps.splice(targetIdx, 0, draggedEmp);
+
+    // 3. 재배치 순서 보장용 재량점수 역산 공식
+    let prevSumVal = null;
+    const maxDiscretion = CRITERIA.재량점수.max;
+    const minDiscretion = CRITERIA.재량점수.min;
+
+    for (let i = 0; i < emps.length; i++) {
+      const curr = emps[i];
+      const baseScore = (calcScores[curr.id]?.가점 || 0) + (calcScores[curr.id]?.감점 || 0);
+
+      if (i === 0) {
+        if(!empScores[curr.id]) empScores[curr.id] = {};
+        empScores[curr.id]['재량점수'] = maxDiscretion;
+        calcScores[curr.id] = calcEmpScore(curr.id);
+        prevSumVal = calcScores[curr.id].총점;
+      } else {
+        const prev = emps[i - 1];
+        
+        let isCurrBetterTie = false;
+        if (String(curr.id).localeCompare(prev.id) < 0) {
+          isCurrBetterTie = true;
+        }
+
+        let maxSumVal = isCurrBetterTie ? (prevSumVal - 1) : prevSumVal;
+        let reqDisc = maxSumVal - baseScore;
+
+        if (reqDisc > maxDiscretion) reqDisc = maxDiscretion;
+        if (reqDisc < minDiscretion) reqDisc = minDiscretion;
+
+        if(!empScores[curr.id]) empScores[curr.id] = {};
+        empScores[curr.id]['재량점수'] = reqDisc;
+        calcScores[curr.id] = calcEmpScore(curr.id);
+        prevSumVal = calcScores[curr.id].총점;
+      }
+    }
+
+    // 4. 순위 및 등급 분배 업데이트
+    const assigned = assignEvalGrades(emps);
+    assigned.forEach(({emp, evalGrade, rank, score}) => {
+      if(!firstR[emp.id]) firstR[emp.id] = {};
+      firstR[emp.id].unitRank = rank;
+      firstR[emp.id].evalGrade = evalGrade;
+      firstR[emp.id].score = score;
+    });
+
+  } else {
+    firstR[id][field] = Number(val);
+  }
+  
+  renderFirst();
+}
+
+function autoFirstRank(targetRater, targetGrade, isSilent = false){
+  const byGroup={};
+  
+  employees.forEach(e=>{
+    const grp = getFirstGroup(e);
+    if(grp === '제외') return;
+    
+    // 필터링 적용
+    if (targetRater && grp !== targetRater) return;
+    if (targetGrade && e.grade !== targetGrade) return;
+
+    const key = grp + '__' + e.grade;
+    if(!byGroup[key]) byGroup[key]=[];
+    byGroup[key].push(e);
+  });
+  
+  Object.values(byGroup).forEach(emps=>{
+    emps.sort((a,b)=>{
+      const scoreA = calcScores[a.id]?.총점||0;
+      const scoreB = calcScores[b.id]?.총점||0;
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA;
+      }
+      // 동점 시 사번 오름차순으로 정렬하여 고유한 순위 부여
+      return String(a.id).localeCompare(b.id);
+    });
+    
+    // 1차 평정 등급배분 및 차등 점수 배정 적용
+    const assigned = assignEvalGrades(emps);
+    assigned.forEach(({emp, evalGrade, score, rank}) => {
+      if(!firstR[emp.id]) firstR[emp.id]={};
+      firstR[emp.id].unitRank = rank;
+      firstR[emp.id].evalGrade = evalGrade;
+      firstR[emp.id].score = score;
+    });
+  });
+  
+  renderFirst();
+  if (!isSilent) {
+    if (targetRater && targetGrade) {
+      alert(`[${targetRater} - ${targetGrade}] 그룹에 대해 1차 자동 순위 및 등급 배분이 완료되었습니다.`);
+    } else {
+      alert('활동 총점 기준으로 1차 평정그룹 내 고유 순위와 등급 배분이 자동 완료되었습니다.');
+    }
+  }
+}
+
+function saveFirst(){
+  employees.forEach(e=>{
+    if(!firstR[e.id]){
+      firstR[e.id]={unitRank:0, score:calcScores[e.id]?.총점||0, evalGrade: '-'};
+    }
+  });
+  updateSteps();
+  alert('1차 평정이 저장되었습니다.');
+  gotoTab('second');
+}
+
+// ============================================================
+// 2차 평정 — 수우미양 배분
+// ============================================================
+// 평정인원별 등급분포 표 (1명~10명)
+const GRADE_DIST_MATRIX = {
+  1: { 수: 0, 우: 1, 미: 0, 양: 0 },
+  2: { 수: 0, 우: 1, 미: 1, 양: 0 },
+  3: { 수: 1, 우: 1, 미: 1, 양: 0 },
+  4: { 수: 1, 우: 1, 미: 1, 양: 1 },
+  5: { 수: 1, 우: 2, 미: 1, 양: 1 },
+  6: { 수: 1, 우: 2, 미: 2, 양: 1 },
+  7: { 수: 2, 우: 2, 미: 2, 양: 1 },
+  8: { 수: 2, 우: 3, 미: 2, 양: 1 },
+  9: { 수: 2, 우: 3, 미: 3, 양: 1 },
+  10: { 수: 2, 우: 4, 미: 3, 양: 1 }
+};
+
+// 등급별 기본 점수 범위 정보
+const SCORE_LIMITS = {
+  수: { max: 100, min: 92 },
+  우: { max: 91.9, min: 80 },
+  미: { max: 79.9, min: 70 },
+  양: { max: 69.9, min: 60 }
+};
+
+function assignEvalGrades(sortedEmps) {
+  const total = sortedEmps.length;
+  let assigned = [];
+  
+  if (total === 0) return assigned;
+
+  let counts = { 수: 0, 우: 0, 미: 0, 양: 0 };
+
+  if (total <= 10) {
+    counts = { ...GRADE_DIST_MATRIX[total] };
+  } else {
+    // 10명을 초과하는 경우: 10명 기준의 분포비율에 맞춰 배분하고 남은 인원은 아래 규칙 또는 소수점 기준 추가 배분
+    // 수: 20%, 우: 30%, 미: 30%, 양: 20%
+    counts.수 = Math.round(total * 0.20);
+    counts.우 = Math.round(total * 0.30);
+    counts.미 = Math.round(total * 0.30);
+    counts.양 = total - (counts.수 + counts.우 + counts.미);
+    if (counts.양 < 0) counts.양 = 0;
+  }
+
+  let index = 0;
+  // 각 등급별로 인원만큼 루프를 돌며 배정 및 점수 차등 부여
+  const grades = ['수', '우', '미', '양'];
+  grades.forEach(g => {
+    const limit = SCORE_LIMITS[g];
+    const n = counts[g];
+    if (n <= 0) return;
+
+    // 등급 내 최고점수로부터 차등을 주어 평정함
+    // n이 8명 이하일 때는 1점씩 차등
+    // n이 9명 이상일 때는 격차를 산출: (max - min) / n 을 소수점 이하 첫째 자리에서 택함
+    let gap = 1.0;
+    if (n >= 9) {
+      const rawGap = (limit.max - limit.min) / n;
+      // 소수점 둘째 자리 이하 버림 (첫째 자리까지 택함)
+      gap = Math.floor(rawGap * 10) / 10;
+    }
+
+    for (let i = 0; i < n; i++) {
+      if (index >= total) break;
+      const emp = sortedEmps[index];
+      
+      // 최고점수로부터 차등 차감 적용
+      // 최고점은 정수 형태로 99, 91, 79, 69 처럼 시작하거나 max 상한값 기준으로 차감
+      let maxStart = Math.floor(limit.max);
+      // '수'의 경우 표에서 1명일때 99, 2명일때 98... 처럼 99점부터 차등하는 것이 일반적임
+      if (g === '수') maxStart = 99;
+      else if (g === '우') maxStart = 91;
+      else if (g === '미') maxStart = 79;
+      else if (g === '양') maxStart = 69;
+
+      let score = maxStart - (i * gap);
+      // 최소점 하한 보장
+      if (score < limit.min) score = limit.min;
+      
+      // 소수점 1자리까지 정리
+      score = Math.round(score * 10) / 10;
+
+      assigned.push({
+        emp: emp,
+        evalGrade: g,
+        rank: index + 1,
+        score: score
+      });
+      index++;
+    }
+  });
+
+  // 혹시라도 배정 누락된 직원이 있다면 양 등급 하한선 부여
+  while (index < total) {
+    assigned.push({
+      emp: sortedEmps[index],
+      evalGrade: '양',
+      rank: index + 1,
+      score: 60
+    });
+    index++;
+  }
+
+  return assigned;
+}
+
+function autoSecondRank(targetGrade){
+  // 2급 및 3급(부장/관리역장/환승역장)은 2차 평정 대상이 아니므로 제외
+  const targetGrades = ['3급(팀장/역장/운영역장)', '4급', '5급', '6급', '7급', '8급', '9급'];
+  const runGrades = targetGrade ? [targetGrade] : targetGrades;
+
+  runGrades.forEach(grade=>{
+    const emps=employees.filter(e=>e.grade===grade).sort((a,b)=>{
+      const scoreA = firstR[a.id]?.score||0;
+      const scoreB = firstR[b.id]?.score||0;
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA;
+      }
+      
+      const rankA = firstR[a.id]?.unitRank||999;
+      const rankB = firstR[b.id]?.unitRank||999;
+      if (rankA !== rankB) {
+        return rankA - rankB; // 순위는 작을수록(1위에 가까울수록) 우선순위가 높으므로 오름차순 정렬
+      }
+
+      // 최종 타이 브레이커: 사번 기준 정렬
+      return String(a.id).localeCompare(b.id);
+    });
+    
+    const assigned=assignEvalGrades(emps);
+    assigned.forEach(({emp,evalGrade,rank,score})=>{
+      if (!secondR[emp.id]) secondR[emp.id] = { discretion: 0 };
+      secondR[emp.id].rank = rank;
+      secondR[emp.id].evalGrade = evalGrade;
+      secondR[emp.id].score = score;
+    });
+  });
+  renderSecond();
+  if (targetGrade) {
+    alert(`[${targetGrade}] 직급에 대해 자동 순위 및 등급 배분이 완료되었습니다.`);
+  } else {
+    alert('모든 직급에 대해 자동 순위 및 등급 배분이 완료되었습니다. 동점자 발생 시 1차 순위 및 사번 기준으로 고유한 순위가 차등 부여되었습니다.');
+  }
+}
+
+function renderSecond(){
+  const gf=document.getElementById('f2-grade-f')?.value||'';
+  const gradeOrder = ['3급(팀장/역장/운영역장)', '4급', '5급', '6급', '7급', '8급', '9급'];
+  
+  let grades = [];
+  if (gf) {
+    if (gradeOrder.includes(gf)) {
+      grades = [gf];
+    } else {
+      grades = [];
+    }
+  } else {
+    grades = gradeOrder.filter(g => employees.some(e => e.grade === g));
+  }
+
+  // 2차 재량점수 값 초기화
+  employees.forEach(e => {
+    if (secondR[e.id] === undefined) {
+      secondR[e.id] = { rank: 999, evalGrade: '-', score: 0, discretion: 0 };
+    } else if (secondR[e.id].discretion === undefined) {
+      secondR[e.id].discretion = 0;
+    }
+  });
+
+  let h='';
+  grades.forEach(grade=>{
+    const emps = employees.filter(e=>e.grade===grade);
+    
+    // 순위 정렬 기준:
+    // 1) 활동총점 + 2차 재량점수의 합산 점수 내림차순
+    // 2) 1차 단위 내 순위 오름차순 (1위에 가까울수록 우선)
+    // 3) 사번 정렬
+    emps.sort((a,b)=>{
+      const totalA = (calcScores[a.id]?.총점||0) + (secondR[a.id]?.discretion||0);
+      const totalB = (calcScores[b.id]?.총점||0) + (secondR[b.id]?.discretion||0);
+      if (totalB !== totalA) return totalB - totalA;
+      
+      const r1A = firstR[a.id]?.unitRank||999;
+      const r1B = firstR[b.id]?.unitRank||999;
+      if (r1A !== r1B) return r1A - r1B;
+
+      return String(a.id).localeCompare(b.id);
+    });
+
+    // 정렬된 순서대로 순위 부여 및 수우미양 분배
+    const assigned = assignEvalGrades(emps);
+    assigned.forEach(({emp, evalGrade, rank, score}) => {
+      secondR[emp.id].rank = rank;
+      secondR[emp.id].evalGrade = evalGrade;
+      secondR[emp.id].score = score;
+    });
+
+    // 1차 평정권자별 매칭 단위 그룹화 (운영부와 사상역은 동일 1차 평정권자인 부장이 평가하므로 묶어서 검사)
+    const conflictIds = new Set();
+    
+    // 가상의 평정 그룹 키를 구하는 함수
+    function getConflictGroupKey(e) {
+      const cleanUnit = String(e.parentUnit || '').replace(/관리역$/, '').replace(/역$/, '').trim();
+      if (cleanUnit === '운영부' || cleanUnit === '사상역' || cleanUnit === '사상' || cleanUnit === '운영' || cleanUnit === '지원') {
+        return '부장_평정그룹';
+      }
+      return e.parentUnit;
+    }
+
+    const cGroupKeys = [...new Set(emps.map(e => getConflictGroupKey(e)))];
+    
+    cGroupKeys.forEach(gKey => {
+      const unitEmps = emps.filter(e => getConflictGroupKey(e) === gKey);
+      if (unitEmps.length < 2) return;
+      for (let i = 0; i < unitEmps.length - 1; i++) {
+        for (let j = i + 1; j < unitEmps.length; j++) {
+          const a = unitEmps[i];
+          const b = unitEmps[j];
+          const ar1 = firstR[a.id]?.unitRank || 0;
+          const br1 = firstR[b.id]?.unitRank || 0;
+          const ar2 = secondR[a.id]?.rank || 0;
+          const br2 = secondR[b.id]?.rank || 0;
+
+          // 둘 다 1차 단위 순위와 2차 순위가 유효하게 입력되어 있는 경우에만 검사
+          if (ar1 > 0 && br1 > 0 && ar2 > 0 && br2 > 0) {
+            // 1차 순위 우위(작은 값이 우세)와 2차 순위 우위가 상반되는 경우 역전 처리
+            if ((ar1 < br1 && ar2 > br2) || (ar1 > br1 && ar2 < br2)) {
+              conflictIds.add(a.id);
+              conflictIds.add(b.id);
+            }
+          }
+        }
+      }
+    });
+
+    const dist={수:0,우:0,미:0,양:0};
+    emps.forEach(e=>{if(secondR[e.id]?.evalGrade)dist[secondR[e.id].evalGrade]++;});
+    
+    const wrapClass = gf ? 'tbl-wrap no-vscroll' : 'tbl-wrap';
+
+    h+=`<div class="card mb2">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <h3 style="margin:0"><span class="badge b-blue">${grade}</span> &nbsp; ${emps.length}명 &nbsp; <span style="font-size:12px;color:var(--text3)">수${dist.수} / 우${dist.우} / 미${dist.미} / 양${dist.양}</span></h3>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-sm" style="background:#e7f0fa; color:#0d2b55; border:1px solid #c2daf8;" onclick="resetSecondDiscretion('${grade}')"><i class="ti ti-rotate-clockwise"></i> 재량점수 초기화</button>
+          <button class="btn btn-sm btn-navy" onclick="autoSecondRank('${grade}')"><i class="ti ti-wand"></i> 이 직급만 자동 배분</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0"><div class="${wrapClass}"><table><thead><tr><th>2차순위</th><th>성명</th><th>직위</th><th>소속단위</th><th>역</th><th>1차단위순위</th><th>1차점수</th><th>활동총점</th><th>재량점수</th><th>합계점수</th><th>2차등급</th><th>2차점수</th></tr></thead><tbody>`;
+    emps.forEach(e=>{
+      const fr=firstR[e.id]||{};
+      const sr=secondR[e.id]||{};
+      const rank=sr.rank||'-';
+      const rCls=rank && rank<=3?`rank-${rank}`:'rank-n';
+      const egCls=sr.evalGrade?`eg-${sr.evalGrade}`:'eg-none';
+      const actTotal = calcScores[e.id]?.총점||0;
+      const disc = sr.discretion||0;
+      const sumVal = actTotal + disc;
+      
+      const borderCls = sr.evalGrade ? `border-eg-${sr.evalGrade}` : 'border-eg-none';
+      const trCls = conflictIds.has(e.id) ? 'class="tr-conflict"' : '';
+      const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+
+      h+=`<tr ${trCls} draggable="true" ondragstart="handleSecondDragStart(event, '${e.id}', '${grade}')" ondragover="handleSecondDragOver(event)" ondragenter="handleSecondDragEnter(event)" ondragleave="handleSecondDragLeave(event)" ondrop="handleSecondDrop(event, '${e.id}', '${grade}')" style="cursor: grab;">
+        <td><input type="number" class="editable rank ${rCls} ${borderCls}" id="f2-rank-${e.id}" value="${rank}" min="1" max="${emps.length}" onchange="updateSecondRankInput('${e.id}', this.value, '${grade}')" draggable="true" ondragstart="event.stopPropagation()" onclick="event.stopPropagation()" style="border:none; text-align:center; padding:0; cursor:pointer; outline:none; font-family:inherit;"></td>
+        <td class="td-name">${e.name}</td><td>${e.position}</td>
+        <td>${displayParentUnit}</td><td class="td-unit">${e.unit}</td>
+        <td>${fr.unitRank||'-'}위</td>
+        <td class="score-total">${fr.score||0}</td>
+        <td>${actTotal}</td>
+        <td><input type="number" class="editable" id="f2-disc-${e.id}" value="${disc}" min="-10" max="10" onchange="updateSecondDiscretion('${e.id}', this.value, '${grade}')" style="width:55px"></td>
+        <td style="font-weight:700">${sumVal}</td>
+        <td><span class="eg ${egCls}">${sr.evalGrade||'-'}</span></td>
+        <td class="score-total">${sr.score||'-'}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div></div></div>`;
+  });
+  document.getElementById('second-tbl').innerHTML=h||'<div style="padding:2rem;text-align:center;color:var(--text3)">1차 평정을 저장한 후 자동 순위를 산출하세요 (평정 대상 직급 없음)</div>';
+  restoreFocus();
+}
+
+function resetSecondDiscretion(grade) {
+  const targetEmps = employees.filter(e => e.grade === grade);
+  targetEmps.forEach(e => {
+    if (secondR[e.id]) {
+      secondR[e.id].discretion = 0;
+    }
+  });
+  renderSecond();
+}
+
+/* 2차 평정 드래그 앤 드롭 순위 조정 및 재량점수 역산 알고리즘 */
+function handleSecondDragStart(ev, id, grade) {
+  ev.dataTransfer.setData('text/plain', id);
+  ev.dataTransfer.setData('grade', grade);
+  ev.currentTarget.style.opacity = '0.4';
+  ev.currentTarget.style.background = 'var(--sky)';
+}
+
+function handleSecondDragOver(ev) {
+  ev.preventDefault();
+}
+
+function handleSecondDragEnter(ev) {
+  const tr = ev.currentTarget.closest('tr');
+  if (tr) {
+    tr.style.borderTop = '3px solid var(--blue-mid)';
+  }
+}
+
+function handleSecondDragLeave(ev) {
+  const tr = ev.currentTarget.closest('tr');
+  if (tr) {
+    tr.style.borderTop = '';
+  }
+}
+
+function handleSecondDrop(ev, targetId, grade) {
+  ev.preventDefault();
+  const tr = ev.currentTarget.closest('tr');
+  if (tr) {
+    tr.style.borderTop = '';
+  }
+
+  const sourceId = ev.dataTransfer.getData('text/plain');
+  const sourceGrade = ev.dataTransfer.getData('grade');
+
+  if (!sourceId || sourceId === targetId || sourceGrade !== grade) {
+    renderSecond();
+    return;
+  }
+
+  // 1. 해당 직급 직원 목록 가져오기 및 현재 정렬 순서대로 획득
+  const emps = employees.filter(e => e.grade === grade);
+  emps.sort((a,b)=>{
+    const totalA = (calcScores[a.id]?.총점||0) + (secondR[a.id]?.discretion||0);
+    const totalB = (calcScores[b.id]?.총점||0) + (secondR[b.id]?.discretion||0);
+    if (totalB !== totalA) return totalB - totalA;
+    const r1A = firstR[a.id]?.unitRank||999;
+    const r1B = firstR[b.id]?.unitRank||999;
+    if (r1A !== r1B) return r1A - r1B;
+    return String(a.id).localeCompare(b.id);
+  });
+
+  const sourceIdx = emps.findIndex(e => e.id === sourceId);
+  const targetIdx = emps.findIndex(e => e.id === targetId);
+
+  if (sourceIdx === -1 || targetIdx === -1) return;
+
+  // 2. 드래그 앤 드롭을 통한 배열 재조정
+  const [draggedEmp] = emps.splice(sourceIdx, 1);
+  emps.splice(targetIdx, 0, draggedEmp);
+
+  // 3. 재배치된 순서대로 재량점수를 역산하여 부여
+  // (총합 = 활동총점 + 재량점수)를 이용하며, 순서를 보장하도록 점수 상한을 아래 방향으로 제한
+  let prevSumVal = null;
+
+  for (let i = 0; i < emps.length; i++) {
+    const curr = emps[i];
+    const actScore = calcScores[curr.id]?.총점 || 0;
+    
+    if (i === 0) {
+      // 1위는 가능한 최대 재량점수(+10점) 부여
+      secondR[curr.id].discretion = 10;
+      prevSumVal = actScore + 10;
+    } else {
+      const prev = emps[i - 1];
+      const r1_prev = firstR[prev.id]?.unitRank || 999;
+      const r1_curr = firstR[curr.id]?.unitRank || 999;
+
+      // 타이 브레이커 비교 (1차 순위 및 사번 비교)
+      let isCurrBetterTie = false;
+      if (r1_curr < r1_prev) {
+        isCurrBetterTie = true;
+      } else if (r1_curr === r1_prev && String(curr.id).localeCompare(prev.id) < 0) {
+        isCurrBetterTie = true;
+      }
+
+      // 이전 직원보다 2차 순위가 낮아야 하므로, 
+      // 현재 직원이 타이 브레이커가 더 우세하다면 합계점수는 반드시 이전 직원보다 1점 이상 낮아야 역전됨
+      // 타이 브레이커가 열세하다면 이전 직원과 동점이어도 순위 정렬에 의해 아래에 안착함
+      let maxSumVal = isCurrBetterTie ? (prevSumVal - 1) : prevSumVal;
+
+      // 필요한 재량점수 = 목표 합계점수 - 활동총점
+      let reqDisc = maxSumVal - actScore;
+
+      // 재량점수 한계인 [-10, 10] 범주로 조율
+      if (reqDisc > 10) reqDisc = 10;
+      if (reqDisc < -10) reqDisc = -10;
+
+      secondR[curr.id].discretion = reqDisc;
+      prevSumVal = actScore + reqDisc;
+    }
+  }
+
+  // 4. 점수 모델 업데이트 및 화면 갱신
+  renderSecond();
+  
+  // 1차 역전 검사 알림은 무음(Silent) 처리하여 쾌적하게 드래그 조율을 연속 수행할 수 있게 조율
+  setTimeout(() => {
+    checkConflicts(true);
+  }, 100);
+}
+
+function updateSecondRankInput(id, val, grade) {
+  const newRank = Number(val) || 0;
+  if (newRank <= 0) {
+    renderSecond();
+    return;
+  }
+
+  // 1. 해당 직급 직원 목록 가져오기 및 현재 정렬 순서대로 획득
+  const emps = employees.filter(e => e.grade === grade);
+  emps.sort((a,b)=>{
+    const totalA = (calcScores[a.id]?.총점||0) + (secondR[a.id]?.discretion||0);
+    const totalB = (calcScores[b.id]?.총점||0) + (secondR[b.id]?.discretion||0);
+    if (totalB !== totalA) return totalB - totalA;
+    const r1A = firstR[a.id]?.unitRank||999;
+    const r1B = firstR[b.id]?.unitRank||999;
+    if (r1A !== r1B) return r1A - r1B;
+    return String(a.id).localeCompare(b.id);
+  });
+
+  const sourceIdx = emps.findIndex(e => e.id === id);
+  let targetIdx = newRank - 1;
+
+  if (targetIdx < 0) targetIdx = 0;
+  if (targetIdx >= emps.length) targetIdx = emps.length - 1;
+
+  if (sourceIdx === -1 || sourceIdx === targetIdx) {
+    renderSecond();
+    return;
+  }
+
+  // 2. 입력받은 순위 위치로 배열 재조정
+  const [draggedEmp] = emps.splice(sourceIdx, 1);
+  emps.splice(targetIdx, 0, draggedEmp);
+
+  // 3. 재배치된 순서대로 재량점수를 역산하여 부여
+  let prevSumVal = null;
+
+  for (let i = 0; i < emps.length; i++) {
+    const curr = emps[i];
+    const actScore = calcScores[curr.id]?.총점 || 0;
+    
+    if (i === 0) {
+      secondR[curr.id].discretion = 10;
+      prevSumVal = actScore + 10;
+    } else {
+      const prev = emps[i - 1];
+      const r1_prev = firstR[prev.id]?.unitRank || 999;
+      const r1_curr = firstR[curr.id]?.unitRank || 999;
+
+      let isCurrBetterTie = false;
+      if (r1_curr < r1_prev) {
+        isCurrBetterTie = true;
+      } else if (r1_curr === r1_prev && String(curr.id).localeCompare(prev.id) < 0) {
+        isCurrBetterTie = true;
+      }
+
+      let maxSumVal = isCurrBetterTie ? (prevSumVal - 1) : prevSumVal;
+
+      let reqDisc = maxSumVal - actScore;
+
+      if (reqDisc > 10) reqDisc = 10;
+      if (reqDisc < -10) reqDisc = -10;
+
+      secondR[curr.id].discretion = reqDisc;
+      prevSumVal = actScore + reqDisc;
+    }
+  }
+
+  // 4. 모델 및 화면 갱신
+  renderSecond();
+  
+  setTimeout(() => {
+    checkConflicts(true);
+  }, 100);
+}
+
+function updateSecondDiscretion(id, val, grade) {
+  let num = parseInt(val) || 0;
+  if (num > 10) num = 10;
+  if (num < -10) num = -10;
+  
+  if (!secondR[id]) secondR[id] = { rank: 999, evalGrade: '-', score: 0 };
+  secondR[id].discretion = num;
+  
+  renderSecond();
+}
+
+function checkConflicts(isSilent = false){
+  const conflicts=[];
+  const gradeOrder = ['3급(팀장/역장/운영역장)', '4급', '5급', '6급', '7급', '8급', '9급'];
+  
+  function getConflictGroupKey(e) {
+    const cleanUnit = String(e.parentUnit || '').replace(/관리역$/, '').replace(/역$/, '').trim();
+    if (cleanUnit === '운영부' || cleanUnit === '사상역' || cleanUnit === '사상' || cleanUnit === '운영' || cleanUnit === '지원') {
+      return '부장_평정그룹';
+    }
+    return e.parentUnit;
+  }
+
+  gradeOrder.forEach(grade=>{
+    const emps = employees.filter(e=>e.grade===grade);
+    const gKeys = [...new Set(emps.map(e => getConflictGroupKey(e)))];
+    
+    gKeys.forEach(gKey => {
+      const unitEmps = emps.filter(e => getConflictGroupKey(e) === gKey);
+      if(unitEmps.length<2)return;
+      for(let i=0;i<unitEmps.length-1;i++) {
+        for(let j=i+1;j<unitEmps.length;j++){
+          const a=unitEmps[i],b=unitEmps[j];
+          const ar1=firstR[a.id]?.unitRank||0;
+          const br1=firstR[b.id]?.unitRank||0;
+          const ar2=secondR[a.id]?.rank||0;
+          const br2=secondR[b.id]?.rank||0;
+          
+          if(ar1 > 0 && br1 > 0 && ar2 > 0 && br2 > 0){
+            if((ar1<br1&&ar2>br2)||(ar1>br1&&ar2<br2)) {
+              const displayGroupName = gKey === '부장_평정그룹' ? '부장 소관 그룹(운영부/사상역)' : gKey;
+              conflicts.push(`[${grade}] ${displayGroupName}: ${a.name}(1차${ar1}위→2차${ar2}위) vs ${b.name}(1차${br1}위→2차${br2}위)`);
+            }
+          }
+        }
+      }
+    });
+  });
+
+  const box=document.getElementById('conflict-msg');
+  if (box) {
+    box.style.display='block';
+    if(conflicts.length){
+      box.className='err-box';
+      box.innerHTML=`<strong><i class="ti ti-alert-triangle"></i> 순위 역전 ${conflicts.length}건</strong><div style="margin-top:6px">${conflicts.map(c=>`<div style="font-size:12px;margin:2px 0">• ${c}</div>`).join('')}</div>`;
+    } else {
+      box.className='info-box';
+      box.innerHTML='<i class="ti ti-circle-check"></i> <strong>순위 역전 없음</strong> — 2차 평정을 확정할 수 있습니다.';
+    }
+  }
+  
+  return conflicts;
+}
+
+function saveSecond(){
+  const conflicts = checkConflicts(true);
+  if (conflicts.length > 0) {
+    alert(`[2차 평정 확정 실패] 아래의 순위 역전 오류를 해결해야 평정을 확정할 수 있습니다:\n\n` + 
+          conflicts.map((c, idx) => `${idx + 1}. ${c}`).join('\n') + 
+          `\n\n해당 직원들의 재량점수를 조정하여 순위 우위를 일치시켜 주세요.`);
+    return;
+  }
+
+  employees.forEach((e,i)=>{
+    if(!secondR[e.id]) secondR[e.id]={rank:i+1,evalGrade:'미',score:70};
+  });
+  updateSteps();
+  alert('2차 평정이 성공적으로 확정되었습니다. 결과 탭에서 확인하세요.');
+  gotoTab('result');
+}
+
+// ============================================================
+// RESULT
+// ============================================================
+function renderResult(){
+  const gf=document.getElementById('r-grade-f')?.value||'';
+  const uf=document.getElementById('r-unit-f')?.value||'';
+  const grades=gf?[gf]:[...new Set(employees.map(e=>e.grade))];
+
+  // summary
+  let sumH='';
+  const tot=employees.length;
+  const dist={수:0,우:0,미:0,양:0};
+  Object.values(secondR).forEach(r=>{if(r.evalGrade)dist[r.evalGrade]++;});
+  sumH+=`<div class="metric accent"><div class="metric-label">전체 직원</div><div class="metric-value">${tot}</div><div class="metric-sub">명</div></div>`;
+  sumH+=`<div class="metric"><div class="metric-label">수</div><div class="metric-value" style="color:var(--gold)">${dist.수}</div><div class="metric-sub">명 (${tot?Math.round(dist.수/tot*100):0}%)</div></div>`;
+  sumH+=`<div class="metric"><div class="metric-label">우</div><div class="metric-value" style="color:var(--blue)">${dist.우}</div><div class="metric-sub">명</div></div>`;
+  sumH+=`<div class="metric"><div class="metric-label">미</div><div class="metric-value">${dist.미}</div><div class="metric-sub">명</div></div>`;
+  sumH+=`<div class="metric"><div class="metric-label">양</div><div class="metric-value" style="color:var(--text3)">${dist.양}</div><div class="metric-sub">명</div></div>`;
+  document.getElementById('result-summary').innerHTML=sumH;
+
+  let h='';
+  grades.forEach(grade=>{
+    let emps=employees.filter(e=>{
+      const matchesGrade = e.grade===grade;
+      const matchesUnit = !uf || e.parentUnit === uf || (uf === '운영부' && (e.parentUnit === '운영' || e.parentUnit === '지원' || e.parentUnit === '운영부'));
+      return matchesGrade && matchesUnit;
+    }).sort((a,b)=>(secondR[a.id]?.rank||99)-(secondR[b.id]?.rank||99));
+    if(!emps.length)return;
+    h+=`<div class="card mb2"><div class="card-header"><h3><span class="badge b-blue">${grade}</span> 평정 결과 <span style="font-weight:400;font-size:12px;color:var(--text3);margin-left:8px">${emps.length}명</span></h3></div><div class="card-body" style="padding:0"><div class="tbl-wrap"><table><thead><tr><th>연번</th><th>2차순위</th><th>등급</th><th>성명</th><th>직위</th><th>소속단위</th><th>역</th><th>생년</th><th>현직급근속</th><th>입사구분</th><th>가점</th><th>감점</th><th>재량</th><th>활동총점</th><th>1차단위순위</th><th>1차점수</th><th>2차점수</th></tr></thead><tbody>`;
+    emps.forEach((e,i)=>{
+      const fr=firstR[e.id]||{};
+      const sr=secondR[e.id]||{};
+      const cs=calcScores[e.id]||{};
+      const rank=sr.rank||'-';
+      const rCls=rank<=3?`rank-${rank}`:'rank-n';
+      const egCls=sr.evalGrade?`eg-${sr.evalGrade}`:'eg-none';
+      h+=`<tr>
+        <td>${i+1}</td>
+        <td><span class="rank ${rCls}">${rank}</span></td>
+        <td><span class="eg ${egCls}">${sr.evalGrade||'-'}</span></td>
+        <td class="td-name">${e.name}</td><td>${e.position}</td>
+        <td>${e.parentUnit}</td><td class="td-unit">${e.unit}</td>
+        <td>${e.birthYear}</td><td>${e.gradeYears}</td><td>${e.entryType}</td>
+        <td class="score-pos">+${cs.가점||0}</td>
+        <td class="score-neg">${cs.감점||0}</td>
+        <td>${cs.재량||0}</td>
+        <td class="score-total">${cs.총점||0}</td>
+        <td>${fr.unitRank||'-'}위</td>
+        <td>${fr.score||0}</td>
+        <td class="score-total">${sr.score||0}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div></div></div>`;
+  });
+  document.getElementById('result-tbl').innerHTML=h||'<div style="padding:2rem;text-align:center;color:var(--text3)">데이터 없음</div>';
+}
+
+// ============================================================
+// EXCEL DOWNLOAD
+// ============================================================
+function dlExcel(type){
+  if(!employees.length){alert('데이터가 없습니다.');return;}
+  const wb=XLSX.utils.book_new();
+  const grades=[...new Set(employees.map(e=>e.grade))];
+
+  if(type==='grade'||type==='all'){
+    grades.forEach(grade=>{
+      const emps=employees.filter(e=>e.grade===grade).sort((a,b)=>(secondR[a.id]?.rank||99)-(secondR[b.id]?.rank||99));
+      const rows=[['연번','2차순위','등급','성명','직위','소속단위','역','생년','현직급근속','입사구분','가점','감점','재량','활동총점','1차단위순위','1차점수','2차점수']];
+      emps.forEach((e,i)=>{
+        const fr=firstR[e.id]||{},sr=secondR[e.id]||{},cs=calcScores[e.id]||{};
+        rows.push([i+1,sr.rank||'',sr.evalGrade||'',e.name,e.position,e.parentUnit,e.unit,e.birthYear,e.gradeYears,e.entryType,cs.가점||0,cs.감점||0,cs.재량||0,cs.총점||0,fr.unitRank||'',fr.score||0,sr.score||0]);
+      });
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),grade+'_평정표');
+    });
+  }
+
+  if(type==='basis'||type==='all'){
+    const rows=[['사번','성명','직급','직위','소속단위','역','수송순위','부정승차','사공헌회원','사공헌횟수','안리더회원','안리더횟수','칭찬미담','신호기','불만민원','감사지적','수입금','기타지적','병가','휴직','재량','활동총점','1차단위순위','1차점수','2차순위','등급','2차점수']];
+    employees.forEach(e=>{
+      const r=empScores[e.id]||{},fr=firstR[e.id]||{},sr=secondR[e.id]||{},cs=calcScores[e.id]||{};
+      rows.push([e.id,e.name,e.grade,e.position,e.parentUnit,e.unit,
+        r['수송순위']||'',r['부정승차단속']||0,r['사회공헌_회원']||0,r['사회공헌_참여횟수']||0,
+        r['안전리더_회원']||0,r['안전리더_활동횟수']||0,r['칭찬미담']||0,r['신호기자격']||0,
+        r['불만민원']||0,r['감사지적']||0,r['수입금오취급']||0,r['기타지적사항']||0,r['병가']||0,r['휴직']||0,
+        r['재량점수']||0,cs.총점||0,fr.unitRank||'',fr.score||0,sr.rank||'',sr.evalGrade||'',sr.score||0
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'평정근거');
+  }
+
+  const fname={grade:'직급별평정표',basis:'평정근거',all:'전체평정결과'}[type];
+  XLSX.writeFile(wb,fname+'.xlsx');
+}
+
+function printResult(){
+  window.print();
+}
+
+function printScoreTable() {
+  const gf = document.getElementById('score-grade-f')?.value||'';
+  const uf = document.getElementById('score-unit-f')?.value||'';
+  const nf = (document.getElementById('score-name-f')?.value||'').trim();
+
+  const list = employees.filter(e=>{
+    const matchesGrade = !gf || e.grade === gf;
+    const matchesUnit = !uf || e.parentUnit === uf || (uf === '운영부' && (e.parentUnit === '운영' || e.parentUnit === '지원' || e.parentUnit === '운영부'));
+    const matchesName = !nf || e.name.includes(nf);
+    return matchesGrade && matchesUnit && matchesName;
+  });
+
+  if(!list.length){
+    alert('인쇄할 데이터가 없습니다.');
+    return;
+  }
+
+  const unitOrder = [
+    '운영부', '장산관리역', '센텀시티관리역', '수영역', '광안관리역',
+    '경성대부경대관리역', '문현관리역', '전포관리역', '동의대관리역',
+    '냉정관리역', '사상역', '모덕관리역', '구명관리역', '덕천역',
+    '화명관리역', '호포관리역', '양산관리역'
+  ];
+
+  list.sort((a, b) => {
+    let ia = unitOrder.indexOf(a.parentUnit);
+    let ib = unitOrder.indexOf(b.parentUnit);
+    if (ia === -1) ia = 999;
+    if (ib === -1) ib = 999;
+    if (ia !== ib) return ia - ib;
+    return String(a.id).localeCompare(b.id);
+  });
+
+  const tempDiv = document.createElement('div');
+  tempDiv.id = 'print-temp-container';
+
+  let filterDesc = [];
+  if (gf) filterDesc.push(`직급: ${gf}`);
+  if (uf) filterDesc.push(`단위: ${uf}`);
+  if (nf) filterDesc.push(`성명: ${nf}`);
+  const filterText = filterDesc.length ? ` (필터조건: ${filterDesc.join(', ')})` : '';
+
+  let printHtml = `
+    <div style="padding: 10px;">
+      <h1 class="print-main-title" style="text-align:center; font-size:18px; font-weight:800; color:#0D2B55; margin-bottom: 15px;">
+        제2여객사업소 인사 평정 활동 점수 세부 참고자료${filterText}
+      </h1>
+      <table class="print-table" style="width:100%; border-collapse:collapse; font-size:8.5px; text-align:center; table-layout: fixed; letter-spacing: -0.04em;">
+        <colgroup>
+          <col style="width: 32px;">
+          <col style="width: 48px;">
+          <col style="width: 70px;">
+          <col style="width: 75px;">
+          <col style="width: 32px;">
+          <col style="width: 52px;">
+          <col style="width: 58px;">
+          <col style="width: 40px;">
+          <col style="width: 40px;">
+          <col style="width: 40px;">
+          <col style="width: 50px;">
+          <col style="width: 50px;">
+          <col style="width: 50px;">
+          <col style="width: 50px;">
+          <col style="width: 40px;">
+          <col style="width: 40px;">
+          <col style="width: 80px;">
+          <col style="width: 40px;">
+          <col style="width: 40px;">
+        </colgroup>
+        <thead>
+          <tr style="background:#0D2B55; color:#fff; height:22px; font-size:8.5px;">
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">연번</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">성명</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">직급</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">1차평정단위</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">생년</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">현직급근속</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">입사구분</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">수송순위</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">수송가점</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">부정단속</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">사공헌회원</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">사공헌횟수</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">안리더회원</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">안리더횟수</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">칭찬미담</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">신호기</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">감사수입금</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">기타지적</th>
+            <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">활동총점</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  list.forEach((e, idx) => {
+    const raw = empScores[e.id]||{};
+    const cs = calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
+    const v = k => raw[k]!==undefined?raw[k]:'-';
+    const cleanAudit = raw.감사수입금_원문 || '-';
+    const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+
+    printHtml += `
+      <tr style="height:19px; font-size:8.5px;">
+        <td style="border:1px solid #ddd; padding:2px 1px;">${idx+1}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; font-weight:700; white-space:nowrap;">${e.name}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.grade.replace('(부장/관리역장/환승역장)', '').replace('(팀장/역장/운영역장)', '')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayParentUnit.replace('부장평정단위(운영부/사상역)', '부장평정(운영부/사상)')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${e.birthYear}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.gradeYears.replace(/\s+/g,'')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.entryType.replace(/공단공채\s*/g, '공채')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${v('수송순위')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; color:green; font-weight:700;">+${applyRangeCriteria(raw['수송순위']||0,CRITERIA.가점.수송순위)}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${v('부정승차단속')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${raw['사회공헌_회원']?'✓':'-'}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${v('사회공헌_참여횟수')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${raw['안전리더_회원']?'✓':'-'}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${v('안전리더_활동횟수')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${v('칭찬미담')}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px;">${raw['신호기자격']?'✓':'-'}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; color:red; font-size:7.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${cleanAudit}">
+          ${(() => {
+            const simplified = cleanAudit.length > 8 ? cleanAudit.substring(0, 8) + '..' : cleanAudit;
+            return simplified;
+          })()}
+        </td>
+        <td style="border:1px solid #ddd; padding:2px 1px; color:red;">${v('기타지적사항')||'-'}</td>
+        <td style="border:1px solid #ddd; padding:2px 1px; font-weight:700; background:#f9f9f9; font-size:9px;">${cs.총점}</td>
+      </tr>
+    `;
+  });
+
+  printHtml += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  tempDiv.innerHTML = printHtml;
+  document.body.appendChild(tempDiv);
+
+  const styleEl = document.createElement('style');
+  styleEl.id = 'print-temp-style';
+  styleEl.innerHTML = `
+    @media print {
+      body > * { display: none !important; }
+      #print-temp-container { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; }
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+      .print-table th { background-color: #0D2B55 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-table td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  `;
+  document.head.appendChild(styleEl);
+
+  window.print();
+
+  setTimeout(() => {
+    if (tempDiv) tempDiv.remove();
+    if (styleEl) styleEl.remove();
+  }, 1000);
+}
+
+function dlScoreExcel(){
+  if(!employees.length){alert('데이터가 없습니다.');return;}
+  const gf = document.getElementById('score-grade-f')?.value||'';
+  const uf = document.getElementById('score-unit-f')?.value||'';
+  const nf = (document.getElementById('score-name-f')?.value||'').trim();
+
+  const list = employees.filter(e=>{
+    const matchesGrade = !gf || e.grade === gf;
+    const matchesUnit = !uf || e.parentUnit === uf || (uf === '운영부' && (e.parentUnit === '운영' || e.parentUnit === '지원' || e.parentUnit === '운영부'));
+    const matchesName = !nf || e.name.includes(nf);
+    return matchesGrade && matchesUnit && matchesName;
+  });
+  if(!list.length){alert('추출할 데이터가 없습니다.');return;}
+
+  const wb=XLSX.utils.book_new();
+
+  const header = ['연번', '성명', '직급', '소속(역)', '1차평정단위', '생년', '현직급근속', '입사구분', '수송순위', '수송가점', '부정승차단속 건수', '사회공헌 회원', '사회공헌 참여횟수', '안전리더 회원', '안전리더 활동횟수', '칭찬미담 건수', '신호기자격 유무', '감사 수입금 건수', '기타 지적 건수', '재량 점수', '총점'];
+
+  // 1. 전체직급 탭 생성
+  const allRows = [header];
+  list.forEach((e, i)=>{
+    const raw=empScores[e.id]||{};
+    const cs=calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
+    allRows.push([
+      i+1, e.name, e.grade, e.unit, e.parentUnit, e.birthYear, e.gradeYears, e.entryType,
+      raw['수송순위']||'', applyRangeCriteria(raw['수송순위']||0, CRITERIA.가점.수송순위),
+      raw['부정승차단속']||0, raw['사회공헌_회원']?'✓':'-', raw['사회공헌_참여횟수']||0,
+      raw['안전리더_회원']?'✓':'-', raw['안전리더_활동횟수']||0, raw['칭찬미담']||0,
+      raw['신호기자격']?'✓':'-', raw['감사수입금']||0, raw['기타지적사항']||0, raw['재량점수']||0, cs.총점
+    ]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allRows), '전체직급');
+
+  // 2. 직급별 탭 생성 (2급 ~ 9급)
+  const gradeOrder = [
+    '2급', '3급(부장/관리역장/환승역장)', '3급(팀장/역장/운영역장)',
+    '4급', '5급', '6급', '7급', '8급', '9급'
+  ];
+  
+  const unitOrder = [
+    '운영부', '장산관리역', '센텀시티관리역', '수영역', '광안관리역',
+    '경성대부경대관리역', '문현관리역', '전포관리역', '동의대관리역',
+    '냉정관리역', '사상역', '모덕관리역', '구명관리역', '덕천역',
+    '화명관리역', '호포관리역', '양산관리역'
+  ];
+
+  gradeOrder.forEach(grade => {
+    const gradeEmps = list.filter(e => e.grade === grade);
+    if (!gradeEmps.length) return;
+
+    gradeEmps.sort((a, b) => {
+      let ia = unitOrder.indexOf(a.parentUnit);
+      let ib = unitOrder.indexOf(b.parentUnit);
+      if (ia === -1) ia = 999;
+      if (ib === -1) ib = 999;
+      if (ia !== ib) return ia - ib;
+      return String(a.id).localeCompare(b.id);
+    });
+
+    const gradeRows = [header];
+    gradeEmps.forEach((e, idx) => {
+      const raw=empScores[e.id]||{};
+      const cs=calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
+      gradeRows.push([
+        idx+1, e.name, e.grade, e.unit, e.parentUnit, e.birthYear, e.gradeYears, e.entryType,
+        raw['수송순위']||'', applyRangeCriteria(raw['수송순위']||0, CRITERIA.가점.수송순위),
+        raw['부정승차단속']||0, raw['사회공헌_회원']?'✓':'-', raw['사회공헌_참여횟수']||0,
+        raw['안전리더_회원']?'✓':'-', raw['안전리더_활동횟수']||0, raw['칭찬미담']||0,
+        raw['신호기자격']?'✓':'-', raw['감사수입금']||0, raw['기타지적사항']||0, raw['재량점수']||0, cs.총점
+      ]);
+    });
+
+    let sheetName = grade;
+    if (sheetName === '3급(부장/관리역장/환승역장)') sheetName = '3급(부장_역장)';
+    if (sheetName === '3급(팀장/역장/운영역장)') sheetName = '3급(팀장_역장)';
+    sheetName = sheetName.substring(0, 31);
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(gradeRows), sheetName);
+  });
+
+  XLSX.writeFile(wb, '평정참고자료_추출.xlsx');
+}
+
+function printSecondWithReference() {
+  const isSecondTabActive = document.getElementById('tab-second').classList.contains('active');
+  if (!isSecondTabActive) {
+    alert('2차 평정 탭에서만 사용할 수 있습니다.');
+    return;
+  }
+
+  const gf = document.getElementById('f2-grade-f')?.value||'';
+  const list = employees.filter(e => !gf || e.grade === gf);
+  if (!list.length) {
+    alert('인쇄할 데이터가 없습니다.');
+    return;
+  }
+
+  // 2차 평정 대상 직급 순서 정의
+  const gradeOrder = [
+    '3급(팀장/역장/운영역장)', '4급', '5급', '6급', '7급', '8급', '9급'
+  ];
+  
+  // 1차 평정단위 정렬 순서 정의 (표 안에서의 출력용 정렬)
+  const unitOrder = [
+    '운영부', '장산관리역', '센텀시티관리역', '수영역', '광안관리역',
+    '경성대부경대관리역', '문현관리역', '전포관리역', '동의대관리역',
+    '냉정관리역', '사상역', '모덕관리역', '구명관리역', '덕천역',
+    '화명관리역', '호포관리역', '양산관리역'
+  ];
+
+  // 인쇄 전용 임시 컨테이너 생성
+  const tempDiv = document.createElement('div');
+  tempDiv.id = 'print-temp-container';
+  
+  let printHtml = `<h1 class="print-main-title" style="text-align:center; font-size:20px; font-weight:800; color:#0D2B55; margin-bottom: 20px;">제2여객사업소 2차 인사평정 결과 및 평정참고자료 (직급별)</h1>`;
+
+  const targetGrades = gradeOrder.filter(grade => list.some(e => e.grade === grade));
+
+  targetGrades.forEach((grade, idx) => {
+    const gradeEmps = list.filter(e => e.grade === grade);
+    if (!gradeEmps.length) return;
+
+    // 2차 순위 정렬
+    gradeEmps.sort((a,b) => (secondR[a.id]?.rank||999)-(secondR[b.id]?.rank||999));
+
+    const isLast = (idx === targetGrades.length - 1);
+    const pbStyle = isLast ? '' : 'page-break-after: always;';
+
+    printHtml += `
+      <div class="print-page-block" style="page-break-after: always; margin-bottom: 30px;">
+        <h2 style="font-size: 14px; font-weight:700; color:#0D2B55; border-bottom: 2px solid #0d2b55; padding-bottom:6px; margin: 15px 0 10px 0; display:flex; justify-content:space-between;">
+          <span>[직급: ${grade}] 2차 평정 결과 목록 (${gradeEmps.length}명)</span>
+          <span style="font-size:12px; font-weight:normal; color:#555;">제2여객사업소</span>
+        </h2>
+        <table class="print-table" style="width:100%; border-collapse:collapse; margin-bottom: 15px; font-size:11px;">
+          <thead>
+            <tr style="background:#0D2B55; color:#fff; height:26px;">
+              <th style="border:1px solid #ddd; padding:4px;">2차순위</th>
+              <th style="border:1px solid #ddd; padding:4px;">성명</th>
+              <th style="border:1px solid #ddd; padding:4px;">직위</th>
+              <th style="border:1px solid #ddd; padding:4px;">1차평정단위</th>
+              <th style="border:1px solid #ddd; padding:4px;">역</th>
+              <th style="border:1px solid #ddd; padding:4px;">1차단위순위</th>
+              <th style="border:1px solid #ddd; padding:4px;">1차점수</th>
+              <th style="border:1px solid #ddd; padding:4px;">활동총점</th>
+              <th style="border:1px solid #ddd; padding:4px;">재량점수</th>
+              <th style="border:1px solid #ddd; padding:4px;">합계점수</th>
+              <th style="border:1px solid #ddd; padding:4px;">2차등급</th>
+              <th style="border:1px solid #ddd; padding:4px;">2차점수</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    gradeEmps.forEach(e => {
+      const fr = firstR[e.id]||{};
+      const sr = secondR[e.id]||{};
+      const actTotal = calcScores[e.id]?.총점||0;
+      const disc = sr.discretion||0;
+      const sumVal = actTotal + disc;
+      const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+
+      printHtml += `
+        <tr style="height:23px; text-align:center;">
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sr.rank||'-'}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${e.name}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${e.position}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-size:10px;">${displayParentUnit}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${e.unit}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${fr.unitRank||'-'}위</td>
+          <td style="border:1px solid #ddd; padding:3px;">${fr.score||0}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${actTotal}</td>
+          <td style="border:1px solid #ddd; padding:3px;">${disc}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sumVal}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sr.evalGrade||'-'}</td>
+          <td style="border:1px solid #ddd; padding:3px; font-weight:700;">${sr.score||'-'}</td>
+        </tr>
+      `;
+    });
+
+    printHtml += `
+          </tbody>
+        </table>
+      </div>
+
+      <div class="print-page-block" style="${pbStyle} margin-bottom: 30px;">
+        <h2 style="font-size: 14px; font-weight:700; color:#444; border-bottom: 2px solid #555; padding-bottom:6px; margin: 15px 0 10px 0; display:flex; justify-content:space-between;">
+          <span>[직급: ${grade}] 평정 활동 점수 세부 참고자료</span>
+          <span style="font-size:12px; font-weight:normal; color:#555;">제2여객사업소</span>
+        </h2>
+        <table class="print-table" style="width:100%; border-collapse:collapse; font-size:8.5px; text-align:center; table-layout: fixed; letter-spacing: -0.04em;">
+          <colgroup>
+            <col style="width: 48px;">
+            <col style="width: 95px;">
+            <col style="width: 32px;">
+            <col style="width: 52px;">
+            <col style="width: 58px;">
+            <col style="width: 40px;">
+            <col style="width: 40px;">
+            <col style="width: 40px;">
+            <col style="width: 50px;">
+            <col style="width: 50px;">
+            <col style="width: 50px;">
+            <col style="width: 50px;">
+            <col style="width: 40px;">
+            <col style="width: 40px;">
+            <col style="width: 80px;">
+            <col style="width: 40px;">
+            <col style="width: 40px;">
+          </colgroup>
+          <thead>
+            <tr style="background:#555; color:#fff; height:20px; font-size:8.5px;">
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">성명</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">1차평정단위</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">생년</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">현직급근속</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">입사구분</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">수송순위</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">수송가점</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">부정단속</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">사공헌회원</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">사공헌횟수</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">안리더회원</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">안리더횟수</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">칭찬미담</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">신호기</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">감사수입금</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">기타지적</th>
+              <th style="border:1px solid #ddd; padding:2px 1px; white-space:nowrap;">활동총점</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    // 참고자료의 정렬은 평정단위 순으로 정렬하여 통일성 유지
+    const sortedReferenceEmps = [...gradeEmps].sort((a, b) => {
+      let ia = unitOrder.indexOf(a.parentUnit);
+      let ib = unitOrder.indexOf(b.parentUnit);
+      if (ia === -1) ia = 999;
+      if (ib === -1) ib = 999;
+      if (ia !== ib) return ia - ib;
+      return String(a.id).localeCompare(b.id);
+    });
+
+    sortedReferenceEmps.forEach(e => {
+      const raw = empScores[e.id]||{};
+      const cs = calcScores[e.id]||{가점:0,감점:0,재량:0,총점:0};
+      const v = k => raw[k]!==undefined?raw[k]:'-';
+      const cleanAudit = raw.감사수입금_원문 || '-';
+      const displayParentUnit = (e.parentUnit === '운영부' || e.parentUnit === '사상역') ? '부장평정단위(운영부/사상역)' : e.parentUnit;
+
+      printHtml += `
+        <tr style="height:19px; font-size:8.5px;">
+          <td style="border:1px solid #ddd; padding:2px 1px; font-weight:700; white-space:nowrap;">${e.name}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayParentUnit.replace('부장평정단위(운영부/사상역)', '부장평정(운영부/사상)')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${e.birthYear}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.gradeYears.replace(/\s+/g,'')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px; font-size:8px; white-space:nowrap;">${e.entryType.replace(/공단공채\s*/g, '공채')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${v('수송순위')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px; color:green; font-weight:700;">+${applyRangeCriteria(raw['수송순위']||0,CRITERIA.가점.수송순위)}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${v('부정승차단속')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${raw['사회공헌_회원']?'✓':'-'}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${v('사회공헌_참여횟수')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${raw['안전리더_회원']?'✓':'-'}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${v('안전리더_활동횟수')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${v('칭찬미담')}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px;">${raw['신호기자격']?'✓':'-'}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px; color:red; font-size:7.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${cleanAudit}">
+            ${(() => {
+              const simplified = cleanAudit.length > 8 ? cleanAudit.substring(0, 8) + '..' : cleanAudit;
+              return simplified;
+            })()}
+          </td>
+          <td style="border:1px solid #ddd; padding:2px 1px; color:red;">${v('기타지적사항')||'-'}</td>
+          <td style="border:1px solid #ddd; padding:2px 1px; font-weight:700; background:#f9f9f9; font-size:9px;">${cs.총점}</td>
+        </tr>
+      `;
+    });
+
+    printHtml += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  });
+
+  tempDiv.innerHTML = printHtml;
+  document.body.appendChild(tempDiv);
+
+  // 인쇄 전용 스타일 태그 추가
+  const styleEl = document.createElement('style');
+  styleEl.id = 'print-temp-style';
+  styleEl.innerHTML = `
+    @media print {
+      body > * { display: none !important; }
+      #print-temp-container { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; }
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+      .print-table th { background-color: #0D2B55 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-table td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  `;
+  document.head.appendChild(styleEl);
+
+  window.print();
+
+  // 인쇄 완료 후 임시 마크업 및 스타일 복원
+  setTimeout(() => {
+    if (tempDiv) tempDiv.remove();
+    if (styleEl) styleEl.remove();
+  }, 1000);
+}
+
+function dlSecondExcel() {
+  if(!employees.length){alert('데이터가 없습니다.');return;}
+  const gf = document.getElementById('f2-grade-f')?.value||'';
+  const list = employees.filter(e => !gf || e.grade === gf);
+  
+  const wb=XLSX.utils.book_new();
+
+  const header = ['2차순위', '성명', '직위', '1차평정단위', '역', '1차단위순위', '1차점수', '활동총점', '재량점수', '합계점수', '2차등급', '2차점수'];
+
+  // 1. 전체 탭 생성
+  const allRows = [header];
+  list.forEach(e => {
+    const fr=firstR[e.id]||{};
+    const sr=secondR[e.id]||{};
+    const actTotal = calcScores[e.id]?.총점||0;
+    const disc = sr.discretion||0;
+    const sumVal = actTotal + disc;
+    allRows.push([
+      sr.rank||'-', e.name, e.position, e.parentUnit, e.unit,
+      fr.unitRank ? fr.unitRank+'위' : '-', fr.score||0,
+      actTotal, disc, sumVal, sr.evalGrade||'-', sr.score||'-'
+    ]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allRows), '전체직급_2차');
+
+  // 2. 직급별 탭 생성
+  const gradeOrder = [
+    '3급(팀장/역장/운영역장)', '4급', '5급', '6급', '7급', '8급', '9급'
+  ];
+
+  gradeOrder.forEach(grade => {
+    const gradeEmps = list.filter(e => e.grade === grade);
+    if (!gradeEmps.length) return;
+
+    // 2차 순위 순 정렬
+    gradeEmps.sort((a,b)=>(secondR[a.id]?.rank||999)-(secondR[b.id]?.rank||999));
+
+    const gradeRows = [header];
+    gradeEmps.forEach(e => {
+      const fr=firstR[e.id]||{};
+      const sr=secondR[e.id]||{};
+      const actTotal = calcScores[e.id]?.총점||0;
+      const disc = sr.discretion||0;
+      const sumVal = actTotal + disc;
+      gradeRows.push([
+        sr.rank||'-', e.name, e.position, e.parentUnit, e.unit,
+        fr.unitRank ? fr.unitRank+'위' : '-', fr.score||0,
+        actTotal, disc, sumVal, sr.evalGrade||'-', sr.score||'-'
+      ]);
+    });
+
+    let sheetName = grade;
+    if (sheetName === '3급(팀장/역장/운영역장)') sheetName = '3급(팀장_역장)';
+    sheetName = sheetName.substring(0, 31);
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(gradeRows), sheetName);
+  });
+
+  XLSX.writeFile(wb, '2차평정결과_추출.xlsx');
+}
+
+// ============================================================
+// UTIL
+// ============================================================
+function gotoTab(name){
+  const names=['org','roster','criteria','scores','first','second','result'];
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='result')renderResult();
+  if(name==='first')renderFirst();
+  if(name==='second')renderSecond();
+  if(name==='scores')renderScoreTable();
+  if(name==='roster')renderRoster();
+  if(name==='criteria')renderCriteriaView();
+}
+
+function refreshFilters() {
+  const units = [...new Set(employees.map(e => {
+    const u = e.parentUnit || '';
+    if (u === '운영' || u === '지원' || u === '운영부') return '운영부';
+    return u;
+  }))].filter(Boolean);
+  const grades = [...new Set(employees.map(e => e.grade))].filter(Boolean);
+
+  // 평가 단위 지정된 순서대로 정렬
+  const unitOrder = [
+    '운영부', '장산관리역', '센텀시티관리역', '수영역', '광안관리역',
+    '경성대부경대관리역', '문현관리역', '전포관리역', '동의대관리역',
+    '냉정관리역', '사상역', '모덕관리역', '구명관리역', '덕천역',
+    '화명관리역', '호포관리역', '양산관리역'
+  ];
+  units.sort((a, b) => {
+    let ia = unitOrder.indexOf(a);
+    let ib = unitOrder.indexOf(b);
+    if (ia === -1) ia = 999;
+    if (ib === -1) ib = 999;
+    return ia - ib;
+  });
+
+  // 직급 지정된 순서대로 정렬
+  const gradeOrder = [
+    '2급',
+    '3급(부장/관리역장/환승역장)',
+    '3급(팀장/역장/운영역장)',
+    '4급', '5급', '6급', '7급', '8급', '9급'
+  ];
+  grades.sort((a, b) => {
+    let ia = gradeOrder.indexOf(a);
+    let ib = gradeOrder.indexOf(b);
+    if (ia === -1) ia = 999;
+    if (ib === -1) ib = 999;
+    return ia - ib;
+  });
+
+  const uSelects = ['roster-unit-f', 'score-unit-f', 'r-unit-f'];
+  uSelects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const oldVal = el.value;
+    el.innerHTML = '<option value="">전체 단위</option>' + units.map(u => `<option value="${u}">${u}</option>`).join('');
+    el.value = oldVal;
+  });
+
+  const gSelects = ['roster-grade-f', 'score-grade-f', 'f1-grade-f', 'f2-grade-f', 'r-grade-f'];
+  gSelects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const oldVal = el.value;
+    el.innerHTML = '<option value="">전체 직급</option>' + grades.map(g => `<option value="${g}">${g}</option>`).join('');
+    el.value = oldVal;
+  });
+}
+
+function renderRoster() {
+  const uf = document.getElementById('roster-unit-f')?.value || '';
+  const gf = document.getElementById('roster-grade-f')?.value || '';
+  const list = employees.filter(e => (!uf || e.parentUnit === uf) && (!gf || e.grade === gf));
+
+  document.getElementById('roster-count').textContent = list.length + '명';
+
+  if (!list.length) {
+    document.getElementById('roster-tbl').innerHTML = '<div style="padding:3rem;text-align:center;color:var(--text3)">조건에 맞는 직원이 없습니다.</div>';
+    return;
+  }
+
+  let h = `<table>
+    <thead>
+      <tr>
+        <th>사번</th>
+        <th>성명</th>
+        <th>직위</th>
+        <th>직렬</th>
+        <th>직급</th>
+        <th>소속단위</th>
+        <th>역</th>
+        <th>생년</th>
+        <th>현직급근속</th>
+        <th>입사구분</th>
+      </tr>
+    </thead>
+    <tbody>`;
+  list.forEach(e => {
+    h += `<tr>
+      <td>${e.id}</td>
+      <td class="td-name">${e.name}</td>
+      <td>${e.position}</td>
+      <td>${e.series}</td>
+      <td><span class="badge b-blue">${e.grade}</span></td>
+      <td>${e.parentUnit}</td>
+      <td class="td-unit">${e.unit}</td>
+      <td>${e.birthYear}</td>
+      <td>${e.gradeYears}</td>
+      <td>${e.entryType}</td>
+    </tr>`;
+  });
+  h += '</tbody></table>';
+  document.getElementById('roster-tbl').innerHTML = h;
+}
+
+function changeThemeMode(mode) {
+  localStorage.setItem('antigravity-theme-mode', mode);
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  
+  function applyTheme(isDark) {
+    if (isDark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }
+
+  // Remove listener if any to avoid duplication
+  if (window._themeListener) {
+    mediaQuery.removeEventListener('change', window._themeListener);
+    window._themeListener = null;
+  }
+
+  if (mode === 'dark') {
+    applyTheme(true);
+  } else if (mode === 'light') {
+    applyTheme(false);
+  } else { // system
+    applyTheme(mediaQuery.matches);
+    window._themeListener = (e) => {
+      if (localStorage.getItem('antigravity-theme-mode') === 'system') {
+        applyTheme(e.matches);
+      }
+    };
+    mediaQuery.addEventListener('change', window._themeListener);
+  }
+}
+
+function updateSteps(){}
+
+// INIT
+(function initTheme() {
+  const savedTheme = localStorage.getItem('antigravity-theme-mode') || 'light';
+  document.getElementById('theme-select').value = savedTheme;
+  changeThemeMode(savedTheme);
+})();
+
+// 글로벌 포커스 복원 정보 저장소
+window.lastFocusedInfo = { id: null, selectAll: false };
+
+function restoreFocus() {
+  if (window.lastFocusedInfo && window.lastFocusedInfo.id) {
+    const el = document.getElementById(window.lastFocusedInfo.id);
+    if (el) {
+      el.focus();
+      if (window.lastFocusedInfo.selectAll && typeof el.select === 'function') {
+        el.select();
+      }
+    }
+    // 복원 후 초기화
+    window.lastFocusedInfo = { id: null, selectAll: false };
+  }
+}
+
+// 키보드 엔터 키 입력 시 동일 항목(세로 아래 열)의 다음 편집 필드로 포커스 이동 기능
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.classList.contains('editable')) {
+    e.preventDefault();
+
+    const currentInput = e.target;
+    const currentTd = currentInput.closest('td');
+    if (!currentTd) return;
+
+    const currentTr = currentTd.closest('tr');
+    if (!currentTr) return;
+
+    // 현재 td의 셀 인덱스 구하기
+    const cellIndex = Array.from(currentTr.cells).indexOf(currentTd);
+    if (cellIndex === -1) return;
+
+    // 바로 아래 행(tr) 찾기
+    const nextTr = currentTr.nextElementSibling;
+    if (nextTr) {
+      const nextTd = nextTr.cells[cellIndex];
+      if (nextTd) {
+        const nextInput = nextTd.querySelector('.editable');
+        if (nextInput && nextInput.id) {
+          // 다음 입력창의 ID와 블록 설정을 글로벌 상태에 기록
+          window.lastFocusedInfo = { id: nextInput.id, selectAll: true };
+          
+          // 현재 활성화된 입력창의 포커스를 해제(blur)하여 데이터 모델 저장 및 화면 재출력(render) 유발
+          currentInput.blur();
+          
+          // 만약 데이터 모델 변경이 렌더링을 유발하지 않는 일반 테이블이라면 포커스를 직접 보완 이동시킴
+          if (document.activeElement !== nextInput) {
+            nextInput.focus();
+            if (typeof nextInput.select === 'function') {
+              nextInput.select();
+            }
+          }
+        }
+      }
+    }
+  }
+});
+
+// 시인성 설정 변경 핸들러
+function changeFontScale(val) {
+  localStorage.setItem('antigravity-font-size', val);
+  document.documentElement.style.setProperty('--custom-fs', val + 'px');
+}
+
+function changeFontWeightScale(val) {
+  localStorage.setItem('antigravity-font-weight', val);
+  if (val === 'normal') {
+    document.documentElement.style.setProperty('--custom-fw', '500');
+    document.documentElement.style.setProperty('--custom-fw-bold', '700');
+  } else if (val === 'medium') {
+    document.documentElement.style.setProperty('--custom-fw', '600');
+    document.documentElement.style.setProperty('--custom-fw-bold', '800');
+  } else { // bold
+    document.documentElement.style.setProperty('--custom-fw', '700');
+    document.documentElement.style.setProperty('--custom-fw-bold', '900');
+  }
+}
+
+function changeBorderWidthScale(val) {
+  localStorage.setItem('antigravity-border-width', val);
+  document.documentElement.style.setProperty('--custom-border-w', val + 'px');
+  if (parseFloat(val) > 1.2) {
+    // 경계 선 굵기가 두꺼워지면 대비 강도를 높이기 위해 테두리 색을 더욱 선명하고 어둡게 처리
+    document.documentElement.style.setProperty('--custom-border-color', '#7088A0');
+  } else {
+    document.documentElement.style.setProperty('--custom-border-color', 'var(--border)');
+  }
+}
+
+// 초기 로딩 시 저장된 시인성 설정 복원
+(function initLegibilitySettings() {
+  const savedSize = localStorage.getItem('antigravity-font-size') || '11.5';
+  const savedWeight = localStorage.getItem('antigravity-font-weight') || 'normal';
+  const savedBorder = localStorage.getItem('antigravity-border-width') || '1';
+
+  document.getElementById('font-size-select').value = savedSize;
+  document.getElementById('font-weight-select').value = savedWeight;
+  document.getElementById('border-width-select').value = savedBorder;
+
+  changeFontScale(savedSize);
+  changeFontWeightScale(savedWeight);
+  changeBorderWidthScale(savedBorder);
+})();
+
+renderOrg();
+renderCriteriaView();
+
+// 보안인증 검사 함수
+function verifyGatePassword() {
+  const pwd = document.getElementById('gate-password').value;
+  const errorEl = document.getElementById('gate-error');
+  if (pwd === 'vudwjd') {
+    sessionStorage.setItem('antigravity-auth-pass', 'true');
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app-content-wrapper').style.display = 'block';
+  } else {
+    errorEl.style.display = 'block';
+    document.getElementById('gate-password').focus();
+  }
+}
+
+// 로딩 즉시 세션인증 유무 확인
+(function checkAuthGate() {
+  if (sessionStorage.getItem('antigravity-auth-pass') === 'true') {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app-content-wrapper').style.display = 'block';
+  } else {
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.getElementById('app-content-wrapper').style.display = 'none';
+    setTimeout(() => {
+      document.getElementById('gate-password').focus();
+    }, 100);
+  }
+})();
+
+// 마우스 우클릭, 드래그, 드래그 선택 차단
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('dragstart', e => {
+  // 평정 테이블의 드래그앤드롭 기능은 작동해야 하므로 tr 드래그 외의 일반 드래그만 차단
+  if (!e.target.closest('tr[draggable="true"]')) {
+    e.preventDefault();
+  }
+});
+
+// 개발자 도구 및 소스보기 단축키 차단 (F12, Ctrl+U, Ctrl+Shift+I/J/C 등)
+document.addEventListener('keydown', e => {
+  // 패스워드 입력칸에서 엔터 입력 시 로그인 처리 보장
+  if (e.key === 'Enter' && e.target && e.target.id === 'gate-password') {
+    e.preventDefault();
+    verifyGatePassword();
+    return;
+  }
+
+  if (
+    e.key === 'F12' || 
+    (e.ctrlKey && e.key === 'u') || 
+    (e.ctrlKey && e.key === 'U') ||
+    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c'))
+  ) {
+    e.preventDefault();
+    return false;
+  }
+});
+</script>
+</div> <!-- /#app-content-wrapper -->
+</body>
+</html>
