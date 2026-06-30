@@ -3104,25 +3104,25 @@ function renderResult(){
     });
     h+=`<div class="card mb2"><div class="card-header"><h3><span class="badge b-blue">${grade} [${series}]</span> 평정 결과 <span style="font-weight:400;font-size:12px;color:var(--text3);margin-left:8px">${emps.length}명</span> &nbsp;&nbsp; <span style="font-size:12.5px;color:var(--text3);font-weight:400;">수${dist.수} / 우${dist.우} / 미${dist.미} / 양${dist.양}</span></h3></div><div class="card-body" style="padding:0"><div class="tbl-wrap"><table>
     <colgroup>
-      <col style="width: 3.5%;">
-      <col style="width: 4.5%;">
-      <col style="width: 4.5%;">
-      <col style="width: 6.5%;">
-      <col style="width: 5.5%;">
-      <col style="width: 10.5%;">
-      <col style="width: 7.5%;">
-      <col style="width: 4.5%;">
-      <col style="width: 7.5%;">
-      <col style="width: 8.5%;">
-      <col style="width: 5.0%;">
       <col style="width: 5.0%;">
       <col style="width: 5.0%;">
       <col style="width: 6.0%;">
+      <col style="width: 5.0%;">
+      <col style="width: 9.0%;">
+      <col style="width: 8.0%;">
+      <col style="width: 5.0%;">
+      <col style="width: 5.0%;">
+      <col style="width: 8.0%;">
+      <col style="width: 6.0%;">
+      <col style="width: 4.0%;">
+      <col style="width: 4.0%;">
+      <col style="width: 5.0%;">
       <col style="width: 7.0%;">
-      <col style="width: 5.0%;">
-      <col style="width: 5.0%;">
+      <col style="width: 6.0%;">
+      <col style="width: 6.0%;">
+      <col style="width: 6.0%;">
     </colgroup>
-    <thead><tr><th>연번</th><th>2차순위</th><th>등급</th><th>성명</th><th>직렬</th><th>직위</th><th>소속단위</th><th>역</th><th>생년</th><th>현직급근속</th><th>입사구분</th><th>가점</th><th>감점</th><th>재량</th><th>활동총점</th><th>1차단위순위</th><th>1차점수</th><th>2차점수</th></tr></thead><tbody>`;
+    <thead><tr><th>2차순위</th><th>등급</th><th>성명</th><th>직렬</th><th>직위</th><th>소속단위</th><th>역</th><th>생년</th><th>현직급근속</th><th>입사구분</th><th>가점</th><th>감점</th><th>재량</th><th>합계점수</th><th>1차단위순위</th><th>1차점수</th><th>2차점수</th></tr></thead><tbody>`;
      emps.forEach((e,i)=>{
       const fr=secondTabFirstR[e.id]||{};
       const sr=secondR[e.id]||{};
@@ -3131,7 +3131,6 @@ function renderResult(){
       const rCls=rank<=3?`rank-${rank}`:'rank-n';
       const egCls=sr.evalGrade?`eg-${sr.evalGrade}`:'eg-none';
       h+=`<tr>
-        <td>${i+1}</td>
         <td><span class="rank ${rCls}">${rank}</span></td>
         <td><span class="eg ${egCls}">${sr.evalGrade||'-'}</span></td>
         <td class="td-name">${e.name}</td>
@@ -3141,8 +3140,8 @@ function renderResult(){
         <td>${e.birthYear}</td><td>${e.gradeYears}</td><td>${e.entryType}</td>
         <td class="score-pos">+${cs.가점||0}</td>
         <td class="score-neg">${cs.감점||0}</td>
-        <td>${cs.재량||0}</td>
-        <td class="score-total">${cs.총점||0}</td>
+        <td>${sr.discretion||0}</td>
+        <td class="score-total">${(cs.총점||0)+(sr.discretion||0)}</td>
         <td>${fr.unitRank||'-'}위</td>
         <td>${fr.score||0}</td>
         <td class="score-total">${sr.score||0}</td>
@@ -3297,9 +3296,9 @@ function printResult(){
   styleEl.innerHTML = `
     @media print {
       body > * { display: none !important; }
-      #print-temp-container { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; }
+      #print-temp-container { display: block !important; width: 100% !important; }
       @page {
-        size: A4 landscape;
+        size: landscape;
         margin: 10mm;
       }
       .print-table th { background-color: #0D2B55 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -3466,9 +3465,9 @@ function printScoreTable() {
   styleEl.innerHTML = `
     @media print {
       body > * { display: none !important; }
-      #print-temp-container { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; }
+      #print-temp-container { display: block !important; width: 100% !important; }
       @page {
-        size: A4 landscape;
+        size: landscape;
         margin: 10mm;
       }
       .print-table th { background-color: #0D2B55 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -3790,9 +3789,9 @@ function printSecondWithReference() {
   styleEl.innerHTML = `
     @media print {
       body > * { display: none !important; }
-      #print-temp-container { display: block !important; position: absolute; left: 0; top: 0; width: 100% !important; }
+      #print-temp-container { display: block !important; width: 100% !important; }
       @page {
-        size: A4 landscape;
+        size: landscape;
         margin: 10mm;
       }
       .print-table th { background-color: #0D2B55 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
