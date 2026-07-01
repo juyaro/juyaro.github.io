@@ -1,0 +1,1754 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>제2여객사업소 직원일람표 대시보드</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --ink: #182230;
+      --muted: #667085;
+      --line: #d0d5dd;
+      --panel: #ffffff;
+      --soft: #f5f7fb;
+      --body-bg: linear-gradient(180deg, #eef3f8 0%, #f8fafc 260px);
+      --control-bg: #ffffff;
+      --table-bg: #ffffff;
+      --table-head: #f8fafc;
+      --table-alt: #fcfdff;
+      --group-bg: #eef4ff;
+      --group-ink: #1d4ed8;
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --green: #16a34a;
+      --amber: #d97706;
+      --rose: #e11d48;
+      --violet: #7c3aed;
+      --shadow: 0 18px 45px rgba(15, 23, 42, .10);
+    }
+
+    body.theme-dark {
+      --ink: #f8fafc;
+      --muted: #cbd5e1;
+      --line: #475569;
+      --panel: #0f172a;
+      --soft: #020617;
+      --body-bg: #020617;
+      --control-bg: #1e293b;
+      --table-bg: #0f172a;
+      --table-head: #1e293b;
+      --table-alt: #1e293b;
+      --group-bg: #1e3a8a;
+      --group-ink: #cbd5e1;
+      --shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    body.theme-dark .station-type-manager {
+      background: #7c2d12 !important;
+      color: #ffedd5 !important;
+      box-shadow: inset 0 -3px 0 #f97316;
+    }
+
+    body.theme-dark .station-type-transfer {
+      background: #064e3b !important;
+      color: #d1fae5 !important;
+      box-shadow: inset 0 -3px 0 #10b981;
+    }
+
+    body.theme-dark .station-type-independent {
+      background: #1e3a8a !important;
+      color: #dbeafe !important;
+      box-shadow: inset 0 -3px 0 #3b82f6;
+    }
+
+    body.theme-dark .roster-board th, body.theme-dark .roster-board td {
+      border: 1px solid #475569;
+      color: #f8fafc;
+    }
+
+    body.theme-dark .roster-board th {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+    }
+
+    body.theme-dark .series-운영 { background: #fef08a !important; color: #1e293b !important; font-weight: bold; }
+    body.theme-dark .series-업무 { background: #bbf7d0 !important; color: #14532d !important; font-weight: bold; }
+    body.theme-dark .state-female { background: #fae8ff !important; color: #701a75 !important; font-weight: bold; }
+    body.theme-dark .person { 
+      border: 1px solid #64748b; 
+      color: #f8fafc; 
+      background: #334155; 
+      font-weight: 800;
+    }
+    body.theme-dark .person small { 
+      color: inherit; 
+      opacity: 0.85;
+      margin-left: 2px;
+    }
+    body.theme-dark .state-manager { outline: 2.5px solid #60a5fa !important; box-shadow: inset 0 0 0 1.5px #000 !important; }
+    body.theme-dark .state-leave { outline: 2.5px solid #f87171 !important; }
+    body.theme-dark .state-merit { outline: 2.5px solid #fbbf24 !important; }
+    body.theme-dark .board-summary th, body.theme-dark .board-summary td {
+      background: #1e293b;
+      color: #f8fafc;
+    }
+    body.theme-dark .board-summary .summary-female { color: #f472b6; }
+    body.theme-dark .board-summary .summary-shortage { color: #f87171; }
+    
+    /* 총괄표 등 테이블 내 가독성 및 글자색 보정 */
+    body.theme-dark .overview-table th {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+    }
+    body.theme-dark .overview-table td {
+      color: #cbd5e1 !important;
+    }
+    body.theme-dark .overview-table .total-row td {
+      background: #334155 !important;
+      color: #ffffff !important;
+    }
+    body.theme-dark .overview-table .delta-positive {
+      color: #f87171 !important;
+    }
+    body.theme-dark .overview-table .delta-negative {
+      color: #60a5fa !important;
+    }
+    body.theme-dark table.data tr.row-female td {
+      background: #4a123a;
+      color: #fbcfe8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+      background: var(--body-bg);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .app {
+      max-width: 1720px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .title p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .theme-select {
+      min-height: 38px;
+      padding: 0 34px 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--control-bg);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+    }
+
+    .btn, .file-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--control-bg);
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+      white-space: nowrap;
+    }
+
+    .btn.primary, .file-label {
+      border-color: #1d4ed8;
+      color: #fff;
+      background: #1d4ed8;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+    }
+
+    #fileInput { display: none; }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(130px, 1fr));
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .field select, .field input {
+      width: 100%;
+      height: 35px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 0 9px;
+      background: var(--control-bg);
+      color: var(--ink);
+      outline: none;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      min-height: 88px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, .06);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 27px;
+      line-height: 1;
+    }
+
+    .metric em {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-style: normal;
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      margin-top: 14px;
+      margin-bottom: 14px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .panel-head small {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .panel-body {
+      padding: 12px;
+    }
+
+    .bars {
+      display: block;
+    }
+
+    .overview-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--line);
+      background: var(--table-bg);
+      font-size: 11px;
+    }
+
+    .overview-table th, .overview-table td {
+      border: 1px solid var(--line);
+      padding: 5px 4px;
+      text-align: center;
+      vertical-align: middle;
+      word-break: keep-all;
+    }
+
+    .overview-table th {
+      background: var(--table-head);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .overview-table td:first-child {
+      text-align: left;
+      font-weight: 800;
+      width: 86px;
+    }
+
+    .overview-table tbody tr:nth-child(even) td {
+      background: var(--table-alt);
+    }
+
+    .overview-table .number {
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    .overview-table .muted {
+      color: #667085;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .overview-table .highlight {
+      color: #be185d;
+    }
+
+    .overview-table .group-row td {
+      background: var(--group-bg) !important;
+      color: var(--group-ink);
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .overview-scroll {
+      overflow: visible;
+    }
+
+    .overview-table .total-row td {
+      background: #fefce8;
+      font-weight: 900;
+    }
+
+    .overview-table .delta-positive {
+      color: #dc2626;
+      font-weight: 900;
+    }
+
+    .overview-table .delta-negative {
+      color: #2563eb;
+      font-weight: 900;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 82px 1fr 38px;
+      gap: 9px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .bar-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    .bar-track {
+      height: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #eef2f6;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      min-width: 3px;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 27px;
+      padding: 0 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--control-bg);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      vertical-align: -2px;
+      margin-right: 4px;
+    }
+
+    .board-wrap {
+      overflow: auto;
+      border-top: 1px solid var(--line);
+      background: var(--table-bg);
+    }
+
+    .roster-board {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 11px;
+    }
+
+    .roster-board th, .roster-board td {
+      width: 78px;
+      min-width: 78px;
+      height: 46px;
+      border: 1px solid #151515;
+      padding: 3px;
+      text-align: center;
+      vertical-align: middle;
+      background: var(--table-bg);
+    }
+
+    .roster-board th:first-child, .roster-board td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      width: 62px;
+      min-width: 62px;
+      background: var(--table-head);
+      font-weight: 800;
+    }
+
+    .roster-board thead th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--table-head);
+      font-weight: 800;
+    }
+
+    .roster-board thead th:first-child {
+      z-index: 4;
+    }
+
+    .station-code {
+      display: block;
+      color: #475467;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .station-name {
+      display: block;
+      margin-top: 2px;
+      word-break: keep-all;
+      line-height: 1.15;
+    }
+
+    .station-type-manager {
+      background: #fff7c2 !important;
+      box-shadow: inset 0 -3px 0 #facc15;
+    }
+
+    .station-type-transfer {
+      background: #dcfce7 !important;
+      box-shadow: inset 0 -3px 0 #22c55e;
+    }
+
+    .station-type-independent {
+      background: #dbeafe !important;
+      box-shadow: inset 0 -3px 0 #3b82f6;
+    }
+
+    .cell-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: stretch;
+    }
+
+    .person {
+      display: block;
+      width: 100%;
+      min-height: 18px;
+      padding: 2px 3px;
+      border-radius: 3px;
+      border: 1px solid rgba(15, 23, 42, .14);
+      color: #101828;
+      font: inherit;
+      line-height: 1.15;
+      text-align: center;
+      white-space: normal;
+      word-break: keep-all;
+      cursor: pointer;
+    }
+
+    .person:hover {
+      filter: brightness(.97);
+      transform: translateY(-1px);
+    }
+
+    .person small {
+      color: #344054;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    body.theme-dark .person:not(.series-운영):not(.series-업무):not(.state-female) {
+      color: var(--ink);
+    }
+
+    body.theme-dark .person:not(.series-운영):not(.series-업무):not(.state-female) small {
+      color: var(--muted);
+    }
+
+    .series-운영 { background: #fef08a; }
+    .series-업무 { background: #bbf7d0; }
+    .state-female { background: #fbcfe8; }
+    .state-manager { outline: 2px solid #2563eb; box-shadow: inset 0 0 0 1px #fff; }
+    .state-leave { outline: 2px solid var(--rose); }
+    .state-merit { outline: 2px solid var(--amber); }
+
+    .board-summary th, .board-summary td {
+      height: 24px;
+      background: color-mix(in srgb, var(--table-head) 78%, #facc15 22%);
+      font-weight: 800;
+    }
+
+    .board-summary th {
+      color: #344054;
+    }
+
+    .board-summary td {
+      color: #1d2939;
+      font-size: 11px;
+    }
+
+    .board-summary .summary-female {
+      color: #be185d;
+    }
+
+    .board-summary .summary-shortage {
+      color: #dc2626;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, .42);
+      z-index: 50;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(760px, 100%);
+      max-height: min(82vh, 780px);
+      overflow: auto;
+      border: 1px solid #d7deea;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(15, 23, 42, .24);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #d0d5dd;
+      border-radius: 6px;
+      background: var(--control-bg);
+      color: var(--ink);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 16px 18px 18px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .detail-table th, .detail-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .detail-table th {
+      width: 150px;
+      background: var(--table-head);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tables {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(360px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    table.data th, table.data td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 7px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    table.data th {
+      color: #475467;
+      background: var(--table-head);
+      font-size: 11px;
+    }
+
+    table.data tr[data-employee-id] {
+      cursor: pointer;
+    }
+
+    table.data tr[data-employee-id]:hover td {
+      background: var(--table-alt);
+    }
+
+    table.data tr.row-female td {
+      background: #fff1f7;
+    }
+
+    .section-data {
+      table-layout: fixed;
+    }
+
+    .section-list {
+      display: flex;
+      min-height: 96px;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .section-person {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 1fr auto;
+      gap: 3px 6px;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--control-bg);
+      color: var(--ink);
+      font: inherit;
+      text-align: left;
+      line-height: 1.25;
+      cursor: pointer;
+    }
+
+    .section-person:hover {
+      border-color: #9cc7ff;
+      background: var(--table-alt);
+    }
+
+    .section-person.state-female {
+      background: #fff1f7;
+      border-color: #f9a8d4;
+    }
+
+    .section-person strong {
+      font-size: 12px;
+    }
+
+    .section-person span {
+      color: #475467;
+      font-size: 11px;
+    }
+
+    .section-person em {
+      grid-column: 1 / -1;
+      color: #667085;
+      font-size: 11px;
+      font-style: normal;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 160px;
+      color: #667085;
+      text-align: center;
+      line-height: 1.55;
+      border: 1px dashed #b9c4d0;
+      border-radius: 8px;
+      background: #fbfdff;
+    }
+
+    .print-title {
+      display: none;
+      text-align: center;
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    @media (max-width: 1180px) {
+      .filters { grid-template-columns: repeat(4, minmax(130px, 1fr)); }
+      .summary-grid { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+      .overview { grid-template-columns: 1fr; }
+      .tables { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .app { padding: 14px; }
+      .topbar { align-items: stretch; flex-direction: column; }
+      .actions { justify-content: flex-start; }
+      .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .bars { grid-template-columns: 1fr; }
+      .tables { grid-template-columns: 1fr; }
+      .title h1 { font-size: 22px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .app { max-width: none; padding: 0; }
+      .topbar, .filters, .overview, .actions, .panel-head small { display: none !important; }
+      .modal { display: none !important; }
+      .print-title { display: block; }
+      .summary-grid { grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 8px; }
+      .metric { min-height: 54px; padding: 6px; box-shadow: none; border-color: #aaa; }
+      .metric strong { font-size: 18px; margin-top: 3px; }
+      .metric em { display: none; }
+      .panel { box-shadow: none; border: 0; }
+      .panel-head { padding: 4px 0; border: 0; }
+      .board-wrap { overflow: visible; border: 0; }
+      .roster-board { width: 100%; font-size: 7px; }
+      .roster-board th, .roster-board td { width: auto; min-width: 0; height: 31px; padding: 1px; }
+      .person { min-height: 12px; padding: 1px; border: 0; }
+      .tables { grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+      @page { size: A3 landscape; margin: 8mm; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <section class="title">
+        <h1>제2여객사업소 직원일람표</h1>
+        <p id="sourceInfo">엑셀 업로드 전입니다. 양식 골격만 표시되며 모든 값은 업로드한 전직원 명부에서 채워집니다.</p>
+      </section>
+      <section class="actions">
+        <select class="theme-select" id="themeSelect" aria-label="화면 모드">
+          <option value="system">시스템 모드</option>
+          <option value="light">일반 모드</option>
+          <option value="dark">다크 모드</option>
+        </select>
+        <label class="file-label" for="fileInput">엑셀 업로드</label>
+        <input id="fileInput" type="file" accept=".xlsx,.xls" />
+        <button class="btn" id="excelBtn" disabled>엑셀 다운로드</button>
+        <button class="btn" id="pdfBtn" disabled>PDF 저장</button>
+        <button class="btn primary" id="printBtn">출력</button>
+      </section>
+    </div>
+
+    <section class="filters" aria-label="필터">
+      <div class="field"><label for="q">검색</label><input id="q" placeholder="성명, 사번, 역명" /></div>
+      <div class="field"><label for="teamFilter">팀/역/분소</label><select id="teamFilter"></select></div>
+      <div class="field"><label for="seriesFilter">직렬</label><select id="seriesFilter"></select></div>
+      <div class="field"><label for="gradeFilter">직급</label><select id="gradeFilter"></select></div>
+      <div class="field"><label for="genderFilter">남/여</label><select id="genderFilter"></select></div>
+      <div class="field"><label for="stateFilter">근무상태</label><select id="stateFilter"></select></div>
+      <div class="field"><label for="groupFilter">근무조</label><select id="groupFilter"></select></div>
+      <div class="field"><label for="specialFilter">특이사항</label><select id="specialFilter"></select></div>
+    </section>
+
+    <h2 class="print-title">제2여객사업소 직원일람표</h2>
+    <section class="summary-grid" id="summary"></section>
+
+    <section class="panel" id="boardPanel">
+      <div class="panel-head">
+        <h2>01 양식형 배치 보드</h2>
+        <small>역별 / 근무조별 자동 배치</small>
+      </div>
+      <div class="panel-body">
+        <div class="legend">
+          <span><i class="series-운영"></i>운영</span>
+          <span><i class="series-업무"></i>업무</span>
+          <span><i class="state-female"></i>여자직원</span>
+          <span><i style="background:#fff; outline:2px solid #2563eb;"></i>관리·환승·독립역장</span>
+          <span><i style="background:#fff7c2;"></i>관리역</span>
+          <span><i style="background:#dcfce7;"></i>환승역</span>
+          <span><i style="background:#dbeafe;"></i>독립역</span>
+        </div>
+      </div>
+      <div class="board-wrap">
+        <table class="roster-board" id="board"></table>
+      </div>
+    </section>
+
+    <section class="tables">
+      <article class="panel">
+        <div class="panel-head"><h2>사업소</h2><small id="officeCount">0명</small></div>
+        <div class="panel-body"><div id="officeTable"></div></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><h2>전자운용부</h2><small id="electronicCount">0명</small></div>
+        <div class="panel-body"><div id="electronicTable"></div></div>
+      </article>
+    </section>
+
+    <section class="overview">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>정원 · 현원 · 급수 현황 총괄표</h2>
+          <small id="overviewNote">업로드 대기</small>
+        </div>
+        <div class="panel-body">
+          <div class="bars" id="stationBars"></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="tables">
+      <article class="panel">
+        <div class="panel-head"><h2>휴직자</h2><small id="leaveCount">0명</small></div>
+        <div class="panel-body"><div id="leaveTable"></div></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><h2>공로연수자 · 1966년생</h2><small id="meritCount">0명</small></div>
+        <div class="panel-body"><div id="meritTable"></div></div>
+      </article>
+    </section>
+  </main>
+
+  <div class="modal" id="employeeModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="employeeModalTitle">
+      <div class="modal-head">
+        <h3 id="employeeModalTitle">직원 인사 정보</h3>
+        <button class="modal-close" id="employeeModalClose" type="button" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body" id="employeeModalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const stationPlan = [
+      ["201","장산"],["202","중동"],["203","해운대"],["204","동백"],["205","벡스코"],["206","센텀시티"],["207","민락"],["208","수영"],["209","광안"],["210","금련산"],["211","남천"],["212","경성대부경대"],["213","대연"],["214","못골"],["215","지게골"],["216","문현"],["217","금융센터"],["218","전포"],["220","부암"],["221","가야"],["222","동의대"],["223","개금"],["224","냉정"],["225","주례"],["226","감전"],["227","사상"],["228","덕포"],["229","모덕"],["230","모라"],["231","구남"],["232","구명"],["233","덕천"],["234","수정"],["235","화명"],["236","율리"],["237","동원"],["238","금곡"],["239","호포"],["240","증산"],["241","부산대양산캠퍼스"],["242","남양산"],["243","양산"]
+    ];
+    const stationQuota = {
+      "장산": 17, "중동": 8, "해운대": 8, "동백": 8, "벡스코": 8, "센텀시티": 18, "민락": 8, "수영": 17, "광안": 13, "금련산": 8, "남천": 8, "경성대부경대": 18, "대연": 8, "못골": 8, "지게골": 8, "문현": 13, "금융센터": 8, "전포": 13, "부암": 8, "가야": 8, "동의대": 13, "개금": 8, "냉정": 13, "주례": 8, "감전": 8, "사상": 17, "덕포": 8, "모덕": 13, "모라": 8, "구남": 8, "구명": 13, "덕천": 21, "수정": 8, "화명": 14, "율리": 8, "동원": 8, "금곡": 8, "호포": 14, "증산": 8, "부산대양산캠퍼스": 8, "남양산": 8, "양산": 17
+    };
+    const stationQuotaTotal = Object.values(stationQuota).reduce((sum, value) => sum + value, 0);
+    const gradeColumns = ["1급", "2급", "3급", "4급", "5급", "6급", "7급", "8급", "9급"];
+    const totalQuota = 514;
+    const gradeQuota = { "1급": 1, "2급": 2, "3급": 49, "4급": 108, "5급": 95, "6급": 75, "7급": 66, "8급": 64, "9급": 54 };
+    const boardRows = ["일근", "A조", "B조", "C조", "D조"];
+    const fieldAliases = {
+      employeeNo: ["사번"],
+      division1: ["소속1"],
+      division2: ["소속2"],
+      department: ["부"],
+      supportOperation: ["__colF"],
+      team: ["팀,역,분소", "팀", "역", "분소"],
+      series: ["직렬"],
+      grade: ["직급"],
+      position: ["__colI", "직위"],
+      appointment: ["보임현황"],
+      name: ["성명"],
+      birth: ["생년월일"],
+      gender: ["성별"],
+      workType: ["근무형태"],
+      state: ["근무상태"],
+      avState: ["__colAV"],
+      group: ["근무조"],
+      leaveType: ["__colAX", "휴직(11)", "휴직", "휴직종류"],
+      leavePeriod: ["__colAY", "휴직기간"],
+      leaveEnd: ["__colAZ", "휴직종료일(13)", "휴직종료일", "종료일"],
+      jobArea: ["업무분야"],
+      hireType: ["입사구분"],
+      hireDate: ["임용일", "입사일"],
+      finalHireDate: ["최종 입사일", "최종입사일"],
+      appointmentDate: ["현보임일", "보임일"],
+      promotionDate: ["현승진일", "승진일"],
+      currentGradeTenure: ["현직급근속연수"],
+      appointmentTenure: ["현보임일근속연수"],
+      hireTenure: ["입사근속연수"],
+      phone: ["전화번호", "연락처", "휴대폰"],
+      address: ["주소"],
+      memo: ["비고", "메모"],
+      signal: ["신호기"]
+    };
+    let rawRows = [];
+    let employees = [];
+    let filtered = [];
+    let sourceName = "";
+    let mediaTheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const $ = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#039;" }[m]));
+
+    function applyTheme(mode = localStorage.getItem("employeeDashboardTheme") || "system") {
+      const dark = mode === "dark" || (mode === "system" && mediaTheme.matches);
+      document.body.classList.toggle("theme-dark", dark);
+      $("themeSelect").value = mode;
+    }
+
+    function excelDateToText(value) {
+      if (!value) return "";
+      if (value instanceof Date) return value.toISOString().slice(0, 10);
+      if (typeof value === "number") {
+        const d = new Date(Date.UTC(1899, 11, 30) + value * 86400000);
+        return d.toISOString().slice(0, 10);
+      }
+      const text = String(value);
+      if (/^\d{5}$/.test(text)) return excelDateToText(Number(text));
+      return text;
+    }
+
+    function birthYear(value) {
+      const text = excelDateToText(value);
+      const match = text.match(/^(\d{4})/);
+      return match ? Number(match[1]) : null;
+    }
+
+    function normalizeStation(value) {
+      let text = String(value || "").trim();
+      text = text.replace(/\s/g, "");
+      text = text.replace(/ㆍ/g, "");
+      text = text.replace(/관리역|역|분소|전자|운용/g, "");
+      text = text.replace("국제금융센터부산은행", "금융센터");
+      text = text.replace("경성대부경대", "경성대부경대");
+      text = text.replace("부산대양산캠퍼스", "부산대양산캠퍼스");
+      return text;
+    }
+
+    function mapStation(value) {
+      const key = normalizeStation(value);
+      if (!key) return value || "미지정";
+      const normalizedStations = stationPlan.map(([code, name]) => ({ code, name, key: normalizeStation(name) }));
+      const exact = normalizedStations.find((station) => station.key === key);
+      if (exact) return exact.name;
+      const containsStation = normalizedStations.find((station) => station.key.length >= 2 && key.includes(station.key));
+      if (containsStation) return containsStation.name;
+      const containsKey = normalizedStations.find((station) => key.length >= 3 && station.key.includes(key));
+      return containsKey ? containsKey.name : (value || "미지정");
+    }
+
+    function getField(row, aliases) {
+      for (const name of aliases) {
+        if (Object.prototype.hasOwnProperty.call(row, name)) return row[name] ?? "";
+      }
+      return "";
+    }
+
+    function mapEmployee(row, index) {
+      const emp = {};
+      for (const [key, aliases] of Object.entries(fieldAliases)) emp[key] = getField(row, aliases);
+      emp._id = index;
+      emp._raw = row;
+      emp.station = mapStation(emp.team);
+      emp.birthText = excelDateToText(emp.birth);
+      emp.birthYear = birthYear(emp.birth);
+      emp.isLeave = String(emp.state).includes("휴직") || String(emp.leaveType).includes("휴직") || String(emp.avState).includes("휴직");
+      emp.isMerit = String(emp.appointment).includes("공로연수") || emp.birthYear === 1966;
+      emp.isIntern = String(emp.series).includes("인턴") || String(emp.grade).includes("인턴") || String(emp.position).includes("인턴");
+      emp.isStationManager = /관리역장|환승역장|독립역장/.test(String(emp.position));
+      emp.groupLabel = emp.isStationManager || emp.workType === "현업일근" || !emp.group ? "일근" : String(emp.group).replace(/\s/g, "");
+      return emp;
+    }
+
+    function uniqueValues(key) {
+      return [...new Set(employees.map((e) => e[key]).filter(Boolean).map(String))].sort((a, b) => a.localeCompare(b, "ko"));
+    }
+
+    function fillSelect(id, values, label) {
+      const el = $(id);
+      const previous = el.value;
+      el.innerHTML = `<option value="">${label}</option>` + values.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+      if ([...el.options].some((o) => o.value === previous)) el.value = previous;
+    }
+
+    function countBy(list, key) {
+      return list.reduce((acc, item) => {
+        const value = String(item[key] || "미지정");
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function employeeSearchText(e) {
+      return [e.division1, e.division2, e.department, e.supportOperation, e.team, e.jobArea, e.position, e.appointment, e.state, e.avState, e.leaveType]
+        .filter(Boolean)
+        .map(String)
+        .join(" ");
+    }
+
+    function sectionLabel(e, labels) {
+      const text = employeeSearchText(e).replace(/\s/g, "");
+      return labels.find((label) => text.includes(label)) || "";
+    }
+
+    function getElectronicLabel(e) {
+      const text = employeeSearchText(e).replace(/\s/g, "");
+      if (text.includes("범내골중정비")) return "전자운용";
+      if (!text.includes("전자")) return "";
+      if (text.includes("구남전자분소")) return "구남전자분소";
+      if (text.includes("부암전자분소")) return "부암전자분소";
+      if (text.includes("해운대전자분소") || text.includes("해운대전자본소")) return "해운대전자본소";
+      if (text.includes("전자운용부") || text.includes("전자운용")) return "전자운용";
+      if (text.includes("전자운용")) return "전자운용";
+      return "";
+    }
+
+    function getOfficeLabel(e) {
+      const text = employeeSearchText(e).replace(/\s/g, "");
+      const teamBlank = !String(e.team || "").trim();
+      const supportOperation = String(e.supportOperation || "").replace(/\s/g, "");
+      if (e.isStationManager) return "";
+      if (text.includes("전자")) return "";
+      if (teamBlank && (String(e.position).includes("소장") || String(e.position).includes("부장"))) return "소장, 부장";
+      if (text.includes("지원팀")) return "지원팀";
+      if (text.includes("운영팀")) return "운영팀";
+      if (supportOperation.includes("지원")) return "지원팀";
+      if (supportOperation.includes("운영")) return "운영팀";
+      return sectionLabel(e, ["지원팀", "운영팀"]);
+    }
+
+    function getBottomCategory(e) {
+      if (e.isLeave) return { key: "leave", label: "휴직자" };
+      if (e.isMerit) return { key: "merit", label: "공로연수자" };
+      const electronic = getElectronicLabel(e);
+      if (electronic) return { key: "electronic", label: electronic };
+      const office = getOfficeLabel(e);
+      if (office) return { key: "office", label: office };
+      return null;
+    }
+
+    function renderSummary(list) {
+      const counted = list.filter((e) => !e.isMerit);
+      const total = counted.length;
+      const present = counted.filter((e) => !e.isLeave).length;
+      const male = counted.filter((e) => e.gender === "남").length;
+      const female = counted.filter((e) => e.gender === "여").length;
+      const leave = counted.filter((e) => e.isLeave).length;
+      const merit = list.filter((e) => e.isMerit).length;
+      const stations = new Set(counted.map((e) => e.station).filter(Boolean)).size;
+      const groups = countBy(counted, "groupLabel");
+      const metrics = [
+        ["총원", total, `공로연수 제외 · ${stations}개 역/팀`],
+        ["근무인원", present, "휴직·공로연수 제외"],
+        ["남", male, total ? `${Math.round(male / total * 100)}%` : "-"],
+        ["여", female, total ? `${Math.round(female / total * 100)}%` : "-"],
+        ["휴직자", leave, "근무상태/휴직열 기준"],
+        ["공로연수", merit, "총원·현원 제외"],
+        ["4조2교대", counted.filter((e) => e.workType === "4조2교대").length, "근무형태 기준"],
+        ["일근", groups["일근"] || 0, "현업일근/조 미지정"]
+      ];
+      $("summary").innerHTML = metrics.map(([label, value, note]) => `<article class="metric"><span>${label}</span><strong>${value}</strong><em>${note}</em></article>`).join("");
+    }
+
+    function boardList(list) {
+      return list.filter((e) => !getBottomCategory(e) && stationPlan.some(([, name]) => name === e.station));
+    }
+
+    function gradeCounts(list) {
+      return gradeColumns.reduce((acc, grade) => {
+        acc[grade] = list.filter((e) => String(e.grade).replace(/\s/g, "") === grade).length;
+        return acc;
+      }, {});
+    }
+
+    function gradeRow(label, quota, current, counts, note = "", rowClass = "") {
+      const isDelta = label === "과부족";
+      const currentClass = isDelta ? deltaClass(current) : "";
+      const cells = gradeColumns.map((grade) => {
+        const value = counts[grade] ?? 0;
+        return `<td class="number ${isDelta ? deltaClass(value) : ""}">${value}</td>`;
+      }).join("");
+      return `<tr class="${rowClass}"><td>${escapeHtml(label)}</td><td class="number">${quota ?? ""}</td><td class="number ${currentClass}">${current ?? ""}</td>${cells}<td class="muted">${escapeHtml(note)}</td></tr>`;
+    }
+
+    function stationGradeRow(station, people) {
+      const quota = stationQuota[station] ?? "";
+      const total = people.length;
+      const counts = gradeCounts(people);
+      const duty = people.filter((e) => e.isStationManager);
+      const note = duty.length ? `운영역장 ${duty.length}명` : "";
+      const cells = gradeColumns.map((grade) => `<td class="number">${counts[grade] ?? 0}</td>`).join("");
+      return `<tr><td>${escapeHtml(station)}</td><td class="number">${quota}</td><td class="number">${total}</td>${cells}<td class="muted">${escapeHtml(note)}</td></tr>`;
+    }
+
+    function deltaClass(value) {
+      if (value > 0) return "delta-positive";
+      if (value < 0) return "delta-negative";
+      return "";
+    }
+
+    function renderBars(list) {
+      const boardEmployees = boardList(list);
+      const office = list.filter((e) => !e.isMerit && getOfficeLabel(e));
+      const officeElectronic = list.filter((e) => !e.isMerit && getElectronicLabel(e));
+      const electronicSections = ["전자운용", "구남전자분소", "부암전자분소", "해운대전자본소"];
+      const present = list.filter((e) => !e.isMerit);
+      const presentCounts = gradeCounts(present);
+      const deltaCounts = gradeColumns.reduce((acc, grade) => {
+        acc[grade] = (presentCounts[grade] || 0) - (gradeQuota[grade] || 0);
+        return acc;
+      }, {});
+      const duty = boardEmployees.filter((e) => e.isStationManager);
+      const duty4 = duty.filter((e) => String(e.grade).replace(/\s/g, "") === "4급").length;
+      const duty5 = duty.filter((e) => String(e.grade).replace(/\s/g, "") === "5급").length;
+      const rows = [
+        gradeRow("정원", totalQuota, "", gradeQuota, "", "total-row"),
+        gradeRow("현원", "", present.length, presentCounts, "휴직자 포함"),
+        gradeRow("과부족", "", present.length - totalQuota, deltaCounts, "현원-정원"),
+        gradeRow("사업소(운영)", "", office.length, gradeCounts(office), "소장·부장·지원·운영"),
+        gradeRow("사업소(전자)", "", officeElectronic.length, gradeCounts(officeElectronic), "전자운용·전자분소"),
+        gradeRow("운영부(계)", "", office.length + boardEmployees.length, gradeCounts([...office, ...boardEmployees]), ""),
+        gradeRow("역 근무", stationQuotaTotal, boardEmployees.length, gradeCounts(boardEmployees), "배치 보드 인원"),
+        `<tr class="group-row"><td colspan="13">관리역(환승·독립역) 당무책임자</td></tr>`,
+        `<tr><td>운영역장</td><td></td><td class="number">${duty.length}</td><td colspan="3"></td><td class="number">${duty4}</td><td class="number">${duty5}</td><td colspan="4"></td><td class="muted">4급 ${duty4}명 · 5급 ${duty5}명</td></tr>`,
+        `<tr class="group-row"><td colspan="13">역별 정원 · 현원 · 급수 현황</td></tr>`,
+        ...stationPlan.map(([, station]) => stationGradeRow(station, boardEmployees.filter((e) => e.station === station))),
+        `<tr class="group-row"><td colspan="13">전자운용부 · 전자분소 급수 현황</td></tr>`,
+        gradeRow("전자분소계", "", officeElectronic.length, gradeCounts(officeElectronic), "휴직자 포함"),
+        ...electronicSections.map((section) => {
+          const sectionPeople = officeElectronic.filter((e) => getElectronicLabel(e) === section);
+          return gradeRow(section, "", sectionPeople.length, gradeCounts(sectionPeople), "");
+        })
+      ].join("");
+      $("stationBars").innerHTML = list.length ? `<div class="overview-scroll"><table class="overview-table">
+        <thead><tr><th>구분</th><th>정원/계</th><th>현원</th>${gradeColumns.map((grade) => `<th>${grade}</th>`).join("")}<th>비고</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : `<div class="empty">엑셀 파일을 업로드하면 전직원 배치 총괄표가 표시됩니다.</div>`;
+      const countedTotal = list.filter((e) => !e.isMerit).length;
+      $("overviewNote").textContent = sourceName ? `${sourceName} · 총원 ${countedTotal.toLocaleString("ko-KR")}명` : "업로드 대기";
+    }
+
+    function personHtml(e) {
+      const classes = [`person`, `series-${String(e.series).replace(/\s/g, "")}`];
+      if (e.gender === "여") classes.push("state-female");
+      if (e.isStationManager) classes.push("state-manager");
+      if (e.isLeave) classes.push("state-leave");
+      if (e.isMerit) classes.push("state-merit");
+      const grade = String(e.grade || "").replace("급", "");
+      const isQualified = String(e.signal).trim() === "적합";
+      const isSignalStation = getSignalRequirement(e.station) !== null;
+      const btnStyle = (isQualified && isSignalStation) ? ' style="border-bottom: 2px solid #1d4ed8; font-weight: bold;"' : '';
+      return `<button class="${classes.join(" ")}"${btnStyle} type="button" data-employee-id="${e._id}" title="${escapeHtml(e.team)} / ${escapeHtml(e.position)} / ${escapeHtml(e.appointment)}">${escapeHtml(e.name || "-")}<small>${escapeHtml(grade)}</small></button>`;
+    }
+
+    function stationHeaderType(people, name) {
+      if (name === "사상") return "manager";
+      const manager = people.find((e) => e.isStationManager);
+      const text = manager ? `${manager.position || ""} ${manager.appointment || ""}` : "";
+      if (text.includes("환승역장")) return "transfer";
+      if (text.includes("독립역장")) return "independent";
+      if (text.includes("관리역장")) return "manager";
+      return "";
+    }
+
+    function shiftShortage(people, station) {
+      const quota = stationQuota[station] ?? 0;
+      const target = Math.floor(quota / 4);
+      const shiftRows = ["A조", "B조", "C조", "D조"];
+      return shiftRows.reduce((sum, row) => {
+        const current = people.filter((e) => e.groupLabel === row).length;
+        return sum + Math.max(0, target - current);
+      }, 0);
+    }
+
+    function getSignalRequirement(station) {
+      const signalStations = {
+        "장산": 8, "벡스코": 8, "수영": 8, "광안": 6, "경성대부경대": 8, "전포": 6, "동의대": 8, "사상": 8, "구명": 6, "덕천": 10, "화명": 6, "호포": 6, "양산": 8, "증산": 8
+      };
+      return signalStations[station] || null;
+    }
+
+    function renderBoard(list) {
+      const byStation = {};
+      const boardPeople = [];
+      for (const e of list) {
+        if (getBottomCategory(e) || !stationPlan.some(([, name]) => name === e.station)) continue;
+        const station = e.station;
+        const row = boardRows.includes(e.groupLabel) ? e.groupLabel : "일근";
+        byStation[station] ??= {};
+        byStation[station][row] ??= [];
+        byStation[station][row].push(e);
+        boardPeople.push(e);
+      }
+      const head = `<thead><tr><th>구분</th>${stationPlan.map(([code, name]) => {
+        const type = stationHeaderType(list.filter((e) => !e.isMerit && e.station === name), name);
+        const className = type ? ` class="station-type-${type}"` : "";
+        return `<th${className}><span class="station-code">${code}</span><span class="station-name">${escapeHtml(name)}</span></th>`;
+      }).join("")}</tr></thead>`;
+      const bodyRows = boardRows.map((row) => {
+        const cells = stationPlan.map(([, station]) => {
+          const people = (byStation[station]?.[row] || []).sort((a, b) => String(a.grade).localeCompare(String(b.grade), "ko"));
+          return `<td><div class="cell-stack">${people.map(personHtml).join("")}</div></td>`;
+        });
+        return `<tr><td>${row}</td>${cells.join("")}</tr>`;
+      }).join("");
+      const totalShiftShortage = stationPlan.reduce((sum, [, station]) => {
+        const people = boardPeople.filter((e) => e.station === station);
+        return sum + shiftShortage(people, station);
+      }, 0);
+      
+      let totalQualified = 0;
+      let totalReq = 0;
+      stationPlan.forEach(([, name]) => {
+        const req = getSignalRequirement(name);
+        if (req !== null) {
+          totalReq += req;
+          const people = boardPeople.filter((e) => e.station === name);
+          const qualified = people.filter((e) => String(e.signal).trim() === "적합").length;
+          totalQualified += qualified;
+        }
+      });
+
+      const summaryRows = [
+        [`정원 ${stationQuotaTotal}`, (people, station) => stationQuota[station] ?? ""],
+        [`현원 ${boardPeople.length}`, (people) => people.length],
+        ["남자", (people) => people.filter((e) => e.gender === "남").length],
+        ["여자", (people) => people.filter((e) => e.gender === "여").length, "summary-female"],
+        [`교대부족 ${totalShiftShortage}`, (people, station) => shiftShortage(people, station), "summary-shortage"],
+        [`신호기 ${totalQualified}/${totalReq}`, (people, name) => {
+          const req = getSignalRequirement(name);
+          if (req === null) return "";
+          const qualified = people.filter((e) => String(e.signal).trim() === "적합").length;
+          return `${qualified}/${req}명`;
+        }]
+      ].map(([label, getter, className]) => {
+        const cells = stationPlan.map(([, station]) => {
+          const people = boardPeople.filter((e) => e.station === station);
+          return `<td class="${className || ""}">${getter(people, station)}</td>`;
+        }).join("");
+        return `<tr><th>${label}</th>${cells}</tr>`;
+      }).join("");
+      $("board").innerHTML = head + `<tbody>${bodyRows}</tbody><tfoot class="board-summary">${summaryRows}</tfoot>`;
+    }
+
+    function renderTable(id, rows, emptyText, showSection = false) {
+      if (!rows.length) {
+        $(id).innerHTML = `<div class="empty">${emptyText}</div>`;
+        return;
+      }
+      const sectionHead = showSection ? "<th>구분</th>" : "";
+      $(id).innerHTML = `<table class="data"><thead><tr>${sectionHead}<th>성명</th><th>직급</th><th>팀/역</th><th>상태</th><th>생년월일</th></tr></thead><tbody>${rows.map((e) => `
+        <tr data-employee-id="${e._id}" class="${e.gender === "여" ? "row-female" : ""}">${showSection ? `<td>${escapeHtml(e.sectionLabel || "")}</td>` : ""}<td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.grade)}</td><td>${escapeHtml(e.team)}</td><td>${escapeHtml(e.appointment || e.state || e.leaveType || e.position)}</td><td>${escapeHtml(e.birthText)}</td></tr>
+      `).join("")}</tbody></table>`;
+    }
+
+    function renderLeaveTable(rows) {
+      if (!rows.length) {
+        $("leaveTable").innerHTML = `<div class="empty">휴직자가 없습니다.</div>`;
+        return;
+      }
+      const leaveEndText = (e) => {
+        const end = excelDateToText(e.leaveEnd);
+        if (end) return end;
+        const period = excelDateToText(e.leavePeriod);
+        return period.includes("~") ? period.split("~").pop().trim() : "";
+      };
+      const leaveEndTime = (e) => {
+        const text = leaveEndText(e).replace(/[.\/]/g, "-");
+        const match = text.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+        return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime() : Number.MAX_SAFE_INTEGER;
+      };
+      const leavePeriodHtml = (e) => {
+        const period = excelDateToText(e.leavePeriod);
+        const end = leaveEndText(e);
+        if (period.includes("~")) {
+          const [start, ...rest] = period.split("~");
+          const periodEnd = rest.join("~").trim();
+          return `${escapeHtml(start.trim())}~<strong>${escapeHtml(periodEnd || end)}</strong>`;
+        }
+        if (period && end) return `${escapeHtml(period)}~<strong>${escapeHtml(end)}</strong>`;
+        if (end) return `<strong>${escapeHtml(end)}</strong>`;
+        return escapeHtml(period);
+      };
+      const sortedRows = rows.slice().sort((a, b) => leaveEndTime(a) - leaveEndTime(b) || String(a.name).localeCompare(String(b.name), "ko"));
+      $("leaveTable").innerHTML = `<table class="data"><thead><tr><th>성명</th><th>직급</th><th>팀/역</th><th>휴직종류</th><th>휴직기간</th></tr></thead><tbody>${sortedRows.map((e) => `
+        <tr data-employee-id="${e._id}" class="${e.gender === "여" ? "row-female" : ""}">
+          <td>${escapeHtml(e.name)}</td>
+          <td>${escapeHtml(e.grade)}</td>
+          <td>${escapeHtml(e.team)}</td>
+          <td>${escapeHtml(e.leaveType || e.state || e.avState)}</td>
+          <td>${leavePeriodHtml(e)}</td>
+        </tr>
+      `).join("")}</tbody></table>`;
+    }
+
+    function sectionRank(e) {
+      const text = employeeSearchText(e).replace(/\s/g, "");
+      if (e.sectionLabel === "소장, 부장") {
+        if (String(e.position).includes("소장") || String(e.appointment).includes("소장")) return 0;
+        if (String(e.position).includes("부장") || String(e.appointment).includes("부장")) return 1;
+      }
+      if (e.sectionLabel === "전자운용") {
+        if (String(e.position).includes("부장") || String(e.appointment).includes("부장")) return 0;
+        if (text.includes("범내골중정비")) return 2;
+        return 1;
+      }
+      return 9;
+    }
+
+    function sortPeople(rows) {
+      return rows.slice().sort((a, b) =>
+        sectionRank(a) - sectionRank(b) ||
+        String(a.grade).localeCompare(String(b.grade), "ko", { numeric: true }) ||
+        String(a.name).localeCompare(String(b.name), "ko")
+      );
+    }
+
+    function sectionPersonHtml(e) {
+      const text = employeeSearchText(e).replace(/\s/g, "");
+      let status = e.appointment || e.position || e.state || e.leaveType || "";
+      if (e.sectionLabel === "소장, 부장") {
+        status = String(e.position).includes("소장") || String(e.appointment).includes("소장") ? "소장" : "부장";
+      } else if (e.sectionLabel === "전자운용") {
+        if (String(e.position).includes("부장") || String(e.appointment).includes("부장")) status = "부장";
+        else if (text.includes("범내골중정비")) status = "범내골중정비";
+        else status = "전자운용 직원";
+      }
+      return `<button class="section-person ${e.gender === "여" ? "state-female" : ""}" type="button" data-employee-id="${e._id}">
+        <strong>${escapeHtml(e.name || "-")}</strong>
+        <span>${escapeHtml(e.grade || "")}</span>
+        <em>${escapeHtml(status)}${e.team ? ` · ${escapeHtml(e.team)}` : ""}</em>
+      </button>`;
+    }
+
+    function renderSectionTable(id, rows, columns, emptyText) {
+      if (!rows.length) {
+        $(id).innerHTML = `<div class="empty">${emptyText}</div>`;
+        return;
+      }
+      const grouped = columns.reduce((acc, column) => ({ ...acc, [column]: [] }), {});
+      rows.forEach((row) => grouped[row.sectionLabel]?.push(row));
+      const head = columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("");
+      const body = columns.map((column) => {
+        const people = sortPeople(grouped[column] || []);
+        return `<td><div class="section-list">${people.map(sectionPersonHtml).join("")}</div></td>`;
+      }).join("");
+      $(id).innerHTML = `<table class="data section-data"><thead><tr>${head}</tr></thead><tbody><tr>${body}</tr></tbody></table>`;
+    }
+
+    function showEmployeeModal(emp) {
+      if (!emp) return;
+      const detailValue = (value) => value instanceof Date ? excelDateToText(value) : String(value ?? "");
+      const clean = (value) => detailValue(value).trim();
+      const compact = (values, separator = " / ") => values.map(clean).filter(Boolean).join(separator);
+      const withTenure = (date, tenure) => {
+        const dateText = clean(date);
+        const tenureText = clean(tenure);
+        if (dateText && tenureText) return `${dateText} (${tenureText})`;
+        return dateText || tenureText;
+      };
+      const identity = `${clean(emp.name)}${compact([emp.employeeNo, emp.gender], ", ") ? ` (${compact([emp.employeeNo, emp.gender], ", ")})` : ""}`;
+      const org = compact([emp.division1, emp.division2, emp.department, emp.team], " > ");
+      const job = compact([emp.series, emp.grade, emp.position, emp.appointment]);
+      
+      // 근무 정보에서 '재직' 상태 텍스트를 제거하고, 신호기 적합/부적합 표기 추가
+      let stateVal = emp.state || emp.avState;
+      if (String(stateVal).trim() === "재직") {
+        stateVal = "";
+      }
+      const workParts = [emp.workType, emp.groupLabel, stateVal].map(clean).filter(Boolean);
+      const signalText = String(emp.signal).trim() === "적합" ? "신호기(적합)" : "신호기(부적합)";
+      workParts.push(signalText);
+      const work = workParts.join(" / ");
+      
+      const hire = compact([withTenure(emp.finalHireDate || emp.hireDate, emp.hireTenure), emp.hireType]);
+      const appointment = withTenure(emp.appointmentDate, emp.appointmentTenure);
+      const promotion = withTenure(emp.promotionDate, emp.currentGradeTenure);
+      const leave = compact([emp.leaveType, emp.leavePeriod, emp.leaveEnd]);
+      const baseRows = [
+        ["직원", identity],
+        ["생년월일", emp.birthText],
+        ["소속", org],
+        ["역 배치", emp.station],
+        ["직무", job],
+        ["근무", work],
+        ["휴직", leave],
+        ["업무분야", emp.jobArea],
+        ["입사", hire],
+        ["보임", appointment],
+        ["승진/직급", promotion],
+        ["연락처", emp.phone],
+        ["주소", emp.address],
+        ["비고", emp.memo]
+      ].filter(([, value]) => String(value ?? "").trim());
+      const rowsHtml = baseRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(detailValue(value))}</td></tr>`).join("");
+      $("employeeModalTitle").textContent = `${emp.name || "직원"} 인사 정보`;
+      $("employeeModalBody").innerHTML = `<table class="detail-table"><tbody>${rowsHtml}</tbody></table>`;
+      $("employeeModal").classList.add("open");
+      $("employeeModal").setAttribute("aria-hidden", "false");
+    }
+
+    function closeEmployeeModal() {
+      $("employeeModal").classList.remove("open");
+      $("employeeModal").setAttribute("aria-hidden", "true");
+    }
+
+    function applyFilters() {
+      const q = $("q").value.trim().toLowerCase();
+      const team = $("teamFilter").value;
+      const series = $("seriesFilter").value;
+      const grade = $("gradeFilter").value;
+      const gender = $("genderFilter").value;
+      const state = $("stateFilter").value;
+      const group = $("groupFilter").value;
+      const special = $("specialFilter").value;
+      filtered = employees.filter((e) => {
+        const haystack = [e.employeeNo, e.name, e.team, e.station, e.series, e.grade, e.position].join(" ").toLowerCase();
+        if (q && !haystack.includes(q)) return false;
+        if (team && e.team !== team) return false;
+        if (series && e.series !== series) return false;
+        if (grade && e.grade !== grade) return false;
+        if (gender && e.gender !== gender) return false;
+        if (state && e.state !== state) return false;
+        if (group && e.groupLabel !== group) return false;
+        if (special === "휴직자" && !e.isLeave) return false;
+        if (special === "공로연수자" && !e.isMerit) return false;
+        if (special === "1966년생" && e.birthYear !== 1966) return false;
+        return true;
+      });
+      renderAll();
+    }
+
+    function renderAll() {
+      renderSummary(filtered);
+      renderBars(filtered);
+      renderBoard(filtered);
+      const leaves = filtered.filter((e) => e.isLeave);
+      const merits = filtered.filter((e) => e.isMerit);
+      const office = filtered.map((e) => ({ ...e, sectionLabel: getOfficeLabel(e) })).filter((e) => !e.isMerit && e.sectionLabel);
+      const electronic = filtered.map((e) => ({ ...e, sectionLabel: getElectronicLabel(e) })).filter((e) => !e.isMerit && e.sectionLabel);
+      const visibleOffice = office.filter((e) => !e.isLeave);
+      const visibleElectronic = electronic.filter((e) => !e.isLeave);
+      $("officeCount").textContent = `${office.length}명`;
+      $("electronicCount").textContent = `${electronic.length}명`;
+      $("leaveCount").textContent = `${leaves.length}명`;
+      $("meritCount").textContent = `${merits.length}명`;
+      renderSectionTable("officeTable", visibleOffice, ["소장, 부장", "지원팀", "운영팀"], "표시할 사업소 재직자가 없습니다.");
+      renderSectionTable("electronicTable", visibleElectronic, ["전자운용", "구남전자분소", "부암전자분소", "해운대전자본소"], "표시할 전자운용부 재직자가 없습니다.");
+      renderLeaveTable(leaves);
+      renderTable("meritTable", merits, "공로연수자 또는 1966년생 대상자가 없습니다.");
+    }
+
+    function setupFilters() {
+      fillSelect("teamFilter", uniqueValues("team"), "전체");
+      fillSelect("seriesFilter", uniqueValues("series"), "전체");
+      fillSelect("gradeFilter", uniqueValues("grade"), "전체");
+      fillSelect("genderFilter", uniqueValues("gender"), "전체");
+      fillSelect("stateFilter", uniqueValues("state"), "전체");
+      fillSelect("groupFilter", uniqueValues("groupLabel"), "전체");
+      $("specialFilter").innerHTML = `<option value="">전체</option><option>휴직자</option><option>공로연수자</option><option>1966년생</option>`;
+    }
+
+    async function loadWorkbook(file) {
+      if (!window.XLSX) {
+        alert("엑셀 파서 라이브러리를 불러오지 못했습니다. 인터넷 연결 후 다시 열어 주세요.");
+        return;
+      }
+      try {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+        const sheetName = workbook.SheetNames.find((name) => name.includes("전직원명부")) || workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        const headers = (rows[0] || []).map((header, index) => String(header || `__COL_${index}`).trim());
+        rawRows = rows.slice(1).map((values) => {
+          const row = {};
+          headers.forEach((header, index) => row[header] = values[index] ?? "");
+          row.__colF = values[5] ?? "";
+          row.__colI = values[8] ?? "";
+          row.__colAV = values[47] ?? "";
+          row.__colAX = values[49] ?? "";
+          row.__colAY = values[50] ?? "";
+          row.__colAZ = values[51] ?? "";
+          return row;
+        });
+        employees = rawRows.map(mapEmployee).filter((e) => e.name && !e.isIntern);
+        filtered = employees.slice();
+        sourceName = file.name;
+        const countedEmployees = employees.filter((e) => !e.isMerit).length;
+        const meritEmployees = employees.length - countedEmployees;
+        $("sourceInfo").textContent = `${file.name} · 총원 ${countedEmployees.toLocaleString("ko-KR")}명 로드 완료 · 공로연수 ${meritEmployees.toLocaleString("ko-KR")}명 제외`;
+        $("excelBtn").disabled = false;
+        $("pdfBtn").disabled = false;
+        setupFilters();
+        renderAll();
+      } catch (err) {
+        console.error(err);
+        alert("엑셀 파일을 파싱하는 과정에서 에러가 발생했습니다. 전직원명부 양식이 맞는지 확인해주세요.");
+      }
+    }
+
+    function exportExcel() {
+      if (!employees.length) return;
+
+      // 1. Roster Board 복제본 생성 및 세로 배치 div화
+      const boardClone = document.getElementById("boardPanel").cloneNode(true);
+      boardClone.querySelectorAll("button.person").forEach((btn) => {
+        const span = btn.querySelector("span");
+        const small = btn.querySelector("small");
+        const nameText = span ? span.innerText.trim() : btn.firstChild.textContent.trim();
+        const gradeText = small ? small.innerText.trim() : "";
+        
+        let inlineStyle = "display:block; border:1px solid #cbd5e1; margin:2px 0; padding:3px; text-align:center; font-size:9px; font-weight:bold; border-radius:2px;";
+        if (btn.classList.contains("series-운영")) {
+          inlineStyle += " background-color:#fef08a !important; color:#1e293b !important;";
+        } else if (btn.classList.contains("series-업무")) {
+          inlineStyle += " background-color:#bbf7d0 !important; color:#14532d !important;";
+        } else if (btn.classList.contains("state-female")) {
+          inlineStyle += " background-color:#fae8ff !important; color:#701a75 !important;";
+        } else {
+          inlineStyle += " background-color:#f1f5f9; color:#1e293b;";
+        }
+        
+        if (btn.style.borderBottom) {
+          inlineStyle += " border-bottom: 2px solid #1d4ed8 !important;";
+        }
+        btn.outerHTML = `<div style="${inlineStyle}">${nameText}(${gradeText})</div>`;
+      });
+
+      boardClone.querySelectorAll("th").forEach((th) => {
+        const codeSpan = th.querySelector(".station-code");
+        const nameSpan = th.querySelector(".station-name");
+        if (codeSpan && nameSpan) {
+          th.innerHTML = `<div style="font-size:8px;color:#475467;">${codeSpan.innerText.trim()}</div><div style="font-size:10px;font-weight:bold;">${nameSpan.innerText.trim()}</div>`;
+        }
+      });
+
+      const boardHtml = boardClone.outerHTML;
+      const overviewHtml = document.querySelector(".overview") ? document.querySelector(".overview").outerHTML : "";
+      
+      const style = `
+        <style>
+          table { border-collapse: collapse; font-family: 'Malgun Gothic', sans-serif; font-size: 10px; }
+          th, td { border: 1px solid #94a3b8; text-align: center; vertical-align: middle; padding: 4px; }
+          .station-type-manager { background-color: #fff7c2 !important; }
+          .station-type-transfer { background-color: #dcfce7 !important; }
+          .station-type-independent { background-color: #dbeafe !important; }
+          .board-summary th, .board-summary td { background-color: #f1f5f9; font-weight: bold; }
+          .summary-female { color: #be185d; }
+          .summary-shortage { color: #dc2626; }
+          .overview-table th { background-color: #f8fafc; font-weight: bold; }
+          .total-row td { background-color: #fefce8; font-weight: bold; }
+          .delta-positive { color: #dc2626; font-weight: bold; }
+          .delta-negative { color: #2563eb; font-weight: bold; }
+        </style>
+      `;
+
+      const excelContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="utf-8">
+          ${style}
+        </head>
+        <body>
+          <h2>제2여객사업소 직원일람표 (배치)</h2>
+          ${boardHtml}
+          <br><br>
+          ${overviewHtml}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([excelContent], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `제2여객사업소_직원배치일람표_${new Date().toISOString().slice(0,10)}.xls`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function resetEmpty() {
+      filtered = [];
+      setupFilters();
+      renderAll();
+    }
+
+    ["q","teamFilter","seriesFilter","gradeFilter","genderFilter","stateFilter","groupFilter","specialFilter"].forEach((id) => {
+      $(id).addEventListener(id === "q" ? "input" : "change", applyFilters);
+    });
+    $("themeSelect").addEventListener("change", (event) => {
+      localStorage.setItem("employeeDashboardTheme", event.target.value);
+      applyTheme(event.target.value);
+    });
+    mediaTheme.addEventListener("change", () => {
+      if (($("themeSelect").value || "system") === "system") applyTheme("system");
+    });
+    $("fileInput").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (file) loadWorkbook(file);
+    });
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-employee-id]");
+      if (!button) return;
+      showEmployeeModal(employees.find((e) => String(e._id) === button.dataset.employeeId));
+    });
+    $("employeeModalClose").addEventListener("click", closeEmployeeModal);
+    $("employeeModal").addEventListener("click", (event) => {
+      if (event.target.id === "employeeModal") closeEmployeeModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeEmployeeModal();
+    });
+    $("excelBtn").addEventListener("click", exportExcel);
+    $("pdfBtn").addEventListener("click", () => {
+      if (!window.html2pdf) {
+        window.print();
+        return;
+      }
+      
+      // PDF가 가로로 짤려 나오는 현상을 방지하기 위해 가상 컨테이너 방식을 폐기하고,
+      // 임시로 CSS 스타일 규칙을 페이지 전체에 오버라이드하여 html2canvas가 max-width 스크롤을 무시하도록 설계합니다.
+      const styleEl = document.createElement("style");
+      styleEl.innerHTML = `
+        @media print {
+          .app { max-width: none !important; width: 3300px !important; padding: 0 !important; }
+          .board-wrap { overflow: visible !important; width: 100% !important; max-width: none !important; }
+          #board { width: 100% !important; max-width: none !important; table-layout: auto !important; }
+        }
+        .pdf-export-mode { max-width: none !important; width: 3300px !important; background: #ffffff !important; }
+        .pdf-export-mode .board-wrap { overflow: visible !important; width: 100% !important; }
+        .pdf-export-mode #board { width: 100% !important; }
+      `;
+      document.head.appendChild(styleEl);
+      
+      const appContainer = document.querySelector(".app");
+      appContainer.classList.add("pdf-export-mode");
+      
+      const options = {
+        margin: 4,
+        filename: `제2여객사업소_배치보드_전체역_${new Date().toISOString().slice(0,10)}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { 
+          scale: 1.5, 
+          useCORS: true,
+          scrollX: 0,
+          scrollY: 0,
+          width: 3300,
+          windowWidth: 3350
+        },
+        jsPDF: { unit: "mm", format: "a2", orientation: "landscape" }
+      };
+
+      html2pdf().set(options).from(appContainer).save().then(() => {
+        appContainer.classList.remove("pdf-export-mode");
+        document.head.removeChild(styleEl);
+      });
+    });
+    $("printBtn").addEventListener("click", () => window.print());
+    applyTheme();
+    resetEmpty();
+  </script>
+</body>
+</html>
