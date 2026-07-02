@@ -562,12 +562,20 @@
       cursor: pointer;
     }
 
+    .person span {
+      display: inline;
+      overflow: visible;
+      white-space: normal;
+    }
+
     .person:hover {
       filter: brightness(.97);
       transform: translateY(-1px);
     }
 
     .person small {
+      display: inline;
+      margin-top: 0;
       color: #344054;
       font-size: 10px;
       font-weight: 800;
@@ -792,8 +800,12 @@
     .print-title {
       display: none;
       text-align: center;
-      margin: 0 0 8px;
-      font-size: 22px;
+      margin: 0 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #0f172a;
+      font-size: 28px;
+      line-height: 1.12;
+      font-weight: 900;
     }
 
     @media (max-width: 1180px) {
@@ -819,19 +831,44 @@
       .app { max-width: none; padding: 0; }
       .topbar, .filters, .overview, .actions, .panel-head small { display: none !important; }
       .modal { display: none !important; }
-      .print-title { display: block; }
-      .summary-grid { grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 8px; }
-      .metric { min-height: 54px; padding: 6px; box-shadow: none; border-color: #aaa; }
-      .metric strong { font-size: 18px; margin-top: 3px; }
+      .print-title { display: block; margin-bottom: 18px; padding-bottom: 8px; break-after: avoid; page-break-after: avoid; }
+      .summary-grid { display: grid !important; grid-template-columns: repeat(8, 1fr); gap: 5px; margin: 0 0 10px; break-after: avoid; page-break-after: avoid; }
+      .metric { min-height: 42px; padding: 5px 7px; box-shadow: none; border-color: #aeb8c6; border-radius: 4px; }
+      .metric span { color: #0f172a; font-size: 8.5px; }
+      .metric strong { font-size: 15px; margin-top: 2px; }
       .metric em { display: none; }
-      .panel { box-shadow: none; border: 0; }
-      .panel-head { padding: 4px 0; border: 0; }
+      .panel { box-shadow: none; border: 0; break-inside: avoid; page-break-inside: avoid; }
+      .panel-head { padding: 3px 0 5px; border: 0; }
+      .panel-head h2 { font-size: 16px; }
+      #boardPanel .panel-head { padding: 6px 0 9px; background: #fff; border-top: 1px solid #94a3b8; border-bottom: 1px solid #94a3b8; }
+      #boardPanel .panel-head h2 { font-size: 17px; }
+      #boardPanel { break-inside: auto; page-break-inside: auto; break-before: avoid; page-break-before: avoid; }
       .board-wrap { overflow: visible; border: 0; }
-      .roster-board { width: 100%; font-size: 7px; }
-      .roster-board th, .roster-board td { width: auto; min-width: 0; height: 31px; padding: 1px; }
-      .person { min-height: 12px; padding: 1px; border: 0; }
-      .tables { grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-      @page { size: A3 landscape; margin: 8mm; }
+      .roster-board { width: 100%; font-size: 7.2px; table-layout: fixed; }
+      .roster-board th, .roster-board td { width: auto; min-width: 0; height: 37px; padding: 1.5px 1px; border-color: #1f2937; line-height: 1.12; }
+      .roster-board th:first-child, .roster-board td:first-child { width: 48px; min-width: 48px; position: static; }
+      .roster-board thead th { position: static; }
+      .station-code { font-size: 7px; }
+      .station-name { margin-top: 1px; line-height: 1.12; }
+      .cell-stack { gap: 1px; }
+      .person { min-height: 17px; padding: 1px; border: 0; border-radius: 1px; line-height: 1.05; word-break: keep-all; overflow-wrap: normal; }
+      .person span { white-space: nowrap; }
+      .person small { display: block; margin: 1px 0 0; font-size: 6.5px; line-height: 1; }
+      .board-summary th, .board-summary td { height: 19px; font-size: 7px; line-height: 1.08; }
+      .legend { gap: 7px; margin: 0 0 6px; font-size: 8px; color: #0f172a; }
+      .legend i { width: 8px; height: 8px; margin-right: 2px; }
+      .tables { grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 0; break-before: page; page-break-before: always; }
+      .tables + .tables { break-before: page; page-break-before: always; }
+      .tables .panel-head { padding-top: 0; margin-bottom: 4px; }
+      .tables .panel-head h2 { font-size: 18px; }
+      .section-data th, .section-data td { border-bottom: 1px solid #cbd5e1; padding: 6px; }
+      .section-list { gap: 5px; min-height: 0; }
+      .section-person { padding: 6px; border-radius: 4px; line-height: 1.18; }
+      .section-person strong, table.data { font-size: 11px; }
+      .section-person span, .section-person em, table.data th { font-size: 9.5px; }
+      table.data th, table.data td { padding: 6px 8px; border-bottom-color: #cbd5e1; }
+      table.data th { color: #1f2937; }
+      @page { size: A3 landscape; margin: 16mm 5mm 6mm; }
     }
   </style>
 </head>
@@ -872,7 +909,7 @@
 
     <section class="panel" id="boardPanel">
       <div class="panel-head">
-        <h2>01 양식형 배치 보드</h2>
+        <h2>직원일람표</h2>
         <small>역별 / 근무조별 자동 배치</small>
       </div>
       <div class="panel-body">
@@ -979,6 +1016,7 @@
       appointmentTenure: ["현보임일근속연수"],
       hireTenure: ["입사근속연수"],
       phone: ["전화번호", "연락처", "휴대폰"],
+      mobilePhone: ["__colAQ"],
       address: ["주소"],
       memo: ["비고", "메모"],
       signal: ["신호기"]
@@ -1240,7 +1278,7 @@
       const isQualified = String(e.signal).trim() === "적합";
       const isSignalStation = getSignalRequirement(e.station) !== null;
       const btnStyle = (isQualified && isSignalStation) ? ' style="border-bottom: 2px solid #1d4ed8; font-weight: bold;"' : '';
-      return `<button class="${classes.join(" ")}"${btnStyle} type="button" data-employee-id="${e._id}" title="${escapeHtml(e.team)} / ${escapeHtml(e.position)} / ${escapeHtml(e.appointment)}">${escapeHtml(e.name || "-")}<small>${escapeHtml(grade)}</small></button>`;
+      return `<button class="${classes.join(" ")}"${btnStyle} type="button" data-employee-id="${e._id}" title="${escapeHtml(e.team)} / ${escapeHtml(e.position)} / ${escapeHtml(e.appointment)}"><span>${escapeHtml(e.name || "-")}</span><small>${escapeHtml(grade)}</small></button>`;
     }
 
     function stationHeaderType(people, name) {
@@ -1451,37 +1489,34 @@
       };
       const identity = `${clean(emp.name)}${compact([emp.employeeNo, emp.gender], ", ") ? ` (${compact([emp.employeeNo, emp.gender], ", ")})` : ""}`;
       const org = compact([emp.division1, emp.division2, emp.department, emp.team], " > ");
-      const job = compact([emp.series, emp.grade, emp.position, emp.appointment]);
+      const job = compact([emp.series, emp.grade, emp.position]);
       
       // 근무 정보에서 '재직' 상태 텍스트를 제거하고, 신호기 적합/부적합 표기 추가
       let stateVal = emp.state || emp.avState;
       if (String(stateVal).trim() === "재직") {
         stateVal = "";
       }
-      const workParts = [emp.workType, emp.groupLabel, stateVal].map(clean).filter(Boolean);
+      const workParts = [emp.workType, stateVal].map(clean).filter(Boolean);
       const signalText = String(emp.signal).trim() === "적합" ? "신호기(적합)" : "신호기(부적합)";
       workParts.push(signalText);
       const work = workParts.join(" / ");
       
       const hire = compact([withTenure(emp.finalHireDate || emp.hireDate, emp.hireTenure), emp.hireType]);
       const appointment = withTenure(emp.appointmentDate, emp.appointmentTenure);
-      const promotion = withTenure(emp.promotionDate, emp.currentGradeTenure);
       const leave = compact([emp.leaveType, emp.leavePeriod, emp.leaveEnd]);
       const baseRows = [
         ["직원", identity],
         ["생년월일", emp.birthText],
         ["소속", org],
-        ["역 배치", emp.station],
         ["직무", job],
         ["근무", work],
         ["휴직", leave],
         ["업무분야", emp.jobArea],
         ["입사", hire],
         ["보임", appointment],
-        ["승진/직급", promotion],
-        ["연락처", emp.phone],
         ["주소", emp.address],
-        ["비고", emp.memo]
+        ["비고", emp.memo],
+        ["휴대전화", emp.mobilePhone]
       ].filter(([, value]) => String(value ?? "").trim());
       const rowsHtml = baseRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(detailValue(value))}</td></tr>`).join("");
       $("employeeModalTitle").textContent = `${emp.name || "직원"} 인사 정보`;
@@ -1568,6 +1603,7 @@
           headers.forEach((header, index) => row[header] = values[index] ?? "");
           row.__colF = values[5] ?? "";
           row.__colI = values[8] ?? "";
+          row.__colAQ = values[42] ?? "";
           row.__colAV = values[47] ?? "";
           row.__colAX = values[49] ?? "";
           row.__colAY = values[50] ?? "";
@@ -1717,9 +1753,59 @@
           .board-wrap { overflow: visible !important; width: 100% !important; max-width: none !important; }
           #board { width: 100% !important; max-width: none !important; table-layout: auto !important; }
         }
-        .pdf-export-mode { max-width: none !important; width: 3300px !important; background: #ffffff !important; }
+        body, .pdf-export-mode { background: #ffffff !important; color: #0f172a !important; }
+        .pdf-export-mode { display: block !important; max-width: none !important; width: 3400px !important; padding: 58px 0 0 !important; }
+        .pdf-export-mode .topbar,
+        .pdf-export-mode .filters,
+        .pdf-export-mode .overview,
+        .pdf-export-mode .actions,
+        .pdf-export-mode .panel-head small { display: none !important; }
+        .pdf-export-mode .print-title { display: block !important; font-size: 46px !important; line-height: 1.1 !important; margin: 0 0 26px !important; padding-bottom: 12px !important; border-bottom: 4px solid #0f172a !important; color: #020617 !important; font-weight: 900 !important; break-after: avoid !important; page-break-after: avoid !important; }
+        .pdf-export-mode #boardPanel { break-inside: auto !important; page-break-inside: auto !important; break-before: avoid !important; page-break-before: avoid !important; }
+        .pdf-export-mode .summary-grid { display: grid !important; grid-template-columns: repeat(8, 1fr) !important; gap: 8px !important; margin: 0 0 18px !important; break-after: avoid !important; page-break-after: avoid !important; }
+        .pdf-export-mode .metric { min-height: 68px !important; padding: 9px 12px !important; border: 1px solid #aeb8c6 !important; border-radius: 7px !important; box-shadow: none !important; background: #ffffff !important; }
+        .pdf-export-mode .metric span { color: #0f172a !important; font-size: 14px !important; }
+        .pdf-export-mode .metric strong { color: #0f172a !important; font-size: 28px !important; margin-top: 4px !important; }
+        .pdf-export-mode .metric em { display: none !important; }
+        .pdf-export-mode .panel { border: 0 !important; box-shadow: none !important; background: #ffffff !important; break-inside: avoid !important; page-break-inside: avoid !important; }
+        .pdf-export-mode .panel-head { padding: 4px 0 7px !important; border: 0 !important; }
+        .pdf-export-mode .panel-head h2 { font-size: 24px !important; color: #020617 !important; }
+        .pdf-export-mode #boardPanel .panel-head { padding: 10px 0 12px !important; margin-bottom: 4px !important; border-top: 2px solid #94a3b8 !important; border-bottom: 2px solid #94a3b8 !important; background: #ffffff !important; }
+        .pdf-export-mode #boardPanel .panel-head h2 { font-size: 27px !important; font-weight: 900 !important; }
         .pdf-export-mode .board-wrap { overflow: visible !important; width: 100% !important; }
-        .pdf-export-mode #board { width: 100% !important; }
+        .pdf-export-mode #board { width: 100% !important; table-layout: fixed !important; font-size: 11.5px !important; color: #0f172a !important; }
+        .pdf-export-mode .roster-board th,
+        .pdf-export-mode .roster-board td { width: auto !important; min-width: 0 !important; height: 57px !important; padding: 2px !important; border: 1px solid #1f2937 !important; background: #ffffff !important; line-height: 1.12 !important; }
+        .pdf-export-mode .roster-board th:first-child,
+        .pdf-export-mode .roster-board td:first-child { width: 72px !important; min-width: 72px !important; position: static !important; background: #f8fafc !important; }
+        .pdf-export-mode .roster-board thead th { position: static !important; background: #f8fafc !important; }
+        .pdf-export-mode .station-type-manager { background: #fff7c2 !important; box-shadow: inset 0 -4px 0 #facc15 !important; }
+        .pdf-export-mode .station-type-transfer { background: #dcfce7 !important; box-shadow: inset 0 -4px 0 #22c55e !important; }
+        .pdf-export-mode .station-type-independent { background: #dbeafe !important; box-shadow: inset 0 -4px 0 #3b82f6 !important; }
+        .pdf-export-mode .station-code { font-size: 11px !important; }
+        .pdf-export-mode .station-name { line-height: 1.12 !important; }
+        .pdf-export-mode .cell-stack { gap: 2px !important; }
+        .pdf-export-mode .person { min-height: 24px !important; padding: 1px 2px !important; border: 0 !important; border-radius: 2px !important; line-height: 1.05 !important; font-weight: 800 !important; color: #111827 !important; word-break: keep-all !important; overflow-wrap: normal !important; }
+        .pdf-export-mode .person span { display: block !important; overflow: hidden !important; text-overflow: clip !important; white-space: nowrap !important; }
+        .pdf-export-mode .person small { display: block !important; font-size: 10px !important; line-height: 1 !important; color: #111827 !important; margin: 2px 0 0 !important; }
+        .pdf-export-mode .board-summary th,
+        .pdf-export-mode .board-summary td { height: 28px !important; font-size: 12px !important; background: #eef2f7 !important; }
+        .pdf-export-mode .legend { font-size: 13px !important; margin-bottom: 10px !important; color: #0f172a !important; }
+        .pdf-export-mode .tables { grid-template-columns: 1fr 1fr !important; gap: 22px !important; margin-top: 0 !important; break-before: page !important; page-break-before: always !important; }
+        .pdf-export-mode .tables + .tables { break-before: page !important; page-break-before: always !important; }
+        .pdf-export-mode table.data { font-size: 16px !important; color: #0f172a !important; }
+        .pdf-export-mode table.data th,
+        .pdf-export-mode table.data td { padding: 10px 12px !important; border-bottom: 1px solid #cbd5e1 !important; background: #ffffff !important; }
+        .pdf-export-mode table.data th { font-size: 14px !important; color: #1f2937 !important; background: #f8fafc !important; }
+        .pdf-export-mode .section-data th,
+        .pdf-export-mode .section-data td { padding: 8px !important; border-bottom: 1px solid #cbd5e1 !important; }
+        .pdf-export-mode .section-list { gap: 7px !important; min-height: 0 !important; }
+        .pdf-export-mode .section-person { padding: 8px !important; border-radius: 5px !important; line-height: 1.18 !important; background: #ffffff !important; color: #0f172a !important; }
+        .pdf-export-mode .section-person.state-female,
+        .pdf-export-mode table.data tr.row-female td { background: #fff1f7 !important; border-color: #f9a8d4 !important; }
+        .pdf-export-mode .section-person strong { font-size: 16px !important; }
+        .pdf-export-mode .section-person span,
+        .pdf-export-mode .section-person em { font-size: 14px !important; color: #475467 !important; }
       `;
       document.head.appendChild(styleEl);
       
@@ -1735,9 +1821,10 @@
           useCORS: true,
           scrollX: 0,
           scrollY: 0,
-          width: 3300,
-          windowWidth: 3350
+          width: 3400,
+          windowWidth: 3450
         },
+        pagebreak: { mode: ["css", "legacy"] },
         jsPDF: { unit: "mm", format: "a2", orientation: "landscape" }
       };
 
