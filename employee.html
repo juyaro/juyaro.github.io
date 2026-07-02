@@ -1503,6 +1503,7 @@
       
       const hire = compact([withTenure(emp.finalHireDate || emp.hireDate, emp.hireTenure), emp.hireType]);
       const appointment = withTenure(emp.appointmentDate, emp.appointmentTenure);
+      const promotion = withTenure(emp.promotionDate, emp.currentGradeTenure);
       const leave = compact([emp.leaveType, emp.leavePeriod, emp.leaveEnd]);
       const baseRows = [
         ["직원", identity],
@@ -1514,6 +1515,7 @@
         ["업무분야", emp.jobArea],
         ["입사", hire],
         ["보임", appointment],
+        ["승진", promotion],
         ["주소", emp.address],
         ["비고", emp.memo],
         ["휴대전화", emp.mobilePhone]
