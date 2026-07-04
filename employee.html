@@ -175,6 +175,7 @@
     }
 
     .auth-badge {
+      position: relative;
       display: grid;
       place-items: center;
       width: 32px;
@@ -186,6 +187,14 @@
       font-size: 16px;
       font-weight: 900;
       box-shadow: 0 0 18px rgba(37, 131, 255, .5);
+      cursor: pointer;
+    }
+
+    .auth-badge::before {
+      content: "";
+      position: absolute;
+      inset: -26px -38px -18px;
+      border-radius: 8px;
     }
 
     .auth-card h1 {
@@ -995,7 +1004,7 @@
 <body class="auth-locked protect-content">
   <section class="auth-overlay" id="authOverlay" aria-label="시스템 보안 인증">
     <form class="auth-card" id="authForm" autocomplete="off">
-      <div class="auth-badge">E</div>
+      <div class="auth-badge" id="waterShortcut" role="link" tabindex="0" aria-label="water 페이지로 이동">E</div>
       <h1>시스템 보안 인증</h1>
       <p>이동 관리 대시보드에 접근하기 위해<br>비밀번호를 입력해 주십시오.</p>
       <input id="authPassword" type="password" placeholder="비밀번호 입력" aria-label="비밀번호 입력" />
@@ -1159,6 +1168,7 @@
     let sourceName = "";
     let mediaTheme = window.matchMedia("(prefers-color-scheme: dark)");
     const accessPassword = "wlrdnjs";
+    const waterShortcutUrl = "https://juyaro.github.io/water.html";
 
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#039;" }[m]));
@@ -1187,6 +1197,16 @@
         unlockDashboard();
         return;
       }
+
+      $("waterShortcut").addEventListener("click", () => {
+        window.location.href = waterShortcutUrl;
+      });
+      $("waterShortcut").addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          window.location.href = waterShortcutUrl;
+        }
+      });
 
       $("authPassword").focus();
       $("authForm").addEventListener("submit", (event) => {
