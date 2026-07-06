@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root{
   --ink:#0E2E35;
@@ -441,7 +442,7 @@ body.secure-view [contenteditable="true"]{
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
       <p>PDF 파일을 여기로 끌어놓거나 클릭하여 선택하세요</p>
       <span>여러 파일 선택 가능 · 청구서 자동납부 PDF (수십MB 가능, 처리에 다소 시간이 걸릴 수 있어요)</span>
-      <input type="file" id="fileInput" accept="application/pdf" multiple style="display:none;">
+      <input type="file" id="fileInput" accept=".pdf,application/pdf" multiple style="display:none;">
     </div>
 
     <div class="progress-list" id="progressList"></div>
@@ -581,8 +582,8 @@ function prevYearSummary(month){
 }
 
 function findPrevYearRow(month, custId){
-  const id = String(custId || '');
-  return prevYearRows(month).find(r => String(r.cust_id || '') === id) || null;
+  const id = normalizeCustId(custId);
+  return prevYearRows(month).find(r => normalizeCustId(r.cust_id) === id) || null;
 }
 
 function ratio(current, previous){
@@ -606,7 +607,7 @@ function daysBetweenDates(start, end){
   const e = parseYmd(end);
   if(!s || !e) return 0;
   const diffDays = Math.round(Math.abs(e - s) / 86400000);
-  return diffDays || 1;
+  return diffDays + 1;
 }
 
 function calcDailyAvg(row){
@@ -1853,7 +1854,7 @@ fileInput.addEventListener('change', e => handleFiles(e.target.files));
 let extractedRows = [];
 
 async function handleFiles(fileList){
-  const files = Array.from(fileList).filter(f=>f.type==='application/pdf' || f.name.endsWith('.pdf'));
+  const files = Array.from(fileList).filter(f=>f.type==='application/pdf' || /\.pdf$/i.test(f.name));
   if(!files.length) return;
   const progressList = document.getElementById('progressList');
   progressList.innerHTML = '';
@@ -1898,6 +1899,36 @@ async function pdfPageLines(page){
   const lines = ys.map(y => rows[y].sort((a,b)=>a.x-b.x).map(o=>o.s).join(' '));
   lines._items = items;
   return lines;
+}
+
+async function ocrPageLines(page, fileName, pageNumber, totalPages){
+  if(!window.Tesseract) return null;
+  const progressList = document.getElementById('progressList');
+  const status = progressList ? progressList.lastElementChild : null;
+  if(status){
+    status.innerHTML = `<span class="spin"></span> ${fileName} OCR 처리 중... (${pageNumber}/${totalPages})`;
+  }
+  const viewport = page.getViewport({scale: 2});
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d', {willReadFrequently: true});
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  await page.render({canvasContext: context, viewport}).promise;
+  const result = await Tesseract.recognize(canvas, 'kor+eng');
+  const lines = String(result && result.data && result.data.text ? result.data.text : '')
+    .replace(/\r/g, '\n')
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(Boolean);
+  lines._items = [];
+  return lines;
+}
+
+function shouldTryOcr(lines, text){
+  if(!window.Tesseract) return false;
+  const compact = String(text || '').replace(/\s/g, '');
+  if(compact.length < 40) return true;
+  return !parsePageText(text, lines);
 }
 
 // numeric tokens on a line (handles comma-formatted numbers, ignores negatives/decimals, requires at least 2 digits)
@@ -2341,11 +2372,27 @@ async function extractPdf(file){
   const pdf = await pdfjsLib.getDocument({data: buf}).promise;
   const results = [];
   const seen = {};
+  let totalCleanTextLen = 0;
   for(let i=1;i<=pdf.numPages;i++){
     const page = await pdf.getPage(i);
-    const lines = await pdfPageLines(page);
-    const text = lines.join('\n');
-    const parsed = parsePageText(text, lines);
+    let lines = await pdfPageLines(page);
+    let text = lines.join('\n');
+    
+    // Filter out page footers like "-- 1 of 42 --"
+    let cleanText = text.replace(/-- \d+ of \d+ --/g, '').replace(/\s/g, '');
+    totalCleanTextLen += cleanText.length;
+    
+    let parsed = parsePageText(text, lines);
+    if(!parsed && shouldTryOcr(lines, text)){
+      const ocrLines = await ocrPageLines(page, file.name, i, pdf.numPages);
+      if(ocrLines){
+        lines = ocrLines;
+        text = lines.join('\n');
+        cleanText = text.replace(/-- \d+ of \d+ --/g, '').replace(/\s/g, '');
+        totalCleanTextLen += cleanText.length;
+        parsed = parsePageText(text, lines);
+      }
+    }
     if(!parsed) continue;
     // Find station by comparing stripped customer IDs (removing non-digits and allowing substring matching for Yangsan prefix '0048330')
     const strippedId = (parsed.cust_id || '').replace(/\D/g, '');
@@ -2416,6 +2463,12 @@ async function extractPdf(file){
     }
     seen[row.cust_id] = results.length;
     results.push(row);
+  }
+  if(totalCleanTextLen === 0){
+    throw new Error('텍스트 레이어가 없는 스캔(이미지) PDF입니다. Adobe Acrobat 또는 한컴 PDF 등을 통해 OCR(텍스트 인식) 문자 인식을 완료한 후 다시 업로드해 주세요.');
+  }
+  if(!results.length){
+    throw new Error('PDF 텍스트는 추출됐지만 고객번호를 찾지 못했습니다. 2025년 스캔 PDF라면 OCR 처리 후에도 고객번호가 흐리게 인식됐을 수 있어 원본 해상도 또는 OCR 완료 PDF를 확인해 주세요.');
   }
   results.forEach((r,i)=> r.seq = i+1);
   return results;
@@ -2554,7 +2607,7 @@ function recalcMonthComparisons(){
       currentRows.forEach(cr => {
         const id = String(cr.cust_id || '').replace(/\D/g, '');
         const fallbackPrevMonth = bimonthlyCompareIds.has(id) ? '11월' : '12월';
-        const pr = prevYearRows(fallbackPrevMonth).find(p => p.cust_id === cr.cust_id);
+        const pr = findPrevYearRow(fallbackPrevMonth, cr.cust_id);
         cr.prev_usage = pr ? ensureDailyAvg(pr) : 0;
         cr.mom_ratio = cr.prev_usage > 0 ? (cr.daily_avg || 0) / cr.prev_usage : 1;
       });
@@ -2565,14 +2618,14 @@ function recalcMonthComparisons(){
       const compareIdx = bimonthlyCompareIds.has(id) ? idx - 2 : idx - 1;
       if(compareIdx < 0){
         const fallbackPrevMonth = compareIdx === -1 ? '12월' : '11월';
-        const pr = prevYearRows(fallbackPrevMonth).find(p => p.cust_id === cr.cust_id);
+        const pr = findPrevYearRow(fallbackPrevMonth, cr.cust_id);
         cr.prev_usage = pr ? ensureDailyAvg(pr) : 0;
         cr.mom_ratio = cr.prev_usage > 0 ? (cr.daily_avg || 0) / cr.prev_usage : 1;
         return;
       }
       const prevM = STATE.order[compareIdx];
       const prevRows = STATE.months[prevM] || [];
-      const pr = prevRows.find(p => p.cust_id === cr.cust_id);
+      const pr = prevRows.find(p => normalizeCustId(p.cust_id) === normalizeCustId(cr.cust_id));
       if (pr) {
         cr.prev_usage = ensureDailyAvg(pr);
         cr.mom_ratio = cr.prev_usage > 0 ? (cr.daily_avg || 0) / cr.prev_usage : 1;
@@ -2605,11 +2658,19 @@ document.getElementById('btnExportProject').onclick = () => {
 
 const projectFileInput = document.getElementById('projectFileInput');
 const prevYearFileInput = document.getElementById('prevYearFileInput');
+const btnImportPrevYear = document.getElementById('btnImportPrevYear');
+btnImportPrevYear.title = '전년도 프로젝트 JSON 또는 월별 청구내역 엑셀을 불러와 전년동기 비교에 사용합니다.';
+Array.from(btnImportPrevYear.childNodes).forEach(node => {
+  if(node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()){
+    node.nodeValue = ' 전년도 자료 불러오기';
+  }
+});
+prevYearFileInput.accept = '.json,.xlsx,.xls,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
 document.getElementById('btnImportProject').onclick = () => {
   projectFileInput.click();
 };
 
-document.getElementById('btnImportPrevYear').onclick = () => {
+btnImportPrevYear.onclick = () => {
   prevYearFileInput.click();
 };
 
@@ -2636,9 +2697,241 @@ projectFileInput.onchange = e => {
   projectFileInput.value = ''; // reset
 };
 
+function compactHeader(value){
+  return String(value || '').replace(/\s+/g, '').replace(/[()（）\[\]·ㆍ:：]/g, '').trim();
+}
+
+function excelNumber(value){
+  if(typeof value === 'number') return value;
+  const cleaned = String(value || '').replace(/[,\s원ton㎥]/g, '').replace(/^-$/, '');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeExcelDate(value, fallbackYear){
+  if(value instanceof Date && !Number.isNaN(value.getTime())){
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  }
+  const raw = String(value || '').trim();
+  if(!raw || raw === '-') return '';
+  if(/^\d{5,6}$/.test(raw)){
+    const date = new Date(Date.UTC(1899, 11, 30) + Number(raw) * 86400000);
+    if(!Number.isNaN(date.getTime())){
+      return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+    }
+  }
+  let m = raw.match(/(20\d{2})[-.\/\s년]+([01]?\d)[-.\/\s월]+([0-3]?\d)/);
+  if(m) return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+  m = raw.match(/\b([01]?\d)\s*[.\/월]\s*([0-3]?\d)\b/);
+  if(m && fallbackYear) return `${fallbackYear}-${String(m[1]).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`;
+  return raw;
+}
+
+function calcExcelDailyAvg(row){
+  const days = daysBetweenDates(row && row.start, row && row.end);
+  return days > 0 ? (row.usage || 0) / days : 0;
+}
+
+function stationKeyById(value){
+  const digits = String(value || '').replace(/\D/g, '');
+  if(!digits) return null;
+  return Object.keys(STATE.stations || {}).find(key => key.replace(/\D/g, '') === digits) || null;
+}
+
+function stationKeyByName(value){
+  const name = String(value || '').replace(/\s+/g, '');
+  if(!name) return null;
+  return Object.keys(STATE.stations || {}).find(key => String(STATE.stations[key].name || '').replace(/\s+/g, '') === name) || null;
+}
+
+function normalizeExcelCustId(value, name){
+  const directKey = stationKeyById(value);
+  if(directKey) return directKey;
+  const nameKey = stationKeyByName(name);
+  if(nameKey) return nameKey;
+  return String(value || '').replace(/\D/g, '');
+}
+
+function findExcelHeaderRow(aoa){
+  const limit = Math.min(30, aoa.length);
+  for(let r=0; r<limit; r++){
+    const row = aoa[r] || [];
+    const headers = row.map(compactHeader);
+    const hasCustomer = headers.some(h => h.includes('고객번호'));
+    const hasName = headers.some(h => h.includes('고객명'));
+    const nextHeaders = ((aoa[r + 1] || [])).map(compactHeader);
+    const combined = headers.concat(nextHeaders);
+    const hasFee = combined.some(h => h.includes('요금') || h.includes('상수도') || h.includes('하수도') || h.includes('물이용부담금') || h === '계' || h.includes('납부금액'));
+    if(hasCustomer && hasName && hasFee) return r;
+  }
+  return -1;
+}
+
+function hasExcelSubHeader(row){
+  const headers = (row || []).map(compactHeader);
+  return headers.some(h => h.includes('시작일') || h.includes('종료일') || h.includes('상수도') || h.includes('하수도') || h.includes('물이용부담금'));
+}
+
+function mergeExcelHeaders(headerRow, subHeaderRow){
+  const length = Math.max((headerRow || []).length, (subHeaderRow || []).length);
+  return Array.from({length}, (_, i) => {
+    const top = compactHeader((headerRow || [])[i]);
+    const sub = compactHeader((subHeaderRow || [])[i]);
+    if(top && sub) return `${top}${sub}`;
+    return top || sub;
+  });
+}
+
+function buildExcelColumnMap(headerRow, subHeaderRow){
+  const headers = mergeExcelHeaders(headerRow, subHeaderRow);
+  const find = predicate => headers.findIndex(predicate);
+  return {
+    seq: find(h => h === '연번' || h === '순번'),
+    cust_id: find(h => h.includes('고객번호')),
+    name: find(h => h.includes('고객명')),
+    usage: find(h => h.includes('사용량') && !h.includes('일평균') && !h.includes('전년') && !h.includes('대비') && !h.includes('증감')),
+    adj_usage: find(h => h.includes('조정량')),
+    start: find(h => h.includes('시작일')),
+    end: find(h => h.includes('종료일')),
+    water: find(h => h.includes('상수도')),
+    sewer: find(h => h.includes('하수도')),
+    levy: find(h => h.includes('물이용부담금')),
+    total: find(h => h === '계' || h.endsWith('계') || h.includes('합계') || h.includes('납부금액') || h.includes('요금원')),
+    daily_avg: find(h => h.includes('1일평균') || h.includes('일평균사용량')),
+    prev_usage: find(h => h.includes('전월') && h.includes('평균')),
+    note: find(h => h.includes('비고') || h.includes('비고'))
+  };
+}
+
+function cell(row, index){
+  return index >= 0 ? row[index] : '';
+}
+
+function monthKeyFromSheet(sheetName, aoa){
+  const sheetMatch = String(sheetName || '').match(/^(1[0-2]|[1-9])\s*월/);
+  if(sheetMatch) return `${Number(sheetMatch[1])}월`;
+
+  const firstCell = String(((aoa || [])[0] || [])[0] || '');
+  const titleMatch = firstCell.match(/20\d{2}\s*년(?:도)?\s*(1[0-2]|[1-9])\s*월/);
+  return titleMatch ? `${Number(titleMatch[1])}월` : null;
+}
+
+function parsePrevYearWorkbook(workbook, fileName){
+  const months = {};
+  const order = [];
+  workbook.SheetNames.forEach(sheetName => {
+    const sheet = workbook.Sheets[sheetName];
+    const aoa = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: '', raw: true, dateNF: 'yyyy-mm-dd'});
+    const month = monthKeyFromSheet(sheetName, aoa);
+    if(!month) return;
+    const headerIndex = findExcelHeaderRow(aoa);
+    if(headerIndex < 0) return;
+    const hasSubHeader = hasExcelSubHeader(aoa[headerIndex + 1]);
+    const map = buildExcelColumnMap(aoa[headerIndex], hasSubHeader ? aoa[headerIndex + 1] : []);
+    if(map.cust_id < 0 && map.name < 0) return;
+
+    const yearMatch = `${fileName} ${(aoa[0] || []).join(' ')}`.match(/(20\d{2})/);
+    const year = yearMatch ? yearMatch[1] : '2025';
+    const rows = [];
+    for(let r=headerIndex + (hasSubHeader ? 2 : 1); r<aoa.length; r++){
+      const raw = aoa[r] || [];
+      if(!raw.some(v => String(v || '').trim())) continue;
+      const name = String(cell(raw, map.name) || '').trim();
+      const label = name.replace(/\s+/g, '');
+      if(label === '계' || label === '총계' || label === '총합') continue;
+      const custId = normalizeExcelCustId(cell(raw, map.cust_id), name);
+      if(!custId || !name) continue;
+
+      const water = excelNumber(cell(raw, map.water));
+      const sewer = excelNumber(cell(raw, map.sewer));
+      const levy = excelNumber(cell(raw, map.levy));
+      const explicitTotal = excelNumber(cell(raw, map.total));
+      const row = {
+        seq: rows.length + 1,
+        cust_id: custId,
+        name,
+        usage: excelNumber(cell(raw, map.usage)),
+        adj_usage: excelNumber(cell(raw, map.adj_usage)) || excelNumber(cell(raw, map.usage)),
+        start: normalizeExcelDate(cell(raw, map.start), year),
+        end: normalizeExcelDate(cell(raw, map.end), year),
+        water,
+        sewer,
+        levy,
+        total: explicitTotal || water + sewer + levy,
+        daily_avg: 0,
+        daily_avg_inclusive: true,
+        mom_ratio: null,
+        prev_usage: excelNumber(cell(raw, map.prev_usage)),
+        note: String(cell(raw, map.note) || '').trim(),
+        contact: (STATE.stations[custId] || {}).contact || ''
+      };
+      row.daily_avg = calcExcelDailyAvg(row);
+      if(!row.daily_avg) ensureDailyAvg(row);
+      rows.push(row);
+    }
+    if(rows.length){
+      months[month] = rows;
+      if(!order.includes(month)) order.push(month);
+    }
+  });
+  order.sort((a,b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0));
+  if(!order.length) throw new Error('월별 청구내역 시트를 찾지 못했습니다. 고객번호/고객명/상수도/하수도/계 헤더가 있는 엑셀인지 확인해 주세요.');
+  return {months, order, fileName};
+}
+
+function loadPrevYearJsonFile(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const data = JSON.parse(evt.target.result);
+        const project = normalizeProjectData(data);
+        resolve({months: project.months, order: project.order, fileName: file.name});
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(reader.error || new Error('파일을 읽지 못했습니다.'));
+    reader.readAsText(file);
+  });
+}
+
+function loadPrevYearExcelFile(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        if(!window.XLSX) throw new Error('엑셀 분석 라이브러리를 불러오지 못했습니다.');
+        const workbook = XLSX.read(evt.target.result, {type: 'array', cellDates: true});
+        resolve(parsePrevYearWorkbook(workbook, file.name));
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(reader.error || new Error('파일을 읽지 못했습니다.'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function loadPrevYearDataFile(file){
+  if(/\.(xlsx|xls)$/i.test(file.name)) return loadPrevYearExcelFile(file);
+  return loadPrevYearJsonFile(file);
+}
+
 prevYearFileInput.onchange = e => {
   const file = e.target.files[0];
   if (!file) return;
+  loadPrevYearDataFile(file).then(prevYear => {
+    STATE.prevYear = prevYear;
+    recalcMonthComparisons();
+    render();
+    alert(`전년도 자료를 불러왔습니다. (${prevYear.order.length}개월, ${file.name})`);
+  }).catch(err => {
+    alert(`전년도 자료 불러오기 실패: ${err.message}`);
+  }).finally(() => {
+    prevYearFileInput.value = '';
+  });
+  return;
   const reader = new FileReader();
   reader.onload = evt => {
     try {
