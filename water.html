@@ -647,6 +647,23 @@ function monthPrevDailyAvgMean(rows){
     : 0;
 }
 
+function cumulativeRows(months, sourceMonths){
+  return (months || []).flatMap(m => (sourceMonths && sourceMonths[m]) ? sourceMonths[m] : []);
+}
+
+function cumulativeDailyAvg(rows){
+  const billedRows = (rows || []).filter(r => (r.total || 0) > 0);
+  const totals = billedRows.reduce((acc, r) => {
+    const days = daysBetweenDates(r.start, r.end);
+    if(days > 0){
+      acc.usage += r.usage || 0;
+      acc.days += days;
+    }
+    return acc;
+  }, {usage: 0, days: 0});
+  return totals.days ? totals.usage / totals.days : monthDailyAvgMean(billedRows);
+}
+
 function yoyBadge(current, previous){
   const d = ratio(current || 0, previous || 0);
   if(d === null || !isFinite(d)) return '<span class="badge flat">—</span>';
@@ -884,6 +901,26 @@ function overviewHTML(){
           <th>월</th><th>청구 역사 수</th><th>사용량(ton)</th><th>일평균 전년대비</th><th>상수도(원)</th><th>하수도(원)</th><th>물이용부담금(원)</th><th>합계(원)</th><th>요금 전년대비</th>
         </tr></thead>
         <tbody>
+          ${(()=>{
+            const monthsToDate = monthSums.map(s => s.month);
+            const currentRows = cumulativeRows(monthsToDate, STATE.months);
+            const prevRows = cumulativeRows(monthsToDate, STATE.prevYear ? STATE.prevYear.months : null);
+            const total = monthSummary(currentRows);
+            const prevTotal = prevRows.length ? monthSummary(prevRows) : null;
+            const dailyAvg = cumulativeDailyAvg(currentRows);
+            const prevDailyAvg = prevRows.length ? cumulativeDailyAvg(prevRows) : 0;
+            return `<tr class="total-row">
+              <td class="center">계</td>
+              <td class="center">-</td>
+              <td>${ton(total.usage)}</td>
+              <td class="center">${yoyBadge(dailyAvg, prevDailyAvg)}</td>
+              <td>${won(total.water)}</td>
+              <td>${won(total.sewer)}</td>
+              <td>${won(total.levy)}</td>
+              <td style="font-weight:800;">${won(total.total)}</td>
+              <td class="center">${yoyBadge(total.total, prevTotal ? prevTotal.total : 0)}</td>
+            </tr>`;
+          })()}
           ${monthSums.map(s=>{
             const prev = prevYearSummary(s.month);
             const prevDailyAvgMean = prev ? monthDailyAvgMean(prevYearRows(s.month)) : 0;
@@ -1570,6 +1607,9 @@ function applyExcelStyles(ws, isDetailSheet = true) {
         } else if (C === 11 || C === 12) {
           ws[cellRef].s.alignment.horizontal = "right";
           ws[cellRef].z = '#,##0.0';
+        } else if (C === 13) {
+          ws[cellRef].s.alignment.horizontal = "right";
+          ws[cellRef].z = '0.0%';
         } else if (C === 3 || C === 4 || (C >= 7 && C <= 10)) {
           ws[cellRef].s.alignment.horizontal = "right";
           ws[cellRef].z = '#,##0'; // format won / tons
