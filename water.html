@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 :root{
   --ink:#0E2E35;
@@ -2103,15 +2104,17 @@ function applyExcelStyles(ws, isDetailSheet = true) {
   }
 }
 
-function exportMonth(month){
+async function exportMonth(month){
   const rows = STATE.months[month] || [];
   const aoa = monthSheetAOA(month, rows);
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{wch:5},{wch:14},{wch:20},{wch:10},{wch:10},{wch:11},{wch:11},{wch:12},{wch:12},{wch:12},{wch:13},{wch:12},{wch:11},{wch:11},{wch:32}];
-  applyExcelStyles(ws, true);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, month);
-  XLSX.writeFile(wb, `${month}_수도요금_청구현황.xlsx`);
+  try {
+    await generateAndDownloadExcel(`${month}_수도요금_청구현황.xlsx`, [
+      { name: month, aoa: aoa, isTotal: false }
+    ]);
+  } catch (err) {
+    console.error(err);
+    alert('엑셀 파일 생성 중 오류가 발생했습니다: ' + err.message);
+  }
 }
 
 function normalizeCustId(id){
@@ -2253,45 +2256,323 @@ function applyTotalSheetStyles(ws){
   }
 }
 
-function exportAll(){
-  const wb = XLSX.utils.book_new();
-  const totalAoa = buildTotalSheetAOA();
-  const totalWs = XLSX.utils.aoa_to_sheet(totalAoa);
-  totalWs['!cols'] = [{wch:6},{wch:14},{wch:22}, ...Array.from({length:26}, (_,i)=>({wch:i%2===0?10:13}))];
-  applyTotalSheetStyles(totalWs);
-  XLSX.utils.book_append_sheet(wb, totalWs, '총계');
+async function generateAndDownloadExcel(filename, sheets) {
+  const workbook = new ExcelJS.Workbook();
+  
+  for (const sheetConfig of sheets) {
+    const ws = workbook.addWorksheet(sheetConfig.name);
+    ws.views = [{ showGridLines: true }];
+    
+    if (sheetConfig.isImageSheet) {
+      ws.getColumn(1).width = 4;
+      ws.getColumn(2).width = 95; // slightly wider column for 18.5cm image (approx 700px width)
+      
+      const images = sheetConfig.images || [];
+      for (let i = 0; i < images.length; i++) {
+        const item = images[i];
+        const startRow = i * 37 + 2; // 37 rows spacing: 1 title + 1 spacer + 33 image rows + 2 gap rows
+        
+        const titleCell = ws.getCell(startRow, 2);
+        titleCell.value = `■ ${i + 1}. ${item.month} - ${item.name} 요금 청구서`;
+        titleCell.font = { name: '맑은 고딕', size: 14, bold: true, color: { argb: 'FF0A4650' } };
+        
+        ws.getRow(startRow).height = 25;
+        ws.getRow(startRow + 1).height = 10;
+        
+        for (let r = 0; r < 33; r++) {
+          ws.getRow(startRow + 2 + r).height = 20; // 33 rows * 20pt = 660pt (fits 622.5pt image completely)
+        }
+        
+        // 2 empty rows gap (height 20pt each)
+        ws.getRow(startRow + 35).height = 20;
+        ws.getRow(startRow + 36).height = 20;
 
-  STATE.order.forEach(m=>{
-    const aoa = monthSheetAOA(m, STATE.months[m]||[]);
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{wch:5},{wch:14},{wch:20},{wch:10},{wch:10},{wch:11},{wch:11},{wch:12},{wch:12},{wch:12},{wch:13},{wch:12},{wch:11},{wch:11},{wch:32}];
-    applyExcelStyles(ws, true);
-    XLSX.utils.book_append_sheet(wb, ws, m);
-  });
-  XLSX.writeFile(wb, `상하수도요금_전체현황_${STATE.order[0]}~${STATE.order[STATE.order.length-1]}.xlsx`);
-  return;
-  // summary sheet
-  const monthSums = STATE.order.map(m => ({month:m, ...monthSummary(STATE.months[m]||[])}));
-  const sumAoa = [
-    ['월별 상·하수도요금 종합 현황'], [],
-    ['월','청구역사수','전체역사수','사용량(ton)','상수도(원)','하수도(원)','물이용부담금(원)','합계(원)'],
-    ...monthSums.map(s=>[s.month, s.stationsBilled, s.count, s.usage, s.dailyAvgMean, s.water, s.sewer, s.levy, s.total])
-  ];
-  sumAoa[2].splice(4, 0, '1일평균사용량(ton)');
-  const wsSum = XLSX.utils.aoa_to_sheet(sumAoa);
-  wsSum['!cols'] = [{wch:8},{wch:12},{wch:12},{wch:12},{wch:16},{wch:13},{wch:13},{wch:14},{wch:14}];
-  applyExcelStyles(wsSum, false);
-  XLSX.utils.book_append_sheet(wb, wsSum, '총계');
+        const imageId = workbook.addImage({
+          base64: item.image,
+          extension: 'jpeg',
+        });
 
-  STATE.order.forEach(m=>{
-    const aoa = monthSheetAOA(m, STATE.months[m]||[]);
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = [{wch:5},{wch:14},{wch:20},{wch:10},{wch:10},{wch:11},{wch:11},{wch:12},{wch:12},{wch:12},{wch:13},{wch:12},{wch:11},{wch:11},{wch:32}];
-    applyExcelStyles(ws, true);
-    XLSX.utils.book_append_sheet(wb, ws, m);
-  });
-  XLSX.writeFile(wb, `상하수도요금_전체현황_${STATE.order[0]}~${STATE.order[STATE.order.length-1]}.xlsx`);
+        ws.addImage(imageId, {
+          tl: { col: 1, row: startRow + 2 },
+          ext: { width: 700, height: 830 }, // 18.5cm x 22cm
+          editAs: 'oneCell'
+        });
+      }
+      continue;
+    }
+    
+    // Add raw rows
+    ws.addRows(sheetConfig.aoa);
+    
+    // Convert string-formatted numbers to clean JS numbers so Excel formatting applies
+    ws.eachRow(row => {
+      row.eachCell((cell, colNumber) => {
+        if (colNumber === 2) return; // Skip Column 2 (고객번호, cust_id) which is a string identifier
+        if (cell.value && typeof cell.value === 'string') {
+          const cleanNum = cell.value.trim().replace(/,/g, '');
+          if (/^-?\d+$/.test(cleanNum)) {
+            cell.value = parseInt(cleanNum, 10);
+          } else if (/^-?\d+\.\d+$/.test(cleanNum)) {
+            cell.value = parseFloat(cleanNum);
+          }
+        }
+      });
+    });
+    
+    // Set default row height
+    ws.eachRow(row => { row.height = 20; });
+    
+    const thinBorder = {
+      top: { style: 'thin', color: { argb: 'FFDCE8E8' } },
+      bottom: { style: 'thin', color: { argb: 'FFDCE8E8' } },
+      left: { style: 'thin', color: { argb: 'FFDCE8E8' } },
+      right: { style: 'thin', color: { argb: 'FFDCE8E8' } }
+    };
+    
+    if (sheetConfig.isTotal) {
+      ws.mergeCells('A1:AC1');
+      ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+      ws.getCell('A1').font = { name: '맑은 고딕', size: 18, bold: true, color: { argb: 'FF0E2E35' } };
+      ws.getRow(1).height = 40;
+      ws.getRow(2).height = 15;
+      
+      ws.mergeCells('A3:A4');
+      ws.mergeCells('B3:B4');
+      ws.mergeCells('C3:C4');
+      ws.mergeCells('D3:E3');
+      for(let i=0; i<12; i++){
+        const cStart = 6 + i*2;
+        ws.mergeCells(3, cStart, 3, cStart + 1);
+      }
+      
+      const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF7C7' } };
+      const headerFont = { name: '맑은 고딕', size: 10, bold: true, color: { argb: 'FF000000' } };
+      const headerAlign = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      
+      [3, 4].forEach(rIdx => {
+        const row = ws.getRow(rIdx);
+        row.height = 22;
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          if (colNumber <= 29) {
+            cell.fill = headerFill;
+            cell.font = headerFont;
+            cell.alignment = headerAlign;
+            cell.border = thinBorder;
+          }
+        });
+      });
+      
+      const totalRow = ws.getRow(5);
+      totalRow.height = 22;
+      const totalFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2F3EF' } };
+      const totalFont = { name: '맑은 고딕', size: 9, bold: true, color: { argb: 'FF0B3A42' } };
+      const doubleBottomBorder = {
+        top: { style: 'thin', color: { argb: 'FF1B7F8C' } },
+        bottom: { style: 'double', color: { argb: 'FF0B3A42' } },
+        left: { style: 'thin', color: { argb: 'FFDCE8E8' } },
+        right: { style: 'thin', color: { argb: 'FFDCE8E8' } }
+      };
+      
+      totalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        if (colNumber <= 29) {
+          cell.fill = totalFill;
+          cell.font = totalFont;
+          cell.border = doubleBottomBorder;
+          if (colNumber <= 3) {
+            cell.alignment = { vertical: 'middle', horizontal: colNumber === 3 ? 'left' : 'center' };
+          } else {
+            cell.alignment = { vertical: 'middle', horizontal: 'right' };
+            cell.numFmt = '#,##0';
+          }
+        }
+      });
+      
+      const dataFont = { name: '맑은 고딕', size: 9, color: { argb: 'FF0E2E35' } };
+      ws.eachRow((row, rowNumber) => {
+        if (rowNumber >= 6) {
+          row.height = 20;
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            if (colNumber <= 29) {
+              cell.font = dataFont;
+              cell.border = thinBorder;
+              if (colNumber <= 3) {
+                cell.alignment = { vertical: 'middle', horizontal: colNumber === 3 ? 'left' : 'center' };
+              } else {
+                cell.alignment = { vertical: 'middle', horizontal: 'right' };
+                cell.numFmt = '#,##0';
+              }
+            }
+          });
+        }
+      });
+      
+      ws.getColumn(1).width = 6;
+      ws.getColumn(2).width = 14;
+      ws.getColumn(3).width = 22;
+      for (let c = 4; c <= 29; c++) {
+        ws.getColumn(c).width = (c % 2 === 0) ? 10 : 13;
+      }
+      
+    } else {
+      ws.getRow(1).height = 30;
+      ws.getCell('A1').font = { name: '맑은 고딕', size: 14, bold: true, color: { argb: 'FF0E2E35' } };
+      ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left' };
+      
+      ws.getRow(2).height = 10;
+      
+      const headerRow = ws.getRow(3);
+      headerRow.height = 24;
+      const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B3A42' } };
+      const headerFont = { name: '맑은 고딕', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      const headerAlign = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      
+      headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        if (colNumber <= 15) {
+          cell.fill = headerFill;
+          cell.font = headerFont;
+          cell.alignment = headerAlign;
+          cell.border = thinBorder;
+        }
+      });
+      
+      const totalRow = ws.getRow(4);
+      totalRow.height = 22;
+      const totalFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB7E4DD' } };
+      const totalFont = { name: '맑은 고딕', size: 10, bold: true, color: { argb: 'FF0B3A42' } };
+      const doubleBottomBorder = {
+        top: { style: 'thin', color: { argb: 'FF1B7F8C' } },
+        bottom: { style: 'double', color: { argb: 'FF0B3A42' } },
+        left: { style: 'thin', color: { argb: 'FFDCE8E8' } },
+        right: { style: 'thin', color: { argb: 'FFDCE8E8' } }
+      };
+      
+      totalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        if (colNumber <= 15) {
+          cell.fill = totalFill;
+          cell.font = totalFont;
+          cell.border = doubleBottomBorder;
+          if (colNumber <= 3) {
+            cell.alignment = { vertical: 'middle', horizontal: colNumber === 3 ? 'left' : 'center' };
+          } else if (colNumber === 6 || colNumber === 7) {
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          } else {
+            cell.alignment = { vertical: 'middle', horizontal: 'right' };
+            if (colNumber === 12 || colNumber === 13) {
+              cell.numFmt = '#,##0.0';
+            } else if (colNumber === 14) {
+              cell.numFmt = '+0.0%;-0.0%;0.0%';
+            } else {
+              cell.numFmt = '#,##0';
+            }
+          }
+        }
+      });
+      
+      const dataFont = { name: '맑은 고딕', size: 10, color: { argb: 'FF0E2E35' } };
+      ws.eachRow((row, rowNumber) => {
+        if (rowNumber >= 5) {
+          row.height = 20;
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            if (colNumber <= 15) {
+              cell.font = dataFont;
+              cell.border = thinBorder;
+              if (colNumber === 1 || colNumber === 2 || colNumber === 6 || colNumber === 7) {
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+              } else if (colNumber === 3 || colNumber === 15) {
+                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+              } else {
+                cell.alignment = { vertical: 'middle', horizontal: 'right' };
+                if (colNumber === 12 || colNumber === 13) {
+                  cell.numFmt = '#,##0.0';
+                } else if (colNumber === 14) {
+                  cell.numFmt = '+0.0%;-0.0%;0.0%';
+                } else {
+                  cell.numFmt = '#,##0';
+                }
+              }
+            }
+          });
+        }
+      });
+      
+      const colWidths = [5, 14, 20, 10, 10, 11, 11, 12, 12, 12, 13, 12, 11, 11, 32];
+      colWidths.forEach((w, idx) => {
+        ws.getColumn(idx + 1).width = w;
+      });
+    }
+  }
+  
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
+
+async function exportAll(){
+  const btn = document.getElementById('btnExportAll');
+  if(!btn) return;
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spin" style="display:inline-block; width:12px; height:12px; border:2px solid var(--line); border-top-color:var(--aqua-400); border-radius:50%; animation:spin .7s linear infinite; margin-right:6px; vertical-align:middle;"></span> 생성 중...`;
+
+  try {
+    const sheets = [];
+    
+    // Add Total Sheet
+    const totalAoa = buildTotalSheetAOA();
+    sheets.push({ name: '총계', aoa: totalAoa, isTotal: true });
+
+    // Add Month Sheets
+    STATE.order.forEach(m => {
+      const aoa = monthSheetAOA(m, STATE.months[m]||[]);
+      sheets.push({ name: m, aoa: aoa, isTotal: false });
+    });
+
+    // Collect images only from the last month (latest month) of the work
+    const allImages = [];
+    if (STATE.order.length > 0) {
+      const lastMonth = STATE.order[STATE.order.length - 1];
+      const rows = STATE.months[lastMonth] || [];
+      const sortedRows = rows.slice().sort((a, b) => (a.seq || 0) - (b.seq || 0));
+      sortedRows.forEach(r => {
+        if (r.pdfPageImage) {
+          allImages.push({
+            month: lastMonth,
+            name: r.name,
+            image: r.pdfPageImage
+          });
+        }
+      });
+    }
+
+    if (allImages.length > 0) {
+      sheets.push({
+        name: '요금 청구서',
+        isImageSheet: true,
+        images: allImages
+      });
+    }
+
+    await generateAndDownloadExcel(
+      `상하수도요금_전체현황_${STATE.order[0]}~${STATE.order[STATE.order.length-1]}.xlsx`,
+      sheets
+    );
+
+  } catch (err) {
+    console.error(err);
+    alert('엑셀 파일 생성 중 오류가 발생했습니다: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
 
 function bindMonthExport(month){
   const btn = document.getElementById('btnExportMonth');
@@ -2857,6 +3138,51 @@ function parsePageText(text, lines){
   return r.cust_id ? r : null;
 }
 
+function cropWhiteMargins(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  
+  let minX = w, minY = h, maxX = 0, maxY = 0;
+  
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const a = data[idx + 3];
+      
+      if (a > 50 && (r < 245 || g < 245 || b < 245)) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  
+  if (maxX < minX || maxY < minY) return canvas;
+  
+  const pad = 6;
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(w - 1, maxX + pad);
+  maxY = Math.min(h - 1, maxY + pad);
+  
+  const cropW = maxX - minX + 1;
+  const cropH = maxY - minY + 1;
+  
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropW;
+  cropCanvas.height = cropH;
+  const cropCtx = cropCanvas.getContext('2d');
+  cropCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+  return cropCanvas;
+}
+
 async function extractPdf(file){
   ensurePdfJs();
   const buf = await file.arrayBuffer();
@@ -2900,15 +3226,11 @@ async function extractPdf(file){
 
     let startVal = null, endVal = null;
     if (parsed.period) {
-      // e.g. sm: "11", sd: "30", em: "12", ed: "30"
-      // we need to construct YYYY-MM-DD. Let's assume year based on file name or current year if needed, 
-      // but keeping it simple, let's extract the year from the filename (e.g. 2026) or default to 2026.
       let year = 2026;
       const yrMatch = file.name.match(/(\d{4})년/);
       if (yrMatch) year = parseInt(yrMatch[1], 10);
       
       let startYear = year;
-      // if start month is greater than end month, start date was in previous year
       const sm = parseInt(parsed.period.sm, 10);
       const em = parseInt(parsed.period.em, 10);
       if (sm > em) {
@@ -2923,6 +3245,25 @@ async function extractPdf(file){
       displayName = known.name;
     } else if (parsed.parsed_name) {
       displayName = parsed.parsed_name;
+    }
+
+    // Render page as a compressed JPEG image
+    let jpegDataUrl = null;
+    try {
+      const targetWidth = 800; // slightly wider for better quality
+      const currentViewport = page.getViewport({scale: 1.0});
+      const scale = targetWidth / currentViewport.width;
+      const viewport = page.getViewport({scale: scale});
+      const imgCanvas = document.createElement('canvas');
+      const imgContext = imgCanvas.getContext('2d');
+      imgCanvas.width = Math.ceil(viewport.width);
+      imgCanvas.height = Math.ceil(viewport.height);
+      await page.render({canvasContext: imgContext, viewport}).promise;
+      
+      const croppedCanvas = cropWhiteMargins(imgCanvas);
+      jpegDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.5);
+    } catch (imgErr) {
+      console.error('Failed to render page image:', imgErr);
     }
 
     const row = {
@@ -2942,7 +3283,8 @@ async function extractPdf(file){
       mom_ratio: null,
       prev_usage: 0,
       note: '',
-      contact: known ? known.contact : ''
+      contact: known ? known.contact : '',
+      pdfPageImage: jpegDataUrl
     };
     // merge duplicate pages for same customer (multi-page bills): keep the one with a valid fee total
     if(seen[row.cust_id] !== undefined){
@@ -3047,7 +3389,8 @@ document.getElementById('btnSaveReview').onclick = () => {
     water: r.water, sewer: r.sewer, levy: r.levy, total: r.total,
     daily_avg: r.daily_avg, mom_ratio: r.mom_ratio, prev_usage: r.prev_usage,
     note: r.note || (r.periodText ? `사용기간: ${r.periodText}` : ''),
-    contact: r.contact
+    contact: r.contact,
+    pdfPageImage: r.pdfPageImage
   }));
   
   if(!STATE.order.includes(month)) {
