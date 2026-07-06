@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="theme-dark" data-theme="dark" data-theme-choice="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B4A52">
 <title>부산교통공사 상·하수도요금 관리 대시보드</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -11,22 +13,85 @@
 <style>
 :root{
   --ink:#0E2E35;
-  --teal-900:#0B3A42;
-  --teal-700:#125B66;
-  --teal-500:#1B7F8C;
-  --aqua-400:#3FB6AA;
+  --teal-900:#0A4650;
+  --teal-700:#115F68;
+  --teal-500:#1C7E87;
+  --aqua-400:#45BEB4;
   --aqua-200:#B7E4DD;
-  --mist-100:#EEF4F4;
-  --mist-50:#F6F9F9;
+  --mist-100:#EDF5F5;
+  --mist-50:#F6FAFA;
   --paper:#FFFFFF;
-  --line:#DCE8E8;
-  --muted:#5F7A7E;
-  --up:#C4573D;
-  --down:#2C7F62;
+  --line:#D7E8E9;
+  --muted:#54777E;
+  --up:#C9573A;
+  --down:#267A61;
   --amber:#D9A441;
-  --shadow: 0 1px 2px rgba(11,58,66,.06), 0 8px 24px -12px rgba(11,58,66,.18);
+  --tab-active-text:#0E2E35;
+  --input-bg:#FFFFFF;
+  --hover-row:#EEF6F6;
+  --chart-teal:#45BEB4;
+  --chart-aqua:#45BEB4;
+  --chart-amber:#D9A441;
+  --chart-coral:#C9573A;
+  --chart-grid:#D7E8E9;
+  --chart-text:#365A61;
+  --shadow: 0 1px 2px rgba(10,70,80,.06), 0 9px 24px -14px rgba(10,70,80,.24);
   --radius: 14px;
   font-variant-numeric: tabular-nums;
+}
+:root[data-theme="dark"],
+body[data-theme="dark"]{
+  --ink:#EAF7F7;
+  --teal-900:#0B4A52;
+  --teal-700:#12636B;
+  --teal-500:#28AFA7;
+  --aqua-400:#4DC3BA;
+  --aqua-200:#143D3B;
+  --mist-100:#222827;
+  --mist-50:#1B201F;
+  --paper:#101111;
+  --line:#343B3B;
+  --muted:#94B7BB;
+  --up:#E46E50;
+  --down:#4EC69A;
+  --amber:#F0C15A;
+  --tab-active-text:#EAF7F7;
+  --input-bg:#171B1B;
+  --hover-row:#1B2625;
+  --chart-teal:#00897D;
+  --chart-aqua:#4DC3BA;
+  --chart-amber:#F0C15A;
+  --chart-coral:#E36B4B;
+  --chart-grid:#343B3B;
+  --chart-text:#A8D6D8;
+  --shadow: 0 1px 2px rgba(0,0,0,.22), 0 14px 32px -18px rgba(0,0,0,.65);
+}
+:root[data-theme="light"],
+body[data-theme="light"]{
+  --ink:#0E2E35;
+  --teal-900:#0A4650;
+  --teal-700:#115F68;
+  --teal-500:#1C7E87;
+  --aqua-400:#45BEB4;
+  --aqua-200:#B7E4DD;
+  --mist-100:#EDF5F5;
+  --mist-50:#F6FAFA;
+  --paper:#FFFFFF;
+  --line:#D7E8E9;
+  --muted:#54777E;
+  --up:#C9573A;
+  --down:#267A61;
+  --amber:#D9A441;
+  --tab-active-text:#0E2E35;
+  --input-bg:#FFFFFF;
+  --hover-row:#EEF6F6;
+  --chart-teal:#45BEB4;
+  --chart-aqua:#45BEB4;
+  --chart-amber:#D9A441;
+  --chart-coral:#C9573A;
+  --chart-grid:#D7E8E9;
+  --chart-text:#365A61;
+  --shadow: 0 1px 2px rgba(10,70,80,.06), 0 9px 24px -14px rgba(10,70,80,.24);
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
@@ -38,6 +103,104 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard Variable","Malgun Gothic","Segoe UI",sans-serif;
   min-height:100vh;
 }
+html.theme-light,
+html.theme-light body{
+  color-scheme:only light !important;
+}
+html.theme-dark,
+html.theme-dark body{
+  color-scheme:dark !important;
+}
+html.theme-light body,
+body.theme-light,
+body[data-theme="light"]{
+  background:#F6FAFA !important;
+  color:#0E2E35 !important;
+}
+html.theme-dark body,
+body.theme-dark,
+body[data-theme="dark"]{
+  background:#1B201F !important;
+  color:#EAF7F7 !important;
+}
+html.theme-light .panel,
+html.theme-light .kpi-card,
+body.theme-light .panel,
+body.theme-light .kpi-card,
+body[data-theme="light"] .panel,
+body[data-theme="light"] .kpi-card{background:#FFFFFF !important;border-color:#D7E8E9 !important;}
+html.theme-dark .panel,
+html.theme-dark .kpi-card,
+body.theme-dark .panel,
+body.theme-dark .kpi-card,
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .kpi-card{background:#101111 !important;border-color:#343B3B !important;}
+html.theme-light .section-title h2,
+html.theme-light .panel .panel-head h3,
+html.theme-light .kpi-value,
+body.theme-light .section-title h2,
+body.theme-light .panel .panel-head h3,
+body.theme-light .kpi-value,
+body[data-theme="light"] .section-title h2,
+body[data-theme="light"] .panel .panel-head h3,
+body[data-theme="light"] .kpi-value{color:#0E2E35 !important;}
+html.theme-light .section-title span,
+html.theme-light .panel .panel-head p,
+html.theme-light .kpi-label,
+html.theme-light .kpi-value small,
+body.theme-light .section-title span,
+body.theme-light .panel .panel-head p,
+body.theme-light .kpi-label,
+body.theme-light .kpi-value small,
+body[data-theme="light"] .section-title span,
+body[data-theme="light"] .panel .panel-head p,
+body[data-theme="light"] .kpi-label,
+body[data-theme="light"] .kpi-value small{color:#54777E !important;}
+html.theme-dark .section-title h2,
+html.theme-dark .panel .panel-head h3,
+html.theme-dark .kpi-value,
+body.theme-dark .section-title h2,
+body.theme-dark .panel .panel-head h3,
+body.theme-dark .kpi-value,
+body[data-theme="dark"] .section-title h2,
+body[data-theme="dark"] .panel .panel-head h3,
+body[data-theme="dark"] .kpi-value{color:#EAF7F7 !important;}
+html.theme-dark .section-title span,
+html.theme-dark .panel .panel-head p,
+html.theme-dark .kpi-label,
+html.theme-dark .kpi-value small,
+body.theme-dark .section-title span,
+body.theme-dark .panel .panel-head p,
+body.theme-dark .kpi-label,
+body.theme-dark .kpi-value small,
+body[data-theme="dark"] .section-title span,
+body[data-theme="dark"] .panel .panel-head p,
+body[data-theme="dark"] .kpi-label,
+body[data-theme="dark"] .kpi-value small{color:#94B7BB !important;}
+html.theme-light table.data thead th,
+body.theme-light table.data thead th,
+body[data-theme="light"] table.data thead th{background:#0A4650 !important;color:#FFFFFF !important;}
+html.theme-light table.data thead tr.sub th,
+body.theme-light table.data thead tr.sub th,
+body[data-theme="light"] table.data thead tr.sub th{background:#115F68 !important;color:#FFFFFF !important;}
+html.theme-light table.data tbody td,
+body.theme-light table.data tbody td,
+body[data-theme="light"] table.data tbody td{background:#FFFFFF;color:#0E2E35;}
+html.theme-light table.data tbody tr.total-row td,
+body.theme-light table.data tbody tr.total-row td,
+body[data-theme="light"] table.data tbody tr.total-row td{background:#B7E4DD;color:#0B3A42;}
+html.theme-dark table.data thead th,
+body.theme-dark table.data thead th,
+body[data-theme="dark"] table.data thead th{background:#083E45 !important;color:#FFFFFF !important;}
+html.theme-dark table.data thead tr.sub th,
+body.theme-dark table.data thead tr.sub th,
+body[data-theme="dark"] table.data thead tr.sub th{background:#115B63 !important;color:#FFFFFF !important;}
+html.theme-dark table.data tbody td,
+body.theme-dark table.data tbody td,
+body[data-theme="dark"] table.data tbody td{background:#101111;color:#EAF7F7;border-color:#343B3B;}
+html.theme-dark table.data tbody tr.total-row td,
+body.theme-dark table.data tbody tr.total-row td,
+body[data-theme="dark"] table.data tbody tr.total-row td{background:#143D3B;color:#EAF7F7;}
 ::selection{background:var(--aqua-200);}
 
 /* ---------- Header ---------- */
@@ -60,7 +223,30 @@ header.app-head{
 .brand-mark svg{width:20px;height:20px;}
 .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.2px;}
 .brand p{margin:2px 0 0;font-size:12.5px;color:rgba(255,255,255,.68);}
-.head-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.theme-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: .15s background, .15s transform;
+}
+.theme-btn:hover {
+  background: rgba(255,255,255,.18);
+}
+.theme-btn:active {
+  transform: translateY(1px);
+}
+.theme-btn svg {
+  width: 18px;
+  height: 18px;
+}
 .btn{
   border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.08); color:#fff;
   padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;
@@ -89,7 +275,7 @@ header.app-head{
   position:relative; transition:.15s color,.15s background;
 }
 .tab:hover{color:#fff; background:rgba(255,255,255,.06);}
-.tab.active{color:#0B3A42; background:var(--mist-50);}
+.tab.active{color:var(--tab-active-text); background:var(--mist-50);}
 .tab .dot{display:none;}
 .tab.overview{margin-right:10px;}
 .tab.overview::after{content:"";position:absolute;right:-6px;top:20%;height:60%;width:1px;background:rgba(255,255,255,.2);}
@@ -139,12 +325,12 @@ table.data thead th{
 }
 table.data thead tr.sub th{background:var(--teal-700); font-weight:600; font-size:11.3px;}
 table.data tbody td{
-  padding:8px 10px;border-bottom:1px solid var(--line);border-right:1px solid #EEF3F3;
+  padding:8px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);
   white-space:nowrap; text-align:right;
 }
 table.data tbody td.txt{text-align:left;}
 table.data tbody td.center{text-align:center;}
-table.data tbody tr:hover{background:var(--mist-100);}
+table.data tbody tr:hover{background:var(--hover-row);}
 table.data tbody tr.total-row{background:var(--aqua-200); font-weight:800;}
 table.data tbody tr.total-row td{border-bottom:2px solid var(--teal-500);}
 table.data tbody td.note{text-align:left;white-space:normal;min-width:220px;color:var(--muted);font-size:12px;}
@@ -154,12 +340,15 @@ table.data tbody td.note{text-align:left;white-space:normal;min-width:220px;colo
 .badge.up{background:#FBE7E1;color:var(--up);}
 .badge.down{background:#E1F2EA;color:var(--down);}
 .badge.flat{background:var(--mist-100);color:var(--muted);}
+html.theme-dark .badge.up{background:rgba(228,110,80,.20);}
+html.theme-dark .badge.down{background:rgba(78,198,154,.18);}
+html.theme-dark .badge.flat{background:#222827;}
 input.cell-edit{
   width:100%;border:1px solid transparent;background:transparent;font:inherit;color:inherit;
   text-align:inherit;border-radius:6px;padding:2px 4px;
 }
 input.cell-edit:hover{border-color:var(--line);}
-input.cell-edit:focus{outline:none;border-color:var(--aqua-400);background:#fff;}
+input.cell-edit:focus{outline:none;border-color:var(--aqua-400);background:var(--input-bg);}
 
 .month-table-panel{margin-left:-26px;margin-right:-26px;}
 .month-table-scroll{overflow-x:auto;}
@@ -245,10 +434,20 @@ input.cell-edit:focus{outline:none;border-color:var(--aqua-400);background:#fff;
   background:#FFF7E9;border:1px solid #F0DDAE;color:#7A5B12;border-radius:10px;padding:10px 14px;
   font-size:12.5px;margin:12px 0; display:flex; gap:8px; align-items:flex-start;
 }
+html.theme-dark .review-note{
+  background:#26210F;border-color:#5D4D1D;color:#F0C15A;
+}
 .review-note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;}
 
 .empty-state{padding:50px 20px;text-align:center;color:var(--muted);}
 .empty-state h3{color:var(--ink);font-size:15px;margin-bottom:6px;}
+
+#uploadModal > div{
+  background:var(--paper) !important;
+  color:var(--ink);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+}
 
 .foot-note{color:var(--muted);font-size:11.5px;text-align:center;margin-top:30px;}
 
@@ -364,9 +563,116 @@ body.secure-view [contenteditable="true"]{
   .kpi-grid{grid-template-columns:repeat(2,1fr);}
   .chart-grid{grid-template-columns:1fr;}
 }
+
+/* Final light-mode paint pass. Keeps the dark theme intact, but prevents any
+   stale dark palette from leaking into the body when light mode is active. */
+html.theme-light,
+html.theme-light body,
+body.theme-light,
+html[data-theme="light"],
+body[data-theme="light"]{
+  --ink:#0E2E35 !important;
+  --teal-900:#0A4650 !important;
+  --teal-700:#115F68 !important;
+  --teal-500:#1C7E87 !important;
+  --aqua-400:#45BEB4 !important;
+  --aqua-200:#B7E4DD !important;
+  --mist-100:#EDF5F5 !important;
+  --mist-50:#F6FAFA !important;
+  --paper:#FFFFFF !important;
+  --line:#D7E8E9 !important;
+  --muted:#54777E !important;
+  --up:#C9573A !important;
+  --down:#267A61 !important;
+  --tab-active-text:#0E2E35 !important;
+  --input-bg:#FFFFFF !important;
+  --hover-row:#EEF6F6 !important;
+  --chart-teal:#45BEB4 !important;
+  --chart-aqua:#45BEB4 !important;
+  --chart-coral:#C9573A !important;
+  --chart-grid:#D7E8E9 !important;
+  --chart-text:#365A61 !important;
+  --shadow:0 1px 2px rgba(10,70,80,.06), 0 9px 24px -14px rgba(10,70,80,.24) !important;
+  color-scheme:only light !important;
+  background:#F6FAFA !important;
+  color:#0E2E35 !important;
+}
+html.theme-light main,
+body.theme-light main,
+html[data-theme="light"] main,
+body[data-theme="light"] main{
+  background:#F6FAFA !important;
+}
+html.theme-light .panel,
+html.theme-light .kpi-card,
+body.theme-light .panel,
+body.theme-light .kpi-card,
+html[data-theme="light"] .panel,
+html[data-theme="light"] .kpi-card,
+body[data-theme="light"] .panel,
+body[data-theme="light"] .kpi-card{
+  background:#FFFFFF !important;
+  border-color:#D7E8E9 !important;
+  color:#0E2E35 !important;
+  box-shadow:0 1px 2px rgba(10,70,80,.06), 0 9px 24px -14px rgba(10,70,80,.24) !important;
+}
+html.theme-light .tab.active,
+body.theme-light .tab.active,
+html[data-theme="light"] .tab.active,
+body[data-theme="light"] .tab.active{
+  background:#F6FAFA !important;
+  color:#0E2E35 !important;
+}
+html.theme-light table.data tbody td,
+body.theme-light table.data tbody td,
+html[data-theme="light"] table.data tbody td,
+body[data-theme="light"] table.data tbody td{
+  background:#FFFFFF !important;
+  color:#0E2E35 !important;
+  border-color:#D7E8E9 !important;
+}
+html.theme-light table.data tbody tr.total-row td,
+body.theme-light table.data tbody tr.total-row td,
+html[data-theme="light"] table.data tbody tr.total-row td,
+body[data-theme="light"] table.data tbody tr.total-row td{
+  background:#B7E4DD !important;
+  color:#0B3A42 !important;
+}
+html.theme-light .section-title h2,
+html.theme-light .panel .panel-head h3,
+html.theme-light .kpi-value,
+body.theme-light .section-title h2,
+body.theme-light .panel .panel-head h3,
+body.theme-light .kpi-value,
+html[data-theme="light"] .section-title h2,
+html[data-theme="light"] .panel .panel-head h3,
+html[data-theme="light"] .kpi-value,
+body[data-theme="light"] .section-title h2,
+body[data-theme="light"] .panel .panel-head h3,
+body[data-theme="light"] .kpi-value{
+  color:#0E2E35 !important;
+}
+html.theme-light .section-title span,
+html.theme-light .panel .panel-head p,
+html.theme-light .kpi-label,
+html.theme-light .kpi-value small,
+body.theme-light .section-title span,
+body.theme-light .panel .panel-head p,
+body.theme-light .kpi-label,
+body.theme-light .kpi-value small,
+html[data-theme="light"] .section-title span,
+html[data-theme="light"] .panel .panel-head p,
+html[data-theme="light"] .kpi-label,
+html[data-theme="light"] .kpi-value small,
+body[data-theme="light"] .section-title span,
+body[data-theme="light"] .panel .panel-head p,
+body[data-theme="light"] .kpi-label,
+body[data-theme="light"] .kpi-value small{
+  color:#54777E !important;
+}
 </style>
 </head>
-<body class="auth-locked secure-view">
+<body class="auth-locked secure-view theme-dark" data-theme="dark" data-theme-choice="dark">
 
 <div class="auth-screen" id="authScreen" aria-modal="true" role="dialog">
   <form class="auth-card" id="authForm" autocomplete="off">
@@ -413,6 +719,11 @@ body.secure-view [contenteditable="true"]{
       <button class="btn primary" id="btnExportAll">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
         전체 엑셀 다운로드
+      </button>
+
+      <!-- 화면 제일 오른쪽에 위치한 해와 달 모양 테마 토글 버튼 -->
+      <button class="theme-btn" id="btnThemeToggle" title="화면 테마 변경">
+        <!-- JS에서 다크/라이트 여부에 따라 해(Sun) 또는 달(Moon) 아이콘을 동적으로 주입합니다. -->
       </button>
     </div>
   </div>
@@ -465,6 +776,24 @@ body.secure-view [contenteditable="true"]{
 
 <script id="app-data" type="application/json">{"months":{},"stations":{"421395100":{"name":"부산교통공사 전포분소동","contact":"051-669-5163"},"399981100":{"name":"장산역","contact":"해운대사업소\n051-669-5371"},"399901100":{"name":"중동역","contact":null},"400388100":{"name":"해운대역","contact":null},"399510100":{"name":"동백역","contact":null},"400015100":{"name":"벡스코역","contact":null},"408884100":{"name":"센텀시티역","contact":null},"406755100":{"name":"민락역","contact":"남부사업소\n051-669-5145 \n또는 051-121 "},"408715100":{"name":"수영역2호선","contact":null},"412203100":{"name":"수영역3호선","contact":null},"399518100":{"name":"광안역","contact":null},"399519100":{"name":"금련산역","contact":null},"399963100":{"name":"남천역","contact":null},"400945100":{"name":"경성대부경대역","contact":null},"401873100":{"name":"대연역","contact":null},"399454100":{"name":"못골역","contact":null},"399429100":{"name":"지게골역","contact":null},"399401100":{"name":"문현역","contact":null},"400722100":{"name":"국제금융센터 부산은행역","contact":null},"399526100":{"name":"전포역","contact":"부산진사업소\n051-669-4028\n또는\n051-669-1284"},"117451100":{"name":"부암역","contact":null},"104257100":{"name":"가야역","contact":null},"105750100":{"name":"동의대역","contact":null},"109839100":{"name":"개금역","contact":null},"317230100":{"name":"냉정역","contact":"북부사업소\n051-669-5321\n051-669-5322\n(사상구)\n또는\n051-669-1341\n또는\n669-5311\n(북구)\n669-5316(요금과)\n"},"498207100":{"name":"냉정역(짝수달)","contact":null},"315483100":{"name":"주례역","contact":null},"314120100":{"name":"감전역","contact":null},"312048100":{"name":"사상역","contact":null},"309576100":{"name":"덕포역","contact":null},"309211100":{"name":"모덕역","contact":null},"306105100":{"name":"모라역","contact":null},"177097100":{"name":"구남역","contact":null},"176688100":{"name":"구명역","contact":null},"182281100":{"name":"덕천역(2호선)","contact":null},"424886100":{"name":"덕천역(3호선)","contact":null},"180320100":{"name":"수정역","contact":null},"180531100":{"name":"화명역","contact":null},"180661100":{"name":"율리역","contact":null},"180103100":{"name":"동원역","contact":null},"253022-0035066":{"name":"증산역","contact":"• 상수도\n(055-392-5552~4)\n• 하수도\n(055-392-5453~4)"},"253046-0003048":{"name":"부산대양산캠퍼스역","contact":null},"253046-1265026":{"name":"남양산역","contact":null},"510034-0470010":{"name":"양산역","contact":null}}}</script>
 <script>
+
+const safeStorage = {
+  getItem(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      return this[key] || null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      this[key] = value;
+    }
+  }
+};
+
 /* ============================================================
    상·하수도요금 관리 대시보드 - app logic
    ============================================================ */
@@ -520,6 +849,109 @@ body.secure-view [contenteditable="true"]{
     });
   });
 })();
+
+const THEME_KEY = 'water-dashboard-theme-v2';
+const systemThemeQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+try {
+  localStorage.removeItem('water-dashboard-theme');
+} catch (e) {}
+
+function resolveTheme(choice){
+  if(choice === 'dark' || choice === 'light') return choice;
+  return 'dark';
+}
+
+function updateThemeToggleIcon(resolvedTheme) {
+  const btn = document.getElementById('btnThemeToggle');
+  if (!btn) return;
+  
+  if (resolvedTheme === 'dark') {
+    // 다크모드일 때는 해(Sun) 모양 아이콘 주입 (클릭하면 라이트모드로)
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+      </svg>
+    `;
+    btn.setAttribute('title', '일반 모드로 전환');
+  } else {
+    // 라이트모드일 때는 달(Moon) 모양 아이콘 주입 (클릭하면 다크모드로)
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+      </svg>
+    `;
+    btn.setAttribute('title', '다크 모드로 전환');
+  }
+}
+
+function updateBrowserThemeHints(resolvedTheme){
+  const colorScheme = resolvedTheme === 'light' ? 'only light' : 'dark';
+  document.documentElement.style.colorScheme = colorScheme;
+  if(document.body) document.body.style.colorScheme = colorScheme;
+
+  let colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+  if(!colorSchemeMeta){
+    colorSchemeMeta = document.createElement('meta');
+    colorSchemeMeta.setAttribute('name', 'color-scheme');
+    document.head.appendChild(colorSchemeMeta);
+  }
+  colorSchemeMeta.setAttribute('content', colorScheme);
+
+  let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if(!themeColorMeta){
+    themeColorMeta = document.createElement('meta');
+    themeColorMeta.setAttribute('name', 'theme-color');
+    document.head.appendChild(themeColorMeta);
+  }
+  themeColorMeta.setAttribute('content', resolvedTheme === 'light' ? '#0A4650' : '#0B4A52');
+}
+
+function applyTheme(choice, shouldRender){
+  const selected = choice || safeStorage.getItem(THEME_KEY) || 'dark';
+  const resolved = resolveTheme(selected);
+  document.documentElement.dataset.theme = resolved;
+  document.documentElement.dataset.themeChoice = selected;
+  document.documentElement.classList.toggle('theme-dark', resolved === 'dark');
+  document.documentElement.classList.toggle('theme-light', resolved === 'light');
+  if(document.body){
+    document.body.dataset.theme = resolved;
+    document.body.dataset.themeChoice = selected;
+    document.body.classList.toggle('theme-dark', resolved === 'dark');
+    document.body.classList.toggle('theme-light', resolved === 'light');
+  }
+  
+  updateBrowserThemeHints(resolved);
+  updateThemeToggleIcon(resolved);
+  
+  if(shouldRender && typeof render === 'function') render();
+}
+
+function bindThemeControls(){
+  const btn = document.getElementById('btnThemeToggle');
+  if(!btn) return;
+  
+  btn.onclick = () => {
+    const current = document.documentElement.dataset.theme || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    safeStorage.setItem(THEME_KEY, next);
+    applyTheme(next, true);
+  };
+}
+
+applyTheme(safeStorage.getItem(THEME_KEY) || 'dark', false);
+document.addEventListener('DOMContentLoaded', () => {
+  bindThemeControls();
+  applyTheme(safeStorage.getItem(THEME_KEY) || 'dark', false);
+});
+if(systemThemeQuery){
+  const onSystemThemeChange = () => {
+    if((safeStorage.getItem(THEME_KEY) || 'dark') === 'system') applyTheme('dark', true);
+  };
+  if(systemThemeQuery.addEventListener) systemThemeQuery.addEventListener('change', onSystemThemeChange);
+  else if(systemThemeQuery.addListener) systemThemeQuery.addListener(onSystemThemeChange);
+}
 
 const RAW = JSON.parse(document.getElementById('app-data').textContent);
 // STATE
@@ -810,8 +1242,8 @@ function overviewHTML(){
   });
   if (STATE.order.length === 0) {
     return `
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; text-align:center; background:#fff; border-radius:12px; border:1px dashed #dce8e8; margin-top:20px;">
-      <div style="width:64px; height:64px; border-radius:50%; background:rgba(63,182,170,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:18px; color:var(--primary);">
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; text-align:center; background:var(--paper); border-radius:12px; border:1px dashed var(--line); margin-top:20px;">
+      <div style="width:64px; height:64px; border-radius:50%; background:var(--mist-100); display:flex; align-items:center; justify-content:center; margin-bottom:18px; color:var(--aqua-400);">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
       </div>
       <h3 style="margin:0 0 8px 0; font-size:18px; color:var(--text); font-weight:600;">청구서 데이터가 없습니다</h3>
@@ -960,9 +1392,17 @@ function kpiCard(label, value, unit, delta){
 }
 
 function chartColors(){
+  const style = getComputedStyle(document.documentElement);
+  const css = name => style.getPropertyValue(name).trim();
   return {
-    teal:'#125B66', aqua:'#3FB6AA', amber:'#D9A441', coral:'#C4573D',
-    grid:'#DCE8E8', text:'#5F7A7E'
+    teal: css('--chart-teal') || '#125B66',
+    aqua: css('--chart-aqua') || '#3FB6AA',
+    amber: css('--chart-amber') || '#D9A441',
+    coral: css('--chart-coral') || '#C4573D',
+    grid: css('--chart-grid') || '#DCE8E8',
+    text: css('--chart-text') || '#5F7A7E',
+    ink: css('--ink') || '#0E2E35',
+    paper: css('--paper') || '#FFFFFF'
   };
 }
 
@@ -987,6 +1427,7 @@ function renderOverviewCharts(){
     if (!container) return;
     const parent = container.parentElement;
     if (!parent) return;
+    const colors = chartColors();
     
     const w = parent.clientWidth || 600;
     const h = parent.clientHeight || 270;
@@ -1026,8 +1467,8 @@ function renderOverviewCharts(){
       const val = Math.round(minVal + (maxVal - minVal) * (i / 4));
       const y = h - paddingBottom - (i / 4) * (h - paddingTop - paddingBottom);
       yTicks += `
-        <line x1="${paddingLeft}" y1="${y}" x2="${w - paddingRight}" y2="${y}" stroke="#E6ECEC" stroke-dasharray="3,3" />
-        <text x="${paddingLeft - 8}" y="${y + 4}" font-size="10" fill="#5F7A7E" text-anchor="end">${val.toLocaleString('ko-KR')}</text>
+        <line x1="${paddingLeft}" y1="${y}" x2="${w - paddingRight}" y2="${y}" stroke="${colors.grid}" stroke-dasharray="3,3" />
+        <text x="${paddingLeft - 8}" y="${y + 4}" font-size="10" fill="${colors.text}" text-anchor="end">${val.toLocaleString('ko-KR')}</text>
       `;
     }
 
@@ -1035,8 +1476,8 @@ function renderOverviewCharts(){
     labels.forEach((m, idx) => {
       const x = paddingLeft + idx * dx;
       xTicks += `
-        <line x1="${x}" y1="${h - paddingBottom}" x2="${x}" y2="${h - paddingBottom + 4}" stroke="#DCE8E8" />
-        <text x="${x}" y="${h - paddingBottom + 18}" font-size="10.5" fill="#5F7A7E" font-weight="600" text-anchor="middle">${m}</text>
+        <line x1="${x}" y1="${h - paddingBottom}" x2="${x}" y2="${h - paddingBottom + 4}" stroke="${colors.grid}" />
+        <text x="${x}" y="${h - paddingBottom + 18}" font-size="10.5" fill="${colors.text}" font-weight="600" text-anchor="middle">${m}</text>
       `;
     });
 
@@ -1051,12 +1492,12 @@ function renderOverviewCharts(){
           const x = paddingLeft + idx * dx;
           const y = h - paddingBottom - ((val - minVal) / (maxVal - minVal)) * (h - paddingTop - paddingBottom);
           return `
-            <circle cx="${x}" cy="${y}" r="4.5" fill="${strokeColor}" stroke="#fff" stroke-width="1.8" style="cursor:pointer;" />
+            <circle cx="${x}" cy="${y}" r="4.5" fill="${strokeColor}" stroke="${colors.paper || '#fff'}" stroke-width="1.8" style="cursor:pointer;" />
             <title>${labels[idx]}: ${val.toLocaleString('ko-KR')}</title>
           `;
         }).join('')}
-        <line x1="${paddingLeft}" y1="${h - paddingBottom}" x2="${w - paddingRight}" y2="${h - paddingBottom}" stroke="#DCE8E8" stroke-width="1.5" />
-        <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${h - paddingBottom}" stroke="#DCE8E8" stroke-width="1.5" />
+        <line x1="${paddingLeft}" y1="${h - paddingBottom}" x2="${w - paddingRight}" y2="${h - paddingBottom}" stroke="${colors.grid}" stroke-width="1.5" />
+        <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${h - paddingBottom}" stroke="${colors.grid}" stroke-width="1.5" />
       </svg>
     `;
   }
@@ -1066,6 +1507,7 @@ function renderOverviewCharts(){
     if (!container) return;
     const parent = container.parentElement;
     if (!parent) return;
+    const colors = chartColors();
 
     const w = parent.clientWidth || 600;
     const h = parent.clientHeight || 250;
@@ -1086,15 +1528,15 @@ function renderOverviewCharts(){
       const rh = barHeight * 0.7;
 
       bars += `
-        <text x="${paddingLeft - 8}" y="${ry + rh/2 + 4}" font-size="10.5" fill="#0E2E35" font-weight="600" text-anchor="end">${item[labelKey]}</text>
+        <text x="${paddingLeft - 8}" y="${ry + rh/2 + 4}" font-size="10.5" fill="${colors.ink}" font-weight="600" text-anchor="end">${item[labelKey]}</text>
         <rect x="${paddingLeft}" y="${ry}" width="${Math.max(rw, 2)}" height="${rh}" fill="${barColor}" rx="3" />
-        <text x="${paddingLeft + rw + 6}" y="${ry + rh/2 + 4}" font-size="10" fill="#5F7A7E" font-weight="700">${val.toLocaleString('ko-KR')}${suffix}</text>
+        <text x="${paddingLeft + rw + 6}" y="${ry + rh/2 + 4}" font-size="10" fill="${colors.text}" font-weight="700">${val.toLocaleString('ko-KR')}${suffix}</text>
       `;
     });
 
     parent.innerHTML = `
       <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" style="font-family:sans-serif;">
-        <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${h - paddingBottom}" stroke="#DCE8E8" stroke-width="1.5" />
+        <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${h - paddingBottom}" stroke="${colors.grid}" stroke-width="1.5" />
         ${bars}
       </svg>
     `;
@@ -1154,8 +1596,7 @@ function renderOverviewCharts(){
   if (isChartJsAvailable) {
     try {
       destroyChart('chartStack');
-      const ctx3 = document.getElementById('chartStack');
-      if(ctx3) STATE.charts.chartStack = new Chart(ctx3, {
+      const ctx3 = document.getElementById('chartStack');      if(ctx3) STATE.charts.chartStack = new Chart(ctx3, {
         type:'bar',
         data:{labels, datasets:[
           {label:'상수도', data: monthSums.map(s=>s.water), backgroundColor:c.teal},
@@ -1164,8 +1605,11 @@ function renderOverviewCharts(){
         ]},
         options: {
           responsive:true, maintainAspectRatio:false,
-          scales:{ x:{stacked:true, grid:{display:false}}, y:{stacked:true, grid:{color:c.grid}, ticks:{callback:v=>won(v)}} },
-          plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }
+          scales:{ 
+            x:{stacked:true, grid:{display:false}, ticks:{color:c.text}}, 
+            y:{stacked:true, grid:{color:c.grid}, ticks:{callback:v=>won(v), color:c.text}} 
+          },
+          plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}, color:c.text}} }
         }
       });
     } catch (err) {
@@ -1183,15 +1627,17 @@ function renderOverviewCharts(){
     try {
       const latestRows = (STATE.months[latestMonth] || []).slice().sort((a,b)=>(b.daily_avg||0)-(a.daily_avg||0)).slice(0,8);
       destroyChart('chartTop');
-      const ctx4 = document.getElementById('chartTop');
-      if(ctx4) STATE.charts.chartTop = new Chart(ctx4, {
+      const ctx4 = document.getElementById('chartTop');      if(ctx4) STATE.charts.chartTop = new Chart(ctx4, {
         type:'bar',
         data:{labels: latestRows.map(r=>r.name), datasets:[{
           label:'일평균 사용량(ton/일)', data: latestRows.map(r=>Number((r.daily_avg || 0).toFixed(1))), backgroundColor: c.teal, borderRadius:4
         }]},
         options:{
           indexAxis:'y', responsive:true, maintainAspectRatio:false,
-          scales:{ x:{grid:{color:c.grid}, ticks:{callback:v=>Number(v).toFixed(1)}}, y:{grid:{display:false}} },
+          scales:{ 
+            x:{grid:{color:c.grid}, ticks:{callback:v=>Number(v).toFixed(1), color:c.text}}, 
+            y:{grid:{display:false}, ticks:{color:c.text}} 
+          },
           plugins:{legend:{display:false}}
         }
       });
@@ -1217,8 +1663,7 @@ function renderOverviewCharts(){
         .slice(0, 8);
 
       destroyChart('chartGrowth');
-      const ctx5 = document.getElementById('chartGrowth');
-      if(ctx5) STATE.charts.chartGrowth = new Chart(ctx5, {
+      const ctx5 = document.getElementById('chartGrowth');      if(ctx5) STATE.charts.chartGrowth = new Chart(ctx5, {
         type:'bar',
         data:{labels: growthRows.map(r=>r.name), datasets:[{
           label:'증가율(%)', data: growthRows.map(r=>r.pct), backgroundColor: c.coral, borderRadius:4
@@ -1226,8 +1671,8 @@ function renderOverviewCharts(){
         options:{
           indexAxis:'y', responsive:true, maintainAspectRatio:false,
           scales:{ 
-            x:{grid:{color:c.grid}, ticks:{callback:v=>v.toFixed(1)+'%'}}, 
-            y:{grid:{display:false}} 
+            x:{grid:{color:c.grid}, ticks:{callback:v=>v.toFixed(1)+'%', color:c.text}}, 
+            y:{grid:{display:false}, ticks:{color:c.text}} 
           },
           plugins:{legend:{display:false}}
         }
@@ -1253,10 +1698,10 @@ function baseLineOpts(yLabel, showLegend = false){
   return {
     responsive:true, maintainAspectRatio:false,
     scales:{
-      x:{grid:{display:false}},
-      y:{grid:{color:c.grid}, ticks:{callback:v=>v.toLocaleString('ko-KR')}}
+      x:{grid:{display:false}, ticks:{color:c.text}},
+      y:{grid:{color:c.grid}, ticks:{callback:v=>v.toLocaleString('ko-KR'), color:c.text}}
     },
-    plugins:{legend:{display:showLegend, position:'bottom', labels:{boxWidth:12, font:{size:11}}}}
+    plugins:{legend:{display:showLegend, position:'bottom', labels:{boxWidth:12, font:{size:11}, color:c.text}}}
   };
 }
 
@@ -1436,8 +1881,7 @@ function renderMonthChart(month, rows){
     destroyChart('chartMonthUsage');
     destroyChart('chartMonthGrowth');
     const ctxUsage = document.getElementById('chartMonthUsage');
-    const ctxGrowth = document.getElementById('chartMonthGrowth');
-    if(ctxUsage) {
+    const ctxGrowth = document.getElementById('chartMonthGrowth');    if(ctxUsage) {
       STATE.charts.chartMonthUsage = new Chart(ctxUsage, {
         type:'bar',
         data:{labels: topDailyRows.map(r=>r.name), datasets:[{
@@ -1445,7 +1889,10 @@ function renderMonthChart(month, rows){
         }]},
         options:{
           indexAxis:'y', responsive:true, maintainAspectRatio:false,
-          scales:{ x:{grid:{color:c.grid}, ticks:{callback:v=>Number(v).toFixed(1)}}, y:{grid:{display:false}, ticks:{font:{size:11}}} },
+          scales:{ 
+            x:{grid:{color:c.grid}, ticks:{callback:v=>Number(v).toFixed(1), color:c.text}}, 
+            y:{grid:{display:false}, ticks:{font:{size:11}, color:c.text}} 
+          },
           plugins:{legend:{display:false}}
         }
       });
@@ -1458,7 +1905,10 @@ function renderMonthChart(month, rows){
         }]},
         options:{
           indexAxis:'y', responsive:true, maintainAspectRatio:false,
-          scales:{ x:{grid:{color:c.grid}, ticks:{callback:v=>Number(v).toFixed(1)+'%'}}, y:{grid:{display:false}, ticks:{font:{size:11}}} },
+          scales:{ 
+            x:{grid:{color:c.grid}, ticks:{callback:v=>Number(v).toFixed(1)+'%', color:c.text}}, 
+            y:{grid:{display:false}, ticks:{font:{size:11}, color:c.text}} 
+          },
           plugins:{legend:{display:false}}
         }
       });
@@ -1474,6 +1924,7 @@ function renderMonthChart(month, rows){
     if (!container) return;
     const parent = container.parentElement;
     if (!parent) return;
+    const colors = chartColors();
 
     const w = parent.clientWidth || 600;
     const h = parent.clientHeight || 230;
@@ -1494,15 +1945,15 @@ function renderMonthChart(month, rows){
       const rh = barHeight * 0.8;
 
       bars += `
-        <text x="${paddingLeft - 8}" y="${ry + rh/2 + 4}" font-size="9.5" fill="#0E2E35" font-weight="600" text-anchor="end">${item.name}</text>
+        <text x="${paddingLeft - 8}" y="${ry + rh/2 + 4}" font-size="9.5" fill="${colors.ink}" font-weight="600" text-anchor="end">${item.name}</text>
         <rect x="${paddingLeft}" y="${ry}" width="${Math.max(rw, 2)}" height="${rh}" fill="${color}" rx="2" />
-        <text x="${paddingLeft + rw + 6}" y="${ry + rh/2 + 4}" font-size="9" fill="#5F7A7E" font-weight="700">${val.toLocaleString('ko-KR')}${suffix}</text>
+        <text x="${paddingLeft + rw + 6}" y="${ry + rh/2 + 4}" font-size="9" fill="${colors.text}" font-weight="700">${val.toLocaleString('ko-KR')}${suffix}</text>
       `;
     });
 
     parent.innerHTML = `
       <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" style="font-family:sans-serif;">
-        <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${h - paddingBottom}" stroke="#DCE8E8" stroke-width="1.2" />
+        <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${h - paddingBottom}" stroke="${colors.grid}" stroke-width="1.2" />
         ${bars}
       </svg>
     `;
@@ -2999,13 +3450,3 @@ render();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
