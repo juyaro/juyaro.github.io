@@ -698,9 +698,13 @@ body[data-theme="light"] .kpi-value small{
       </div>
     </div>
     <div class="head-actions">
+      <button class="btn primary" id="btnUploadLegacy">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg>
+        청구서 PDF 업로드 Ⅰ
+      </button>
       <button class="btn primary" id="btnUpload">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg>
-        청구서 PDF 업로드
+        청구서 PDF 업로드 Ⅱ
       </button>
       <button class="btn" id="btnExportProject" title="현재 작업한 전체 데이터를 JSON 파일로 내보냅니다.">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1249,7 +1253,10 @@ function overviewHTML(){
       </div>
       <h3 style="margin:0 0 8px 0; font-size:18px; color:var(--text); font-weight:600;">청구서 데이터가 없습니다</h3>
       <p style="margin:0 0 24px 0; color:var(--muted); font-size:14px; max-width:320px;">상수도 또는 하수도 요금 청구서 PDF 파일을 업로드하면 대시보드가 활성화됩니다.</p>
-      <button class="btn primary" onclick="document.getElementById('btnUpload').click()">청구서 PDF 업로드하기</button>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn primary" onclick="document.getElementById('btnUploadLegacy').click()">청구서 PDF 업로드 Ⅰ</button>
+        <button class="btn primary" onclick="document.getElementById('btnUpload').click()">청구서 PDF 업로드 Ⅱ</button>
+      </div>
     </div>
     `;
   }
@@ -2259,6 +2266,21 @@ function applyTotalSheetStyles(ws){
 async function generateAndDownloadExcel(filename, sheets) {
   const workbook = new ExcelJS.Workbook();
   
+  function normalizeExcelImageData(imageData) {
+    const raw = String(imageData || '');
+    const m = raw.match(/^data:image\/(png|jpe?g);base64,(.+)$/i);
+    if (m) {
+      return {
+        base64: m[2],
+        extension: m[1].toLowerCase() === 'png' ? 'png' : 'jpeg'
+      };
+    }
+    return {
+      base64: raw,
+      extension: 'jpeg'
+    };
+  }
+
   for (const sheetConfig of sheets) {
     const ws = workbook.addWorksheet(sheetConfig.name);
     ws.views = [{ showGridLines: true }];
@@ -2287,15 +2309,13 @@ async function generateAndDownloadExcel(filename, sheets) {
         ws.getRow(startRow + 35).height = 20;
         ws.getRow(startRow + 36).height = 20;
 
-        const imageId = workbook.addImage({
-          base64: item.image,
-          extension: 'jpeg',
-        });
+        const imageData = normalizeExcelImageData(item.image);
+        if (!imageData.base64) continue;
+        const imageId = workbook.addImage(imageData);
 
         ws.addImage(imageId, {
           tl: { col: 1, row: startRow + 2 },
-          ext: { width: 700, height: 830 }, // 18.5cm x 22cm
-          editAs: 'oneCell'
+          br: { col: 2, row: startRow + 35 }
         });
       }
       continue;
@@ -2591,11 +2611,20 @@ function ensurePdfJs(){
 }
 
 const modal = document.getElementById('uploadModal');
-document.getElementById('btnUpload').onclick = () => openUploadModal();
+let uploadMode = 'withImages';
+document.getElementById('btnUploadLegacy').onclick = () => openUploadModal('textOnly');
+document.getElementById('btnUpload').onclick = () => openUploadModal('withImages');
 document.getElementById('btnCloseModal').onclick = () => modal.style.display='none';
 modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.style.display='none'; });
 
-function openUploadModal(){
+function openUploadModal(mode = 'withImages'){
+  uploadMode = mode;
+  const title = modal.querySelector('h3');
+  if(title){
+    title.textContent = mode === 'textOnly'
+      ? '청구서 PDF 업로드 Ⅰ & 자동 추출'
+      : '청구서 PDF 업로드 Ⅱ & 자동 추출';
+  }
   const sel = document.getElementById('monthSelect');
   sel.innerHTML = '';
   STATE.order.forEach(m=>{
@@ -2637,7 +2666,7 @@ async function handleFiles(fileList){
     item.innerHTML = `<span class="spin"></span> ${file.name} 분석 중...`;
     progressList.appendChild(item);
     try{
-      const rows = await extractPdf(file);
+      const rows = await extractPdf(file, { includePageImages: uploadMode === 'withImages' });
       extractedRows = extractedRows.concat(rows);
       item.innerHTML = `\u2713 ${file.name} — ${rows.length}건 인식`;
       item.classList.add('done');
@@ -3183,7 +3212,8 @@ function cropWhiteMargins(canvas) {
   return cropCanvas;
 }
 
-async function extractPdf(file){
+async function extractPdf(file, options = {}){
+  const includePageImages = options.includePageImages !== false;
   ensurePdfJs();
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({data: buf}).promise;
@@ -3247,23 +3277,25 @@ async function extractPdf(file){
       displayName = parsed.parsed_name;
     }
 
-    // Render page as a compressed JPEG image
     let jpegDataUrl = null;
-    try {
-      const targetWidth = 800; // slightly wider for better quality
-      const currentViewport = page.getViewport({scale: 1.0});
-      const scale = targetWidth / currentViewport.width;
-      const viewport = page.getViewport({scale: scale});
-      const imgCanvas = document.createElement('canvas');
-      const imgContext = imgCanvas.getContext('2d');
-      imgCanvas.width = Math.ceil(viewport.width);
-      imgCanvas.height = Math.ceil(viewport.height);
-      await page.render({canvasContext: imgContext, viewport}).promise;
-      
-      const croppedCanvas = cropWhiteMargins(imgCanvas);
-      jpegDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.5);
-    } catch (imgErr) {
-      console.error('Failed to render page image:', imgErr);
+    if (includePageImages) {
+      // Render page as a compressed JPEG image for upload mode II.
+      try {
+        const targetWidth = 800; // slightly wider for better quality
+        const currentViewport = page.getViewport({scale: 1.0});
+        const scale = targetWidth / currentViewport.width;
+        const viewport = page.getViewport({scale: scale});
+        const imgCanvas = document.createElement('canvas');
+        const imgContext = imgCanvas.getContext('2d');
+        imgCanvas.width = Math.ceil(viewport.width);
+        imgCanvas.height = Math.ceil(viewport.height);
+        await page.render({canvasContext: imgContext, viewport}).promise;
+        
+        const croppedCanvas = cropWhiteMargins(imgCanvas);
+        jpegDataUrl = croppedCanvas.toDataURL('image/jpeg', 0.5);
+      } catch (imgErr) {
+        console.error('Failed to render page image:', imgErr);
+      }
     }
 
     const row = {
