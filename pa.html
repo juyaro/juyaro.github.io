@@ -757,6 +757,51 @@ tbody tr.tr-conflict td .td-name {
     (0, eval)(decodedText);
 })();
 </script>
+<script>
+(function() {
+    // 기본 모드가 다크모드가 되도록 로컬스토리지 기본값 초기화
+    if (!localStorage.getItem('antigravity-theme-mode')) {
+        localStorage.setItem('antigravity-theme-mode', 'dark');
+    }
+
+    var originalChangeThemeMode = window.changeThemeMode;
+    
+    window.changeThemeMode = function(mode) {
+        // 기존 테마 변경 로직 실행
+        if (typeof originalChangeThemeMode === 'function') {
+            originalChangeThemeMode(mode);
+        }
+        
+        // 브라우저의 강제 다크모드를 무력화하기 위한 color-scheme 동적 적용
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        let isDark = false;
+        
+        if (mode === 'dark') {
+            isDark = true;
+        } else if (mode === 'light') {
+            isDark = false;
+        } else { // system
+            isDark = mediaQuery.matches;
+        }
+        
+        if (isDark) {
+            document.documentElement.style.setProperty('color-scheme', 'dark', 'important');
+            document.documentElement.style.colorScheme = 'dark';
+        } else {
+            document.documentElement.style.setProperty('color-scheme', 'only light', 'important');
+            document.documentElement.style.colorScheme = 'only light';
+        }
+    };
+
+    // 초기 테마 로드 시 호출하여 다크모드 기본 실행 및 배율/테마 동기화 적용
+    const savedTheme = localStorage.getItem('antigravity-theme-mode') || 'dark';
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+        themeSelect.value = savedTheme;
+    }
+    window.changeThemeMode(savedTheme);
+})();
+</script>
 </div> <!-- /#app-content-wrapper -->
 </body>
 </html>
