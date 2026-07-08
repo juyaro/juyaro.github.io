@@ -465,88 +465,115 @@ body.auth-locked > #uploadModal{
   pointer-events:none;
 }
 .auth-screen{
-  position:fixed;
-  inset:0;
-  z-index:9999;
+  position:fixed !important;
+  inset:0 !important;
+  z-index:99999 !important;
   display:none;
-  align-items:center;
-  justify-content:center;
-  background:#0B0F14;
-  color:#EAF2FF;
-  padding:24px;
+  align-items:center !important;
+  justify-content:center !important;
+  background:#0b0f19 !important;
+  color:#ffffff !important;
+  padding:24px !important;
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
-body.auth-locked .auth-screen{display:flex;}
-.auth-card{
-  width:300px;
-  min-height:296px;
-  background:#141B26;
-  border:1px solid #243247;
-  border-radius:9px;
-  box-shadow:0 22px 70px rgba(0,0,0,.36);
-  padding:36px 28px;
-  text-align:center;
+body.auth-locked .auth-screen{display:flex !important;}
+.auth-card {
+  width: 300px !important;
+  height: 320px !important;
+  margin: 0 !important;
+  padding: 36px 28px !important;
+  border: 1px solid #1f2937 !important;
+  border-radius: 10px !important;
+  background: #111827 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
 }
-.auth-logo{
-  width:32px;
-  height:32px;
-  margin:0 auto 22px;
-  border-radius:6px;
-  background:linear-gradient(135deg,#33A3FF,#2377F2);
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:17px;
-  font-weight:900;
-  line-height:1;
-  box-shadow:0 8px 20px rgba(35,119,242,.36);
+.auth-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  margin: 0 auto 20px !important;
+  border-radius: 6px !important;
+  background: #1a8cff !important;
+  color: #fff !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 12px rgba(26, 140, 255, 0.4) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
 }
-.auth-card h2{
-  margin:0 0 12px;
-  font-size:17px;
-  font-weight:800;
-  letter-spacing:0;
+.auth-card h1 {
+  margin: 0 0 10px 0 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.2 !important;
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
 }
-.auth-card p{
-  margin:0 0 22px;
-  color:#B6C5D8;
-  font-size:12px;
-  line-height:1.45;
+.auth-card p {
+  margin: 0 0 20px 0 !important;
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+  word-break: keep-all !important;
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
 }
-.auth-card input{
-  width:100%;
-  height:36px;
-  border:1px solid #34445D;
-  border-radius:4px;
-  background:#202A3A;
-  color:#fff;
-  text-align:center;
-  outline:none;
-  font:600 12px/1 inherit;
+.auth-card input {
+  width: 100% !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  background: #1e293b !important;
+  border: 1px solid #2a3547 !important;
+  border-radius: 4px !important;
+  color: #fff !important;
+  font-size: 12.5px !important;
+  outline: none !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s !important;
+  margin: 0 0 12px 0 !important;
 }
-.auth-card input::placeholder{color:#7F8DA1;}
-.auth-card input:focus{
-  border-color:#3B82F6;
-  box-shadow:0 0 0 2px rgba(59,130,246,.18);
+.auth-card input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18) !important;
 }
-.auth-card button{
-  width:100%;
-  height:37px;
-  margin-top:14px;
-  border:0;
-  border-radius:4px;
-  background:#3B82F6;
-  color:#fff;
-  font:800 13px/1 inherit;
-  cursor:pointer;
+.auth-card button {
+  width: 100% !important;
+  height: 36px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  background: #3b82f6 !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: background 0.15s !important;
 }
-.auth-card button:hover{background:#4A8DF7;}
-.auth-error{
-  min-height:16px;
-  margin-top:10px;
-  color:#FF8A8A;
-  font-size:11px;
-  font-weight:700;
+.auth-card button:hover {
+  background: #2563eb !important;
+}
+.auth-error {
+  height: 18px !important;
+  margin-top: 10px !important;
+  color: #ef4444 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 18px !important;
+  word-break: keep-all !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
 }
 body.secure-view,
 body.secure-view *{
@@ -677,8 +704,8 @@ body[data-theme="light"] .kpi-value small{
 
 <div class="auth-screen" id="authScreen" aria-modal="true" role="dialog">
   <form class="auth-card" id="authForm" autocomplete="off">
-    <div class="auth-logo">W</div>
-    <h2>시스템 보안 인증</h2>
+    <div class="auth-badge" onclick="location.href='./index.html'">W</div>
+    <h1>시스템 보안 인증</h1>
     <p>이동 관리 대시보드에 접근하기 위해<br>비밀번호를 입력해 주십시오.</p>
     <input id="authPassword" type="password" placeholder="비밀번호 입력" autocomplete="current-password">
     <button type="submit">확인</button>
