@@ -1654,6 +1654,114 @@
             .comp-row-hover:hover td.sticky-col {
                 background: #202b41 !important; /* Opaque background when hovered to hide scrolled text */
             }
+            .auth-overlay {
+                position: fixed !important;
+                inset: 0 !important;
+                display: flex;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 24px !important;
+                background: #0b0f19 !important;
+                color: #ffffff !important;
+                z-index: 99999 !important;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            }
+            .auth-card {
+                width: 300px !important;
+                height: 320px !important;
+                margin: 0 !important;
+                padding: 36px 28px !important;
+                border: 1px solid #1f2937 !important;
+                border-radius: 10px !important;
+                background: #111827 !important;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+                text-align: center !important;
+                box-sizing: border-box !important;
+            }
+            .auth-badge {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 32px !important;
+                height: 32px !important;
+                margin: 0 auto 20px !important;
+                border-radius: 6px !important;
+                background: #1a8cff !important;
+                color: #fff !important;
+                font-size: 16px !important;
+                font-weight: 800 !important;
+                box-shadow: 0 0 12px rgba(26, 140, 255, 0.4) !important;
+                cursor: pointer !important;
+            }
+            .auth-card h1 {
+                margin: 0 0 10px 0 !important;
+                font-size: 16px !important;
+                font-weight: 700 !important;
+                color: #ffffff !important;
+                letter-spacing: -0.03em !important;
+                line-height: 1.2 !important;
+                border: none !important;
+                padding: 0 !important;
+                background: transparent !important;
+            }
+            .auth-card p {
+                margin: 0 0 20px 0 !important;
+                color: #94a3b8 !important;
+                font-size: 11px !important;
+                line-height: 1.5 !important;
+                word-break: keep-all !important;
+                border: none !important;
+                padding: 0 !important;
+                background: transparent !important;
+            }
+            .auth-card input {
+                width: 100% !important;
+                height: 36px !important;
+                padding: 0 12px !important;
+                background: #1e293b !important;
+                border: 1px solid #2a3547 !important;
+                border-radius: 4px !important;
+                color: #fff !important;
+                font-size: 12.5px !important;
+                outline: none !important;
+                text-align: center !important;
+                box-sizing: border-box !important;
+                transition: border-color 0.15s !important;
+                margin: 0 0 12px 0 !important;
+            }
+            .auth-card input:focus {
+                border-color: #3b82f6 !important;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18) !important;
+            }
+            .auth-card button {
+                width: 100% !important;
+                height: 36px !important;
+                margin: 0 !important;
+                border: 0 !important;
+                border-radius: 4px !important;
+                background: #3b82f6 !important;
+                color: #fff !important;
+                font-size: 13px !important;
+                font-weight: 700 !important;
+                cursor: pointer !important;
+                box-sizing: border-box !important;
+                transition: background 0.15s !important;
+            }
+            .auth-card button:hover {
+                background: #2563eb !important;
+            }
+            .auth-error {
+                height: 18px !important;
+                margin-top: 10px !important;
+                color: #ef4444 !important;
+                font-size: 11px !important;
+                font-weight: 500 !important;
+                line-height: 18px !important;
+                word-break: keep-all !important;
+                background: transparent !important;
+                border: none !important;
+                padding: 0 !important;
+            }
         </style>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1662,14 +1770,14 @@
 <body style="overflow: hidden;">
 
     <!-- 시스템 접속 보안 인증 레이어 -->
-    <div id="auth-overlay" style="position:fixed; inset:0; background:#060814; z-index:10000; display:flex; align-items:center; justify-content:center; font-family:'Noto Sans KR', sans-serif;">
-        <div style="background:#0f1322; padding:45px 35px; border-radius:12px; border:1px solid #1e293b; box-shadow:0 20px 40px rgba(0, 0, 0, 0.6); text-align:center; width:340px; box-sizing:border-box;">
-            <div onclick="location.href='https://juyaro.github.io/vudwjd.html'" style="width:48px; height:48px; background:linear-gradient(135deg, #0ea5e9, #2563eb); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#fff; margin:0 auto 20px; box-shadow: 0 4px 12px rgba(37,99,235,0.2); cursor:pointer;">2</div>
-            <div style="font-size:18px; font-weight:700; color:#ffffff; margin-bottom:12px; letter-spacing:-0.5px;">시스템 보안 인증</div>
-            <div style="font-size:12px; color:#94a3b8; line-height:1.6; margin-bottom:24px; font-weight:400;">이동 관리 대시보드에 접근하기 위해<br>비밀번호를 입력해 주십시오.</div>
-            <input type="password" id="sys-pw" onkeydown="if(event.key==='Enter') checkAuth()" placeholder="비밀번호 입력" style="background:#161c2d; border:1px solid #273549; color:#fff; padding:12px; border-radius:6px; width:100%; outline:none; font-size:14px; text-align:center; box-sizing:border-box; transition:all 0.2s; margin-bottom:12px;">
-            <button onclick="checkAuth()" style="background:#3b82f6; color:#fff; border:none; padding:12px; border-radius:6px; font-weight:700; cursor:pointer; width:100%; font-size:14px; transition:all 0.2s;">확인</button>
-            <div id="pw-err" style="color:#ef4444; font-size:12px; margin-top:15px; display:none; font-weight:600; background:rgba(239,68,68,0.1); padding:8px; border-radius:6px; box-sizing:border-box; border:1px solid rgba(239,68,68,0.2);">❌ 비밀번호가 올바르지 않습니다.</div>
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-badge" onclick="location.href='./pa.html'">2</div>
+            <h1>시스템 보안 인증</h1>
+            <p>이동 관리 대시보드에 접근하기 위해<br>비밀번호를 입력해 주십시오.</p>
+            <input type="password" id="sys-pw" onkeydown="if(event.key==='Enter') checkAuth()" placeholder="비밀번호 입력">
+            <button onclick="checkAuth()">확인</button>
+            <div id="pw-err" class="auth-error" style="display:none;">❌ 비밀번호가 올바르지 않습니다.</div>
         </div>
     </div>
 
@@ -2637,6 +2745,45 @@
                 console.error("Error executing dashboard script:", err);
             }
         })();
+    </script>
+    <script>
+    (function() {
+        var originalSetTheme = window.setTheme;
+        window.setTheme = function(theme) {
+            if (typeof originalSetTheme === 'function') {
+                originalSetTheme(theme);
+            }
+            // 브라우저의 강제 다크모드를 방지하기 위해 color-scheme 설정 추가
+            var applyTheme = theme;
+            if (theme === 'system') {
+                applyTheme = (typeof getThemeBySunTime === 'function') ? getThemeBySunTime() : 'dark';
+            }
+            if (applyTheme === 'light') {
+                document.documentElement.style.setProperty('color-scheme', 'only light', 'important');
+                document.documentElement.style.colorScheme = 'only light';
+            } else {
+                document.documentElement.style.setProperty('color-scheme', 'dark', 'important');
+                document.documentElement.style.colorScheme = 'dark';
+            }
+        };
+
+        // 초기 테마 로드 시에도 강제로 적용되도록 초기 실행
+        var savedTheme = localStorage.getItem('dashboard-theme') || 'dark';
+        window.setTheme(savedTheme);
+
+        // 시스템 테마 변경 시에도 반영되도록 오버라이드
+        setInterval(function() {
+            var theme = localStorage.getItem('dashboard-theme') || 'dark';
+            if (theme === 'system') {
+                var applyTheme = (typeof getThemeBySunTime === 'function') ? getThemeBySunTime() : 'dark';
+                if (applyTheme === 'light') {
+                    document.documentElement.style.colorScheme = 'only light';
+                } else {
+                    document.documentElement.style.colorScheme = 'dark';
+                }
+            }
+        }, 5000); // 5초마다 체크하여 동기화
+    })();
     </script>
 </body>
 </html>
