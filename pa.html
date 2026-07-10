@@ -507,7 +507,7 @@ tbody tr.tr-conflict td .td-name {
       <option value="2">두껍게</option>
     </select>
 
-    <select id="theme-select" onchange="changeThemeMode(this.value)" style="background:#1A4A8A;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11.5px;font-weight:700;border-radius:18px;padding:4px 8px;cursor:pointer;outline:none">
+    <select id="theme-select" onchange="changeThemeMode(this.value)" style="display:none">
       <option value="light">일반 모드</option>
       <option value="dark">다크 모드</option>
       <option value="system">시스템 설정</option>
@@ -520,6 +520,7 @@ tbody tr.tr-conflict td .td-name {
     <button onclick="exportProject()" style="background:#2563AB;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11px;font-weight:700;border-radius:18px;padding:4px 10px;cursor:pointer;outline:none;display:inline-flex;align-items:center;gap:4px;transition:background 0.15s;" onmouseover="this.style.background='#3B82C4'" onmouseout="this.style.background='#2563AB'"><i class="ti ti-file-export"></i> 프로젝트 내보내기</button>
     <button onclick="triggerImport()" style="background:#2563AB;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11px;font-weight:700;border-radius:18px;padding:4px 10px;cursor:pointer;outline:none;display:inline-flex;align-items:center;gap:4px;transition:background 0.15s;" onmouseover="this.style.background='#3B82C4'" onmouseout="this.style.background='#2563AB'"><i class="ti ti-file-import"></i> 프로젝트 불러오기</button>
     <button onclick="resetDashboard()" style="background:#B81C1C;color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:11px;font-weight:700;border-radius:18px;padding:4px 10px;cursor:pointer;outline:none;display:inline-flex;align-items:center;gap:4px;transition:background 0.15s;" onmouseover="this.style.background='#E83A3A'" onmouseout="this.style.background='#B81C1C'"><i class="ti ti-trash"></i> 초기화</button>
+    <button id="themeToggle" style="background:#2563AB;color:#fff;border:1px solid rgba(255,255,255,0.3);width:28px;height:28px;border-radius:50%;cursor:pointer;outline:none;display:inline-flex;align-items:center;justify-content:center;transition:background 0.15s;padding:0;" onmouseover="this.style.background='#3B82C4'" onmouseout="this.style.background='#2563AB'"></button>
     <input type="file" id="projectFileSelect" accept=".peval" onchange="handleImportProject(event)" style="display:none">
   </div>
 </div>
@@ -784,6 +785,17 @@ tbody tr.tr-conflict td .td-name {
             isDark = mediaQuery.matches;
         }
         
+        const toggleBtn = document.getElementById('themeToggle');
+        if (toggleBtn) {
+            if (isDark) {
+                toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+                toggleBtn.title = "라이트 모드로 전환";
+            } else {
+                toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+                toggleBtn.title = "다크 모드로 전환";
+            }
+        }
+
         if (isDark) {
             document.documentElement.style.setProperty('color-scheme', 'dark', 'important');
             document.documentElement.style.colorScheme = 'dark';
@@ -800,6 +812,27 @@ tbody tr.tr-conflict td .td-name {
         themeSelect.value = savedTheme;
     }
     window.changeThemeMode(savedTheme);
+
+    const toggleBtn = document.getElementById('themeToggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const currentMode = localStorage.getItem('antigravity-theme-mode') || 'dark';
+            let newMode = 'dark';
+            if (currentMode === 'dark') {
+                newMode = 'light';
+            } else if (currentMode === 'light') {
+                newMode = 'dark';
+            } else {
+                newMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
+            }
+            localStorage.setItem('antigravity-theme-mode', newMode);
+            const tSel = document.getElementById('theme-select');
+            if (tSel) {
+                tSel.value = newMode;
+            }
+            window.changeThemeMode(newMode);
+        });
+    }
 })();
 </script>
 </div> <!-- /#app-content-wrapper -->
