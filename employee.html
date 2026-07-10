@@ -327,14 +327,13 @@
       padding-bottom: 2px;
     }
 
-    .theme-select {
-      min-height: 38px;
-      padding: 0 30px 0 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--ink);
-      background: var(--control-bg);
-      box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+    #themeToggle {
+      width: 38px;
+      min-width: 38px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn, .file-label {
@@ -1055,11 +1054,6 @@
         <p id="sourceInfo">엑셀 업로드 전입니다. 양식 골격만 표시되며 모든 값은 업로드한 전직원 명부에서 채워집니다.</p>
       </section>
       <section class="actions">
-        <select class="theme-select" id="themeSelect" aria-label="화면 모드">
-          <option value="system">시스템 모드</option>
-          <option value="light">일반 모드</option>
-          <option value="dark">다크 모드</option>
-        </select>
         <label class="file-label" for="fileInput">엑셀 업로드</label>
         <input id="fileInput" type="file" accept=".xlsx,.xls" />
         <button class="btn" id="excelBtn" disabled>엑셀 다운로드</button>
@@ -1067,6 +1061,7 @@
         <label class="file-label" for="projectFileInput">프로젝트파일 가져오기</label>
         <input id="projectFileInput" type="file" accept=".json,application/json" />
         <button class="btn primary" id="printBtn">출력</button>
+        <button class="btn" id="themeToggle" aria-label="화면 모드 변경"></button>
       </section>
     </div>
 
@@ -1262,9 +1257,18 @@
     function applyTheme(mode = localStorage.getItem("employeeDashboardTheme") || "system") {
       const dark = mode === "dark" || (mode === "system" && mediaTheme.matches);
       document.body.classList.toggle("theme-dark", dark);
-      $("themeSelect").value = mode;
       
-      // 브라우저의 강제 다크모드를 방지하기 위해 color-scheme 설정 추가
+      const toggleBtn = $("themeToggle");
+      if (toggleBtn) {
+        if (dark) {
+          toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+          toggleBtn.title = "라이트 모드로 전환";
+        } else {
+          toggleBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+          toggleBtn.title = "다크 모드로 전환";
+        }
+      }
+      
       if (dark) {
         document.documentElement.style.setProperty('color-scheme', 'dark', 'important');
         document.documentElement.style.colorScheme = 'dark';
@@ -2061,7 +2065,7 @@
           rawRows,
           employees,
           filters: getFilterState(),
-          theme: $("themeSelect").value || "system"
+          theme: localStorage.getItem("employeeDashboardTheme") || "system"
         };
         const encrypted = await encryptProjectData(projectData);
         const blob = new Blob([JSON.stringify(encrypted, null, 2)], { type: "application/json;charset=utf-8" });
@@ -2113,12 +2117,21 @@
     ["q","teamFilter","seriesFilter","gradeFilter","genderFilter","stateFilter","groupFilter","specialFilter"].forEach((id) => {
       $(id).addEventListener(id === "q" ? "input" : "change", applyFilters);
     });
-    $("themeSelect").addEventListener("change", (event) => {
-      localStorage.setItem("employeeDashboardTheme", event.target.value);
-      applyTheme(event.target.value);
+    $("themeToggle").addEventListener("click", () => {
+      const currentTheme = localStorage.getItem("employeeDashboardTheme") || "system";
+      let newTheme = "dark";
+      if (currentTheme === "dark") {
+        newTheme = "light";
+      } else if (currentTheme === "light") {
+        newTheme = "dark";
+      } else {
+        newTheme = mediaTheme.matches ? "light" : "dark";
+      }
+      localStorage.setItem("employeeDashboardTheme", newTheme);
+      applyTheme(newTheme);
     });
     mediaTheme.addEventListener("change", () => {
-      if (($("themeSelect").value || "system") === "system") applyTheme("system");
+      if ((localStorage.getItem("employeeDashboardTheme") || "system") === "system") applyTheme("system");
     });
     $("fileInput").addEventListener("change", (event) => {
       const file = event.target.files?.[0];
