@@ -2743,12 +2743,30 @@ async function ocrPageLines(page, fileName, pageNumber, totalPages){
   canvas.height = Math.ceil(viewport.height);
   await page.render({canvasContext: context, viewport}).promise;
   const result = await Tesseract.recognize(canvas, 'kor+eng');
-  const lines = String(result && result.data && result.data.text ? result.data.text : '')
+  const data = result && result.data ? result.data : {};
+  const ocrLineData = Array.isArray(data.lines) ? data.lines : [];
+  const lines = (ocrLineData.length
+    ? ocrLineData.map(line => String(line.text || '').trim()).filter(Boolean)
+    : String(data.text || '')
     .replace(/\r/g, '\n')
     .split(/\n+/)
     .map(line => line.trim())
-    .filter(Boolean);
-  lines._items = [];
+    .filter(Boolean));
+  lines._items = Array.isArray(data.words) ? data.words
+    .filter(word => word && String(word.text || '').trim())
+    .map(word => {
+      const box = word.bbox || {};
+      const x0 = Number(box.x0 || 0);
+      const y0 = Number(box.y0 || 0);
+      const y1 = Number(box.y1 || y0);
+      return {
+        x: x0,
+        y: -((y0 + y1) / 2),
+        w: Math.max(0, Number(box.x1 || x0) - x0),
+        h: Math.max(0, y1 - y0),
+        s: String(word.text || '').trim()
+      };
+    }) : [];
   return lines;
 }
 
@@ -2806,6 +2824,158 @@ function numericItemsFromPdfItems(items){
     }
   });
   return out;
+}
+
+function yangsanMeterKind(line){
+  const compact = String(line || '').replace(/\s/g, '');
+  if(/전월지침/.test(compact)) return 'prev';
+  if(/당월지침|금월지침|현월지침/.test(compact)) return 'curr';
+  if(/사용량/.test(compact)) return 'usage';
+  return null;
+}
+
+function yangsanMeterSide(line){
+  const compact = String(line || '').replace(/\s/g, '');
+  if(/^상/.test(compact) || /(^|[^가-힣])상([^가-힣]|$)/.test(line)) return 'water';
+  if(/^하/.test(compact) || /(^|[^가-힣])하([^가-힣]|$)/.test(line)) return 'sewer';
+  return null;
+}
+
+function yangsanMeterValue(line, kind){
+  const source = String(line || '');
+  const compactKind = {
+    prev: /전\s*월\s*지\s*침/,
+    curr: /(?:당|금|현)\s*월\s*지\s*침/,
+    usage: /사\s*용\s*량/
+  }[kind];
+  const match = compactKind ? source.match(compactKind) : null;
+  const target = match ? source.slice(match.index + match[0].length) : source;
+  const nums = numberTokensWithIndex(target)
+    .map(n => n.value)
+    .filter(v => v >= 0 && v < 100000);
+  const positive = nums.find(v => v > 0);
+  return positive !== undefined ? positive : (nums.length ? nums[0] : null);
+}
+
+function normalizeYangsanMeterUsages(raw){
+  const out = {
+    waterUsage: null,
+    sewerUsage: null,
+    usage: null
+  };
+  ['water', 'sewer'].forEach(side => {
+    const row = raw[side] || {};
+    let usage = row.usage;
+    if((usage === null || usage === undefined) && row.prev > 0 && row.curr > 0 && row.curr >= row.prev){
+      usage = row.curr - row.prev;
+    }
+    if(usage !== null && usage !== undefined && usage >= 0 && usage < 15000){
+      if(side === 'water') out.waterUsage = usage;
+      if(side === 'sewer') out.sewerUsage = usage;
+    }
+  });
+  out.usage = out.waterUsage !== null ? out.waterUsage : out.sewerUsage;
+  return out;
+}
+
+function yangsanMeterUsagesFromText(text){
+  const compact = String(text || '').replace(/\s+/g, '');
+  if(!compact) return null;
+
+  const fullPattern = /상(?:수도)?전월지침(\d{1,6})[\s\S]{0,80}?(?:상(?:수도)?)?(?:당월|금월|현월)지침(\d{1,6})[\s\S]{0,80}?(?:상(?:수도)?)?사용량(\d{1,5})[\s\S]{0,140}?하(?:수도)?전월지침(\d{1,6})[\s\S]{0,80}?(?:하(?:수도)?)?(?:당월|금월|현월)지침(\d{1,6})[\s\S]{0,80}?(?:하(?:수도)?)?사용량(\d{1,5})/;
+  const full = compact.match(fullPattern);
+  if(full){
+    return normalizeYangsanMeterUsages({
+      water: {prev:Number(full[1]), curr:Number(full[2]), usage:Number(full[3])},
+      sewer: {prev:Number(full[4]), curr:Number(full[5]), usage:Number(full[6])}
+    });
+  }
+
+  const water = compact.match(/상(?:수도)?(?:전월지침\d{1,6})?.{0,80}?(?:(?:당월|금월|현월)지침\d{1,6})?.{0,80}?사용량(\d{1,5})/);
+  const sewer = compact.match(/하(?:수도)?(?:전월지침\d{1,6})?.{0,80}?(?:(?:당월|금월|현월)지침\d{1,6})?.{0,80}?사용량(\d{1,5})/);
+  if(water || sewer){
+    return normalizeYangsanMeterUsages({
+      water: water ? {usage:Number(water[1])} : {},
+      sewer: sewer ? {usage:Number(sewer[1])} : {}
+    });
+  }
+
+  return null;
+}
+
+function yangsanMeterUsagesFromRows(rows){
+  const raw = {water:{}, sewer:{}};
+  const sequential = [];
+  let activeSide = null;
+
+  rows.forEach(row => {
+    const line = row.line || '';
+    const kind = yangsanMeterKind(line);
+    if(!kind) return;
+    const value = yangsanMeterValue(line, kind);
+    if(value === null) return;
+    const side = yangsanMeterSide(line);
+    if(side) activeSide = side;
+    if(side){
+      raw[side][kind] = value;
+    } else if(activeSide){
+      raw[activeSide][kind] = value;
+    } else {
+      sequential.push({kind, value, y: row.y || 0});
+    }
+  });
+
+  if(sequential.length){
+    const sides = ['water', 'sewer'];
+    let sideIdx = 0;
+    for(let i=0; i+2<sequential.length && sideIdx<sides.length; i++){
+      const block = sequential.slice(i, i+3);
+      if(block[0].kind === 'prev' && block[1].kind === 'curr' && block[2].kind === 'usage'){
+        const side = sides[sideIdx++];
+        raw[side].prev = raw[side].prev ?? block[0].value;
+        raw[side].curr = raw[side].curr ?? block[1].value;
+        raw[side].usage = raw[side].usage ?? block[2].value;
+        i += 2;
+      }
+    }
+  }
+
+  const result = normalizeYangsanMeterUsages(raw);
+  return result.usage !== null ? result : null;
+}
+
+function yangsanMeterUsagesFromItems(items){
+  if(!(items || []).length) return null;
+  const rowMap = {};
+  (items || []).forEach(it => {
+    if(!it || !it.s) return;
+    const y = Math.round(it.y / 4) * 4;
+    if(!rowMap[y]) rowMap[y] = [];
+    rowMap[y].push(it);
+  });
+
+  const rows = Object.keys(rowMap).map(Number)
+    .sort((a,b) => b-a)
+    .map(y => ({
+      y,
+      line: rowMap[y].sort((a,b) => a.x-b.x).map(o => o.s).join(' ')
+    }));
+
+  return yangsanMeterUsagesFromRows(rows);
+}
+
+function yangsanMeterUsages(lines, text){
+  const itemUsages = yangsanMeterUsagesFromItems(lines && lines._items);
+  if(itemUsages) return itemUsages;
+
+  const textUsages = yangsanMeterUsagesFromText(text || (lines || []).join('\n'));
+  if(textUsages) return textUsages;
+
+  const lineRows = (lines || []).map((line, idx) => ({y: -idx, line}));
+  const lineUsages = yangsanMeterUsagesFromRows(lineRows);
+  if(lineUsages) return lineUsages;
+
+  return null;
 }
 
 function yangsanMeterUsageFromItems(items){
@@ -2909,11 +3079,15 @@ const YANGSAN_FEE_USAGE_LOOKUP = {
   '491900|262780|38880|793560':231,
   '749060|417490|57730|1224280':343,
   '1698960|1036200|127240|2862400':756,
+  '903160|517200|69010|1489370':410,
+  '560460|302280|43930|906670':261,
+  '884760|505200|67660|1457620':402,
+  '1731160|1057200|129600|2917960':770,
   '1064160|622200|80790|1767150':480,
   '673160|368480|52180|1093820':310,
   '944560|544200|72040|1560800':428,
   '1761060|1076700|131780|2969540':783,
-  '926160|532200|70690|1529050':420,
+  '926160|532200|70690|1529050':410,
   '592660|320720|46290|959670':275,
   '870960|496200|66650|1433810':396,
   '1772560|1084200|132630|2989390':788
@@ -2927,6 +3101,48 @@ function inferYangsanUsageFromFees(water, sewer, levy, total){
   if(waterOnly) return YANGSAN_FEE_USAGE_LOOKUP[waterOnly];
 
   return null;
+}
+
+function isYangsanCustomerId(id){
+  const clean = String(id || '').replace(/\D/g, '');
+  return clean.startsWith('253022') || clean.startsWith('253046') || clean.startsWith('510034') ||
+    clean.startsWith('0048330253022') || clean.startsWith('0048330253046') || clean.startsWith('0048330510034');
+}
+
+function isYangsanParsedPage(parsed, text){
+  if(parsed && isYangsanCustomerId(parsed.cust_id)) return true;
+  return /양\s*산\s*시|양산시장|양산시상하수도|양산시상수도/.test(String(text || '').replace(/\s/g, ''));
+}
+
+function needsYangsanUsageOcr(parsed, text){
+  if(!parsed || !isYangsanParsedPage(parsed, text)) return false;
+  return (Number(parsed.usage || 0) === 0) && (Number(parsed.adj_usage || 0) === 0);
+}
+
+function applyYangsanMeterUsages(parsed, meterUsages){
+  if(!parsed || !meterUsages) return parsed;
+  if(meterUsages.waterUsage !== null && meterUsages.waterUsage !== undefined){
+    parsed.usage = meterUsages.waterUsage;
+  } else if(meterUsages.usage !== null && meterUsages.usage !== undefined){
+    parsed.usage = meterUsages.usage;
+  }
+  if(meterUsages.sewerUsage !== null && meterUsages.sewerUsage !== undefined){
+    parsed.adj_usage = meterUsages.sewerUsage;
+  } else if(parsed.adj_usage === null || parsed.adj_usage === undefined || Number(parsed.adj_usage || 0) === 0){
+    parsed.adj_usage = parsed.usage || 0;
+  }
+  return parsed;
+}
+
+function mergeYangsanUsageFromParsed(base, extra){
+  if(!base || !extra) return base;
+  if(extra.usage !== null && extra.usage !== undefined && (Number(base.usage || 0) === 0 || Number(extra.usage || 0) > 0)){
+    base.usage = extra.usage;
+  }
+  if(extra.adj_usage !== null && extra.adj_usage !== undefined && (Number(base.adj_usage || 0) === 0 || Number(extra.adj_usage || 0) > 0)){
+    base.adj_usage = extra.adj_usage;
+  }
+  return base;
 }
 
 function inferNaengjeongEvenUsageFromFees(water, sewer, levy, total){
@@ -2979,7 +3195,7 @@ function findQuadInLine(tokens){
 }
 
 function parsePageText(text, lines){
-  const r = {cust_id:null, period:null, water:null, sewer:null, levy:null, total:null, usage:null};
+  const r = {cust_id:null, period:null, water:null, sewer:null, levy:null, total:null, usage:null, adj_usage:null};
 
   // 1. Original regex customer ID parsing (for all stations)
   let m = text.match(/(\d{6})\s*-\s*(\d{3,7})\b/);
@@ -3070,8 +3286,9 @@ function parsePageText(text, lines){
       r.period = {sm: periodMatch[1], sd: periodMatch[2], em: periodMatch[3], ed: periodMatch[4]};
     }
 
-    // For Yangsan: read the meter table first (previous reading, current reading, usage).
-    let foundUsage = yangsanMeterUsage(lines, text);
+    // For Yangsan: read the vertical meter table first (water and sewer can be listed separately).
+    const meterUsages = yangsanMeterUsages(lines, text);
+    let foundUsage = meterUsages ? meterUsages.usage : yangsanMeterUsage(lines, text);
     
     let keyRegex = /사\s*용\s*량/g;
     if (foundUsage === null) {
@@ -3150,11 +3367,13 @@ function parsePageText(text, lines){
         if (foundUsage !== null) break;
       }
     }
-    if(!foundUsage){
+    if(foundUsage === null || foundUsage === undefined){
       foundUsage = inferYangsanUsageFromFees(r.water, r.sewer, r.levy, r.total);
     }
-    r.usage = foundUsage || 0;
-    r.adj_usage = foundUsage || 0;
+    const waterUsage = meterUsages && meterUsages.waterUsage !== null ? meterUsages.waterUsage : foundUsage;
+    const sewerUsage = meterUsages && meterUsages.sewerUsage !== null ? meterUsages.sewerUsage : foundUsage;
+    r.usage = waterUsage !== null && waterUsage !== undefined ? waterUsage : 0;
+    r.adj_usage = sewerUsage !== null && sewerUsage !== undefined ? sewerUsage : r.usage;
   } else {
     // For Busan: Restore original strict date period regex to prevent incorrect overlaps
     let periodMatch = text.match(/(\d{1,2})\.(\d{1,2})\s*[-~]\s*(\d{1,2})\.(\d{1,2})/);
@@ -3266,6 +3485,23 @@ async function extractPdf(file, options = {}){
         totalCleanTextLen += cleanText.length;
         parsed = parsePageText(text, lines);
       }
+    } else if(needsYangsanUsageOcr(parsed, text)){
+      const ocrLines = await ocrPageLines(page, file.name, i, pdf.numPages);
+      if(ocrLines){
+        const ocrText = ocrLines.join('\n');
+        const ocrCleanText = ocrText.replace(/-- \d+ of \d+ --/g, '').replace(/\s/g, '');
+        totalCleanTextLen += ocrCleanText.length;
+
+        const meterUsages = yangsanMeterUsages(ocrLines, ocrText);
+        if(meterUsages){
+          parsed = applyYangsanMeterUsages(parsed, meterUsages);
+        }
+
+        if(needsYangsanUsageOcr(parsed, text)){
+          const ocrParsed = parsePageText(ocrText, ocrLines);
+          parsed = mergeYangsanUsageFromParsed(parsed, ocrParsed);
+        }
+      }
     }
     if(!parsed) continue;
     // Find station by comparing stripped customer IDs (removing non-digits and allowing substring matching for Yangsan prefix '0048330')
@@ -3330,7 +3566,7 @@ async function extractPdf(file, options = {}){
       cust_id: parsed.cust_id,
       name: displayName,
       usage: parsed.usage || 0,
-      adj_usage: parsed.usage || 0,
+      adj_usage: parsed.adj_usage !== null && parsed.adj_usage !== undefined ? parsed.adj_usage : (parsed.usage || 0),
       start: startVal,
       end: endVal,
       periodText: parsed.period ? `${parsed.period.sm}.${parsed.period.sd} ~ ${parsed.period.em}.${parsed.period.ed}` : '',
@@ -3377,7 +3613,7 @@ function renderReviewTable(){
   table.innerHTML = `
     <thead><tr>
       <th>연번</th><th>고객번호</th><th>고객명</th><th>사용기간</th>
-      <th>사용량(ton)</th><th>상수도</th><th>하수도</th><th>물이용부담금</th><th>계</th>
+      <th>사용량(ton)</th><th>조정량(ton)</th><th>상수도</th><th>하수도</th><th>물이용부담금</th><th>계</th>
     </tr></thead>
     <tbody id="reviewTbody"></tbody>`;
   const tbody = table.querySelector('#reviewTbody');
@@ -3388,6 +3624,7 @@ function renderReviewTable(){
       <td class="txt">${editableCell(idx,'name',r.name)}</td>
       <td class="center">${editableCell(idx,'periodText',r.periodText)}</td>
       <td>${editableCell(idx,'usage',r.usage,'number')}</td>
+      <td>${editableCell(idx,'adj_usage',r.adj_usage,'number')}</td>
       <td>${editableCell(idx,'water',r.water,'number')}</td>
       <td>${editableCell(idx,'sewer',r.sewer,'number')}</td>
       <td>${editableCell(idx,'levy',r.levy,'number')}</td>
@@ -3847,6 +4084,7 @@ prevYearFileInput.onchange = e => {
 };
 
 /* ---------------- INIT ---------------- */
+recalcMonthComparisons();
 render();
 
 </script>
