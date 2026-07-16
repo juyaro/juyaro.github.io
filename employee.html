@@ -856,6 +856,66 @@
       font-size: 12px;
     }
 
+    .address-map-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: #2563eb;
+      font: inherit;
+      text-align: left;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+
+    .address-map-button:hover {
+      color: #1d4ed8;
+    }
+
+    .map-modal-card {
+      width: min(920px, 100%);
+    }
+
+    .map-frame {
+      display: block;
+      width: 100%;
+      height: min(64vh, 560px);
+      min-height: 360px;
+      border: 0;
+      background: var(--table-head);
+    }
+
+    .map-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px 16px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .map-address {
+      min-width: 0;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .map-open-link {
+      flex: 0 0 auto;
+      color: #2563eb;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .map-open-link:hover {
+      text-decoration: underline;
+    }
+
     .tables {
       display: grid;
       grid-template-columns: repeat(2, minmax(360px, 1fr));
@@ -1142,6 +1202,22 @@
         <button class="modal-close" id="employeeModalClose" type="button" aria-label="닫기">×</button>
       </div>
       <div class="modal-body" id="employeeModalBody"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="mapModal" aria-hidden="true">
+    <div class="modal-card map-modal-card" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle">
+      <div class="modal-head">
+        <h3 id="mapModalTitle">Google Map</h3>
+        <button class="modal-close" id="mapModalClose" type="button" aria-label="Close">x</button>
+      </div>
+      <div class="modal-body">
+        <iframe class="map-frame" id="mapFrame" title="Google Map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+      <div class="map-actions">
+        <span class="map-address" id="mapAddress"></span>
+        <a class="map-open-link" id="mapOpenLink" href="#" target="_blank" rel="noopener noreferrer">Google Maps</a>
+      </div>
     </div>
   </div>
 
@@ -1723,6 +1799,7 @@
     function showEmployeeModal(emp) {
       if (!emp) return;
       const detailValue = (value) => excelDateToText(value);
+      const addressValue = detailValue(emp.address).trim();
       const clean = (value) => detailValue(value).trim();
       const compact = (values, separator = " / ") => values.map(clean).filter(Boolean).join(separator);
       const withTenure = (date, tenure) => {
@@ -1764,11 +1841,43 @@
         ["비고", emp.memo],
         ["휴대전화", emp.mobilePhone]
       ].filter(([, value]) => String(value ?? "").trim());
-      const rowsHtml = baseRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(detailValue(value))}</td></tr>`).join("");
+      const rowsHtml = baseRows.map(([label, value]) => {
+        const text = detailValue(value);
+        const isAddressRow = label === "주소" && text.trim() === addressValue;
+        const valueHtml = isAddressRow
+          ? `<button class="address-map-button" type="button" data-map-address="${escapeHtml(addressValue)}" title="Google Maps">📍 ${escapeHtml(addressValue)}</button>`
+          : escapeHtml(text);
+        return `<tr><th>${escapeHtml(label)}</th><td>${valueHtml}</td></tr>`;
+      }).join("");
       $("employeeModalTitle").textContent = `${emp.name || "직원"} 인사 정보`;
       $("employeeModalBody").innerHTML = `<table class="detail-table"><tbody>${rowsHtml}</tbody></table>`;
       $("employeeModal").classList.add("open");
       $("employeeModal").setAttribute("aria-hidden", "false");
+    }
+
+    function showMapModal(address) {
+      const cleanAddress = String(address || "").trim();
+      if (!cleanAddress) return;
+      const encodedAddress = encodeURIComponent(cleanAddress);
+      const embedUrl = `https://www.google.com/maps?q=${encodedAddress}&z=16&output=embed`;
+      const openUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+      const mapWindow = window.open(openUrl, "employeeAddressMap", "popup=yes,width=980,height=720,menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes,resizable=yes");
+      if (mapWindow) {
+        mapWindow.focus();
+        return;
+      }
+      $("mapModalTitle").textContent = "Google Map";
+      $("mapAddress").textContent = cleanAddress;
+      $("mapOpenLink").href = openUrl;
+      $("mapFrame").src = embedUrl;
+      $("mapModal").classList.add("open");
+      $("mapModal").setAttribute("aria-hidden", "false");
+    }
+
+    function closeMapModal() {
+      $("mapModal").classList.remove("open");
+      $("mapModal").setAttribute("aria-hidden", "true");
+      $("mapFrame").src = "";
     }
 
     function closeEmployeeModal() {
@@ -2138,6 +2247,12 @@
       if (file) loadWorkbook(file);
     });
     document.addEventListener("click", (event) => {
+      const addressButton = event.target.closest("[data-map-address]");
+      if (addressButton) {
+        event.preventDefault();
+        showMapModal(addressButton.dataset.mapAddress);
+        return;
+      }
       const button = event.target.closest("[data-employee-id]");
       if (!button) return;
       showEmployeeModal(employees.find((e) => String(e._id) === button.dataset.employeeId));
@@ -2146,8 +2261,15 @@
     $("employeeModal").addEventListener("click", (event) => {
       if (event.target.id === "employeeModal") closeEmployeeModal();
     });
+    $("mapModalClose").addEventListener("click", closeMapModal);
+    $("mapModal").addEventListener("click", (event) => {
+      if (event.target.id === "mapModal") closeMapModal();
+    });
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeEmployeeModal();
+      if (event.key === "Escape") {
+        closeMapModal();
+        closeEmployeeModal();
+      }
     });
     $("excelBtn").addEventListener("click", exportExcel);
     $("projectSaveBtn").addEventListener("click", saveProjectFile);
