@@ -1697,8 +1697,8 @@
         return;
       }
       const sectionHead = showSection ? "<th>구분</th>" : "";
-      $(id).innerHTML = `<table class="data"><thead><tr>${sectionHead}<th>성명</th><th>직급</th><th>팀/역</th><th>상태</th><th>생년월일</th></tr></thead><tbody>${rows.map((e) => `
-        <tr data-employee-id="${e._id}" class="${e.gender === "여" ? "row-female" : ""}">${showSection ? `<td>${escapeHtml(e.sectionLabel || "")}</td>` : ""}<td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.grade)}</td><td>${escapeHtml(e.team)}</td><td>${escapeHtml(e.appointment || e.state || e.leaveType || e.position)}</td><td>${escapeHtml(e.birthText)}</td></tr>
+      $(id).innerHTML = `<table class="data"><thead><tr>${sectionHead}<th>성명</th><th>직급</th><th>팀/역</th><th>상태</th><th>출생년도</th></tr></thead><tbody>${rows.map((e) => `
+        <tr data-employee-id="${e._id}" class="${e.gender === "여" ? "row-female" : ""}">${showSection ? `<td>${escapeHtml(e.sectionLabel || "")}</td>` : ""}<td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.grade)}</td><td>${escapeHtml(e.team)}</td><td>${escapeHtml(e.appointment || e.state || e.leaveType || e.position)}</td><td>${escapeHtml(e.birthYear || "")}</td></tr>
       `).join("")}</tbody></table>`;
     }
 
@@ -1828,7 +1828,7 @@
       const leave = compact([emp.leaveType, emp.leavePeriod]);
       const baseRows = [
         ["직원", identity],
-        ["생년월일", emp.birthText],
+        ["출생년도", emp.birthYear],
         ["소속", org],
         ["직무", job],
         ["근무", work],
@@ -1842,7 +1842,7 @@
         ["휴대전화", emp.mobilePhone]
       ].filter(([, value]) => String(value ?? "").trim());
       const rowsHtml = baseRows.map(([label, value]) => {
-        const text = detailValue(value);
+        const text = (label === "출생년도") ? String(value ?? "") : detailValue(value);
         const isAddressRow = label === "주소" && text.trim() === addressValue;
         const valueHtml = isAddressRow
           ? `<button class="address-map-button" type="button" data-map-address="${escapeHtml(addressValue)}" title="Google Maps">📍 ${escapeHtml(addressValue)}</button>`
