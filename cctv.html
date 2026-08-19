@@ -246,6 +246,30 @@
 (() => {
   const $ = (id) => document.getElementById(id);
 
+  function blockPageInspection(){
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('selectstart', (e) => {
+      if(!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) e.preventDefault();
+    });
+    document.addEventListener('dragstart', (e) => e.preventDefault());
+    document.addEventListener('copy', (e) => {
+      if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) e.preventDefault();
+    });
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toUpperCase();
+      if(
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I','J','C','K'].includes(key)) ||
+        (e.ctrlKey && ['U','S'].includes(key))
+      ){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
+
+  blockPageInspection();
+
   // ---------------- AVI -> MP4 conversion ----------------
   // Uses ffmpeg.wasm 0.12 SINGLE-THREAD core (@ffmpeg/core, not core-mt),
   // which does NOT require SharedArrayBuffer / cross-origin-isolation headers.
@@ -1356,8 +1380,14 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
 <script>
 const pkg = decodePkg('${pkgEncoded}');
 const app = document.getElementById('app');
-document.addEventListener('contextmenu', function(e){e.preventDefault();});
-document.addEventListener('keydown', function(e){if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||(e.ctrlKey&&e.key.toUpperCase()==='U'))e.preventDefault();});
+blockPageInspection();
+function blockPageInspection(){
+document.addEventListener('contextmenu',function(e){e.preventDefault();});
+document.addEventListener('selectstart',function(e){if(!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))e.preventDefault();});
+document.addEventListener('dragstart',function(e){e.preventDefault();});
+document.addEventListener('copy',function(e){if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault();});
+document.addEventListener('keydown',function(e){const k=e.key.toUpperCase();if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C','K'].includes(k))||(e.ctrlKey&&['U','S'].includes(k))){e.preventDefault();e.stopPropagation();}},true);
+}
 function decodePkg(encoded){const bin=atob(encoded);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return JSON.parse(new TextDecoder().decode(bytes));}
 function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
 async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
