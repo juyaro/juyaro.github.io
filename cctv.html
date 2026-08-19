@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCTV 개인정보 보호 편집기</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e2229; --line:#2a2f3a;
+    --text:#e7e9ee; --sub:#9aa3b2; --accent:#4fd1c5; --accent2:#f2a154;
+    --danger:#e2555a; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;
+    font-size:14px;
+  }
+  header{
+    padding:14px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  header h1{font-size:16px; margin:0; letter-spacing:.02em;}
+  header .badge{color:var(--sub); font-size:12px;}
+  .layout{display:grid; grid-template-columns:1fr 320px; gap:16px; padding:16px; max-width:1440px; margin:0 auto;}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} }
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px;}
+  .panel + .panel{margin-top:14px;}
+  .panel h2{font-size:13px; margin:0 0 10px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em;}
+  .stage-wrap{position:relative; background:#000; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line);}
+  #stage{display:block; width:100%; height:auto; cursor:crosshair;}
+  .empty-hint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--sub); text-align:center; padding:20px;}
+  .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .row + .row{margin-top:8px;}
+  button{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px;
+  }
+  button:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent); color:#08191a; border-color:var(--accent); font-weight:600;}
+  button.warn{background:var(--danger); color:#fff; border-color:var(--danger);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  input[type=file]{color:var(--sub); font-size:12px;}
+  input[type=range]{accent-color:var(--accent); width:100%;}
+  input[type=number], input[type=text], input[type=password]{
+    background:var(--panel2); border:1px solid var(--line); color:var(--text);
+    border-radius:6px; padding:5px 8px; font-size:13px;
+  }
+  input[type=number]{width:70px;}
+  select{background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:5px;}
+  .timeline{margin-top:12px;}
+  .time-track{
+    position:relative; height:44px; background:var(--panel2); border-radius:8px; border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .seg-block{
+    position:absolute; top:4px; bottom:4px; border-radius:5px; background:#2a3e3c; border:1px solid var(--accent);
+    display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--accent); cursor:pointer;
+  }
+  .seg-block.selected{outline:2px solid var(--accent2);}
+  .playhead{
+    position:absolute; top:0; bottom:0; width:2px; background:var(--accent2); pointer-events:none;
+  }
+  .seg-list{max-height:160px; overflow:auto; margin-top:8px;}
+  .seg-row{display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 8px; border-radius:6px; background:var(--panel2); margin-bottom:6px; font-size:12px;}
+  .region-item{padding:8px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; background:var(--panel2);}
+  .region-item.selected{border-color:var(--accent);}
+  .region-item .title{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .swatch{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px;}
+  .sub{color:var(--sub); font-size:12px;}
+  .kf-list{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
+  .kf-chip{font-size:10px; padding:2px 6px; border-radius:10px; background:#10151c; border:1px solid var(--line); color:var(--sub);}
+  .progress{height:6px; background:var(--panel2); border-radius:4px; overflow:hidden; margin-top:8px; display:none;}
+  .progress > div{height:100%; width:0%; background:var(--accent); transition:width .15s;}
+  .hint{color:var(--sub); font-size:12px; line-height:1.5;}
+  .divider{height:1px; background:var(--line); margin:14px 0;}
+  a.dl{color:var(--accent); text-decoration:none;}
+  .field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:120px;}
+  .field label{font-size:11px; color:var(--sub);}
+  .notice{border-radius:8px; padding:10px; font-size:12px; line-height:1.6;}
+  .notice.danger{background:rgba(226,85,90,0.12); border:1px solid var(--danger); color:#ffb2b4;}
+  .notice.ok{background:rgba(79,209,197,0.1); border:1px solid var(--accent); color:var(--accent);}
+  code{background:#10151c; border:1px solid var(--line); border-radius:4px; padding:1px 4px; color:var(--text);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎥 CCTV 개인정보 보호 편집기</h1>
+  <span class="badge">모자이크 · 타임라인 편집 · 암호/만료 잠금 패키지로 PC 저장</span>
+</header>
+
+<div class="layout">
+  <!-- LEFT: stage + timeline -->
+  <div>
+    <div class="panel">
+      <h2>0. AVI → MP4 변환 (선택)</h2>
+      <div class="row">
+        <input type="file" id="aviInput" accept=".avi,video/avi,video/x-msvideo,video/*">
+        <button id="convertBtn" disabled>MP4로 변환</button>
+      </div>
+      <div class="progress" id="aviProgressWrap"><div id="aviProgressBar"></div></div>
+      <div id="aviResult" class="hint" style="margin-top:6px;"></div>
+      <div id="aviProtocolWarning" class="notice danger" style="margin-top:6px; display:none;">
+        ⚠ 이 파일을 <strong>내 컴퓨터에서 직접 더블클릭해서(file://)</strong> 열어보고 계신 것 같습니다. 변환 엔진은 보안상 이런 방식에서는 인터넷에서 파일을 받아오지 못해 항상 실패합니다.<br>
+        해결 방법: 이 HTML 파일을 <strong>홈페이지(웹서버)에 올려서 https:// 주소로 접속</strong>하시거나, PC에서 간단한 로컬 서버로 열어주세요. 그전까지는 다른 프로그램으로 미리 MP4로 변환한 뒤 "1. 영상 불러오기"에서 그 MP4를 선택해 사용하실 수 있습니다.
+      </div>
+      <div class="hint" style="margin-top:4px;">최초 변환 시 변환 엔진(수십 MB)을 내려받아 다소 시간이 걸릴 수 있습니다. 변환은 이 브라우저 안에서만 처리되며, 변환이 끝나면 자동으로 PC에 MP4로 저장됩니다.</div>
+    </div>
+
+    <div class="panel">
+      <h2>1. 영상 불러오기 (PC에서 MP4 파일 선택)</h2>
+      <div class="row">
+        <input type="file" id="fileInput" accept="video/mp4,.mp4,video/*">
+        <span class="sub">PC에 저장된 MP4 파일을 바로 선택하면 됩니다. AVI만 있다면 위 0번에서 먼저 변환하세요.</span>
+      </div>
+      <div class="stage-wrap" style="margin-top:10px;">
+        <canvas id="stage" width="960" height="540"></canvas>
+        <div class="empty-hint" id="emptyHint">영상을 불러오면 여기에 표시됩니다</div>
+      </div>
+      <video id="srcVideo" style="display:none;" playsinline muted></video>
+
+      <div class="timeline">
+        <div class="row">
+          <button id="playBtn" disabled>▶ 재생</button>
+          <button id="splitBtn" disabled>✂ 현재 위치에서 자르기</button>
+          <span class="sub" id="timeLabel">00:00 / 00:00</span>
+        </div>
+        <div class="time-track" id="timeTrack">
+          <div class="playhead" id="playhead" style="left:0%"></div>
+        </div>
+        <input type="range" id="seek" min="0" max="1000" value="0" step="1" disabled style="margin-top:6px; width:100%;">
+        <div class="seg-list" id="segList"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>2. 모자이크(유리판) 영역</h2>
+      <div class="row">
+        <button id="addRegionBtn" disabled>+ 모자이크 영역 추가</button>
+        <button id="addRevealBtn" disabled>+ 모자이크 제외 영역</button>
+        <span class="hint">추가 후 캔버스에서 드래그해 영역을 그리세요. 재생하며 위치를 다시 맞추면 그 시점이 자동으로 키프레임(추적 지점)으로 저장됩니다.</span>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div class="field">
+          <label>모자이크 투명도</label>
+          <input type="range" id="mosaicOpacity" min="20" max="95" value="58">
+        </div>
+        <span class="sub" id="mosaicOpacityLabel">58%</span>
+        <label class="sub"><input type="checkbox" id="autoMotionMosaic"> 움직임 자동 모자이크</label>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>자동 감지 민감도</label>
+          <input type="range" id="motionSensitivity" min="8" max="60" value="24">
+        </div>
+        <span class="sub">값이 낮을수록 더 많이 잡습니다. 특정인은 “모자이크 제외 영역”으로 가려진 모자이크를 지울 수 있습니다.</span>
+      </div>
+      <div id="regionList" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>3. 렌더링</h2>
+      <div class="row">
+        <button id="exportBtn" class="primary" disabled>선택 구간 렌더링 시작</button>
+      </div>
+      <div class="progress" id="progressWrap"><div id="progressBar"></div></div>
+      <div id="exportResult" class="hint" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: password + expiry lock package -->
+  <div>
+    <div class="panel">
+      <h2>4. 암호/만료 설정 후 PC에 저장</h2>
+      <div class="row">
+        <div class="field" style="width:100%;">
+          <label>파일 이름</label>
+          <input type="text" id="pkgName" placeholder="예) 3덕천E/S_7대_2026-08-19">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>열람 암호</label>
+          <input type="password" id="pkgPassword" placeholder="암호 설정">
+        </div>
+        <div class="field">
+          <label>암호 확인</label>
+          <input type="password" id="pkgPassword2" placeholder="암호 재입력">
+        </div>
+      </div>
+      <div class="row">
+        <label class="sub"><input type="checkbox" id="showPassword"> 열람 암호 보이기</label>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>보관(열람 가능) 기간</label>
+          <input type="number" id="pkgDays" value="30" min="1">
+        </div>
+        <span class="sub">일 후 자동 만료</span>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>만료 날짜</label>
+          <input type="date" id="pkgExpireDate">
+        </div>
+        <div class="field">
+          <label>만료 시간</label>
+          <input type="time" id="pkgExpireTime" value="23:59">
+        </div>
+        <span class="sub">기본값은 지정일 저녁 24시입니다.</span>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <button id="savePkgBtn" class="primary" disabled>🔒 암호화 패키지로 PC에 저장</button>
+        <button id="saveHtmlPkgBtn" disabled>민원인 배부용 HTML 저장</button>
+      </div>
+      <div id="savePkgMsg" class="hint" style="margin-top:6px;"></div>
+      <div class="hint" style="margin-top:8px;">
+        렌더링을 먼저 완료해야 저장할 수 있습니다. 다운로드된 파일(.cctvpkg)은 설정한 암호 없이는 열리지 않고, 만료일이 지나면 어떤 암호로도 열 수 없습니다. 민원인에게는 파일을 메일로 보내고, 암호는 전화·문자 등 다른 경로로 별도 전달하세요.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>패키지 열기 (수신한 영상 확인)</h2>
+      <div class="row">
+        <input type="file" id="openPkgInput" accept=".cctvpkg,.json,application/json">
+      </div>
+      <div id="openPkgStatus" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>사용 안내</h2>
+      <ul class="hint" style="padding-left:16px; margin:0;">
+        <li>모든 처리(모자이크, 변환, 암호화)는 서버 전송 없이 브라우저 안에서만 이루어집니다.</li>
+        <li>모자이크는 픽셀 블록화 + 반투명 유리 효과로 구성되어, 사람의 실루엣은 보이되 얼굴/신체 디테일은 가려집니다.</li>
+        <li>여러 명은 "모자이크 영역 추가"를 반복해 각각 추적하세요.</li>
+        <li>저장 파일은 PC(로컬)에만 다운로드되며, 만료일이 지나면 이 도구에서 열람이 차단됩니다. 다만 파일 자체가 기기에서 강제로 지워지지는 않으니(브라우저 보안정책상 임의 파일 삭제 불가), 완전 삭제가 필요하면 수동으로 파일을 지워주세요.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // ---------------- AVI -> MP4 conversion ----------------
+  // Uses ffmpeg.wasm 0.12 SINGLE-THREAD core (@ffmpeg/core, not core-mt),
+  // which does NOT require SharedArrayBuffer / cross-origin-isolation headers.
+  // Loaded lazily via dynamic import() so a network/CORS failure here never
+  // breaks the rest of the editor (mosaic, timeline, encryption still work).
+  const aviInput = $('aviInput');
+  const convertBtn = $('convertBtn');
+  let aviFile = null;
+  let ffmpegLibs = null;   // { FFmpeg, fetchFile, toBlobURL }
+  let ffmpegInstance = null;
+
+  if(location.protocol === 'file:'){
+    $('aviProtocolWarning').style.display = 'block';
+    $('aviResult').innerHTML =
+      '<span style="color:var(--danger)">현재 파일을 더블클릭(file://)으로 열어서 AVI 변환 기능을 사용할 수 없습니다.</span><br>' +
+      '<span class="hint">이 HTML 파일을 홈페이지에 올린 뒤 <code>https://</code> 주소로 접속해서 사용해주세요.</span>';
+  }
+
+  aviInput.addEventListener('change', (e) => {
+    aviFile = e.target.files[0] || null;
+    convertBtn.disabled = !aviFile;
+    if(location.protocol === 'file:'){
+      convertBtn.disabled = true;
+      $('aviResult').innerHTML =
+        '<span style="color:var(--danger)">더블클릭(file://) 실행 상태라 변환을 시작할 수 없습니다.</span><br>' +
+        '<span class="hint">홈페이지에 올린 뒤 <code>https://</code> 주소로 접속하면 선택한 AVI를 MP4로 변환해 PC에 저장할 수 있습니다.</span>';
+    } else {
+      $('aviResult').textContent = '';
+    }
+  });
+
+  async function loadFFmpegLibs(){
+    if(ffmpegLibs) return ffmpegLibs;
+    const [ffmpegMod, utilMod] = await Promise.all([
+      import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js'),
+      import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js'),
+    ]);
+    ffmpegLibs = { FFmpeg: ffmpegMod.FFmpeg, fetchFile: utilMod.fetchFile, toBlobURL: utilMod.toBlobURL };
+    return ffmpegLibs;
+  }
+
+  async function ensureFFmpegLoaded(){
+    const libs = await loadFFmpegLibs();
+    if(ffmpegInstance && ffmpegInstance.loaded) return ffmpegInstance;
+    const ff = new libs.FFmpeg();
+    // single-thread core — no SharedArrayBuffer required
+    const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+    const ffmpegBaseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
+    await ff.load({
+      coreURL: await libs.toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await libs.toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      classWorkerURL: await libs.toBlobURL(`${ffmpegBaseURL}/worker.js`, 'text/javascript'),
+    });
+    ffmpegInstance = ff;
+    return ff;
+  }
+
+  convertBtn.addEventListener('click', async () => {
+    if(!aviFile) return;
+    if(location.protocol === 'file:'){
+      convertBtn.disabled = true;
+      $('aviResult').innerHTML =
+        '<span style="color:var(--danger)">브라우저 보안 정책 때문에 file://에서는 변환 엔진을 불러올 수 없습니다.</span><br>' +
+        '<span class="hint">이 HTML 파일을 홈페이지에 올린 뒤 <code>https://</code> 주소로 접속해주세요.</span>';
+      return;
+    }
+    convertBtn.disabled = true;
+    $('aviProgressWrap').style.display = 'block';
+    $('aviProgressBar').style.width = '0%';
+    $('aviResult').textContent = '변환 엔진 로딩 중... (최초 1회만, 수십 MB라 다소 걸릴 수 있어요)';
+    try{
+      const libs = await loadFFmpegLibs();
+      const ff = await ensureFFmpegLoaded();
+      ff.on('progress', ({progress}) => {
+        const pct = Math.min(100, Math.max(0, progress*100));
+        $('aviProgressBar').style.width = pct + '%';
+      });
+      $('aviResult').textContent = '변환 중...';
+      const inName = 'input' + (aviFile.name.match(/\.[a-zA-Z0-9]+$/) || ['.avi'])[0];
+      await ff.writeFile(inName, await libs.fetchFile(aviFile));
+      await ff.exec(['-i', inName, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-c:a', 'aac', '-movflags', '+faststart', 'output.mp4']);
+      const data = await ff.readFile('output.mp4');
+      const blob = new Blob([data.buffer], {type:'video/mp4'});
+      const url = URL.createObjectURL(blob);
+      const outName = (aviFile.name.replace(/\.[^.]+$/, '') || 'converted') + '.mp4';
+
+      // Auto-save to PC
+      const a = document.createElement('a');
+      a.href = url; a.download = outName;
+      document.body.appendChild(a); a.click(); a.remove();
+
+      $('aviResult').innerHTML = `✔ 변환 완료! <strong>${outName}</strong> 이름으로 PC에 자동 저장되었습니다.<br>
+        <a class="dl" href="${url}" download="${outName}">⬇ 다시 다운로드</a> &nbsp; <button id="loadConvertedBtn">편집기로 바로 불러오기</button>`;
+      $('loadConvertedBtn').addEventListener('click', () => {
+        if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
+        lastLoadedURL = url;
+        srcVideo.src = url;
+        srcVideo.load();
+      });
+    } catch(err){
+      console.error(err);
+      const msg = (err && (err.message || err.toString())) || '알 수 없는 오류';
+      const isFileProto = location.protocol === 'file:';
+      $('aviResult').innerHTML = `
+        <span style="color:var(--danger)">변환에 실패했습니다: ${msg}</span><br>
+        <span class="hint">${isFileProto
+          ? '이 파일을 file:// 방식(더블클릭)으로 열고 계셔서 변환 엔진을 내려받지 못했을 가능성이 높습니다. 위 경고 문구를 확인해주세요.'
+          : '파일이 손상되었거나 지원되지 않는 코덱이거나, 네트워크(방화벽/사내망)에서 변환 엔진(cdn.jsdelivr.net) 접속이 차단되었을 수 있습니다. 다른 프로그램으로 MP4 변환 후 "1. 영상 불러오기"에서 불러오는 방법도 있습니다.'}
+        </span>`;
+    } finally {
+      $('aviProgressWrap').style.display = 'none';
+      convertBtn.disabled = false;
+    }
+  });
+
+  // ---------------- Editor state ----------------
+  const fileInput = $('fileInput');
+  const srcVideo = $('srcVideo');
+  const stage = $('stage');
+  const ctx = stage.getContext('2d');
+  const emptyHint = $('emptyHint');
+  const playBtn = $('playBtn');
+  const splitBtn = $('splitBtn');
+  const addRegionBtn = $('addRegionBtn');
+  const addRevealBtn = $('addRevealBtn');
+  const exportBtn = $('exportBtn');
+  const seek = $('seek');
+  const timeLabel = $('timeLabel');
+  const timeTrack = $('timeTrack');
+  const playhead = $('playhead');
+  const segList = $('segList');
+  const regionList = $('regionList');
+  const savePkgBtn = $('savePkgBtn');
+  const saveHtmlPkgBtn = $('saveHtmlPkgBtn');
+  const mosaicOpacity = $('mosaicOpacity');
+  const mosaicOpacityLabel = $('mosaicOpacityLabel');
+  const autoMotionMosaic = $('autoMotionMosaic');
+  const motionSensitivity = $('motionSensitivity');
+  const pkgDays = $('pkgDays');
+  const pkgExpireDate = $('pkgExpireDate');
+  const pkgExpireTime = $('pkgExpireTime');
+  const showPassword = $('showPassword');
+  const progressWrap = $('progressWrap');
+  const progressBar = $('progressBar');
+  const exportResult = $('exportResult');
+
+  const tempCanvas = document.createElement('canvas');
+  const tempCtx = tempCanvas.getContext('2d');
+  const motionCanvas = document.createElement('canvas');
+  const motionCtx = motionCanvas.getContext('2d', {willReadFrequently:true});
+
+  let duration = 0;
+  let regions = [];
+  let revealRegions = [];
+  let selectedRegionId = null;
+  let segments = [];
+  let selectedSegmentId = null;
+  let drag = null;
+  let lastLoadedURL = null;
+  let previousMotionData = null;
+
+  const COLORS = ['#4fd1c5','#f2a154','#e2555a','#8e7cff','#5adb6f','#ff7ab6'];
+  const uid = () => Math.random().toString(36).slice(2,9);
+  const fmt = (t) => {
+    if(!isFinite(t)) t = 0;
+    const m = Math.floor(t/60).toString().padStart(2,'0');
+    const s = Math.floor(t%60).toString().padStart(2,'0');
+    return `${m}:${s}`;
+  };
+
+  function pad2(v){ return String(v).padStart(2, '0'); }
+  function setDefaultExpiryFromDays(){
+    const days = Math.max(1, Number(pkgDays.value) || 30);
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    pkgExpireDate.value = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    pkgExpireTime.value = '23:59';
+  }
+
+  function syncDaysFromExpiry(){
+    if(!pkgExpireDate.value) return;
+    const time = pkgExpireTime.value || '23:59';
+    const expiresAt = new Date(`${pkgExpireDate.value}T${time}:59`).getTime();
+    if(!Number.isFinite(expiresAt)) return;
+    const ms = expiresAt - Date.now();
+    pkgDays.value = Math.max(1, Math.ceil(ms / 86400000));
+  }
+
+  setDefaultExpiryFromDays();
+  pkgDays.addEventListener('input', setDefaultExpiryFromDays);
+  pkgExpireDate.addEventListener('change', syncDaysFromExpiry);
+  pkgExpireTime.addEventListener('change', syncDaysFromExpiry);
+  showPassword.addEventListener('change', () => {
+    const type = showPassword.checked ? 'text' : 'password';
+    $('pkgPassword').type = type;
+    $('pkgPassword2').type = type;
+  });
+  mosaicOpacity.addEventListener('input', () => {
+    mosaicOpacityLabel.textContent = `${mosaicOpacity.value}%`;
+    drawFrame(undefined, {editing:true});
+  });
+  autoMotionMosaic.addEventListener('change', () => {
+    previousMotionData = null;
+    drawFrame(undefined, {editing:true});
+  });
+  motionSensitivity.addEventListener('input', () => {
+    previousMotionData = null;
+    drawFrame(undefined, {editing:true});
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if(!f) return;
+    if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
+    const url = URL.createObjectURL(f);
+    lastLoadedURL = url;
+    srcVideo.src = url;
+    srcVideo.load();
+    previousMotionData = null;
+  });
+
+  srcVideo.addEventListener('loadedmetadata', () => {
+    duration = srcVideo.duration;
+    stage.width = srcVideo.videoWidth || 960;
+    stage.height = srcVideo.videoHeight || 540;
+    emptyHint.style.display = 'none';
+    playBtn.disabled = false;
+    splitBtn.disabled = false;
+    addRegionBtn.disabled = false;
+    addRevealBtn.disabled = false;
+    exportBtn.disabled = false;
+    seek.disabled = false;
+    seek.max = Math.floor(duration*1000);
+    regions = [];
+    revealRegions = [];
+    previousMotionData = null;
+    segments = [{id:uid(), start:0, end:duration}];
+    selectedSegmentId = segments[0].id;
+    renderRegionList();
+    renderSegments();
+    drawFrame(undefined, {editing:true});
+  });
+
+  srcVideo.addEventListener('error', () => {
+    emptyHint.style.display = 'flex';
+    emptyHint.textContent = '이 파일을 재생할 수 없습니다. 코덱/컨테이너를 브라우저가 지원하지 않을 수 있어요 (MP4/H.264 권장, 상단의 AVI→MP4 변환을 먼저 사용해보세요).';
+  });
+
+  let playing = false;
+  playBtn.addEventListener('click', () => {
+    if(!playing){ srcVideo.play(); playing = true; playBtn.textContent = '⏸ 일시정지'; requestAnimationFrame(loop); }
+    else { srcVideo.pause(); playing = false; playBtn.textContent = '▶ 재생'; }
+  });
+  srcVideo.addEventListener('ended', () => { playing = false; playBtn.textContent = '▶ 재생'; });
+
+  function loop(){
+    if(playing){
+      drawFrame(undefined, {editing:true});
+      updateTimeUI();
+      requestAnimationFrame(loop);
+    }
+  }
+
+  seek.addEventListener('input', () => { srcVideo.currentTime = (seek.value/1000); });
+  srcVideo.addEventListener('seeked', () => { drawFrame(undefined, {editing:true}); updateTimeUI(); });
+
+  function updateTimeUI(){
+    const t = srcVideo.currentTime;
+    seek.value = Math.floor(t*1000);
+    timeLabel.textContent = `${fmt(t)} / ${fmt(duration)}`;
+    playhead.style.left = (duration ? (t/duration*100) : 0) + '%';
+  }
+
+  // ---------------- Mosaic rendering ----------------
+  function getRectAtTime(region, t){
+    const kfs = region.keyframes;
+    if(kfs.length === 0) return null;
+    if(kfs.length === 1 || t <= kfs[0].t) return kfs[0];
+    if(t >= kfs[kfs.length-1].t) return kfs[kfs.length-1];
+    for(let i=0;i<kfs.length-1;i++){
+      const a = kfs[i], b = kfs[i+1];
+      if(t >= a.t && t <= b.t){
+        const r = (b.t - a.t) === 0 ? 0 : (t - a.t)/(b.t - a.t);
+        return {
+          x: a.x + (b.x-a.x)*r, y: a.y + (b.y-a.y)*r,
+          w: a.w + (b.w-a.w)*r, h: a.h + (b.h-a.h)*r,
+          block: a.block + (b.block-a.block)*r,
+        };
+      }
+    }
+    return kfs[kfs.length-1];
+  }
+
+  // Softer transparent-vinyl mosaic: keeps the scene readable while masking detail.
+  function applyGlassMosaic(rect, shape){
+    const {x,y,w,h,block} = rect;
+    if(w < 2 || h < 2) return;
+    const bs = Math.max(2, block);
+    const bw = Math.max(1, Math.round(w/bs));
+    const bh = Math.max(1, Math.round(h/bs));
+    tempCanvas.width = bw; tempCanvas.height = bh;
+    tempCtx.imageSmoothingEnabled = true;
+    tempCtx.drawImage(stage, x, y, w, h, 0, 0, bw, bh);
+
+    ctx.save();
+    ctx.beginPath();
+    if(shape === 'ellipse'){
+      ctx.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2);
+    } else {
+      ctx.rect(x,y,w,h);
+    }
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    try{ ctx.filter = 'blur(0.7px)'; } catch(e){}
+    ctx.globalAlpha = Number(mosaicOpacity.value) / 100;
+    ctx.drawImage(tempCanvas, 0,0,bw,bh, x,y,w,h);
+    ctx.globalAlpha = 1 - (Number(mosaicOpacity.value) / 100);
+    ctx.drawImage(srcVideo, 0, 0, stage.width, stage.height);
+    ctx.globalAlpha = 1;
+    ctx.filter = 'none';
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.fillRect(x,y,w,h);
+    ctx.restore();
+  }
+
+  function drawFrame(atTime, opts){
+    if(!duration) return;
+    const editing = opts && opts.editing;
+    const t = atTime !== undefined ? atTime : srcVideo.currentTime;
+    ctx.drawImage(srcVideo, 0, 0, stage.width, stage.height);
+    if(autoMotionMosaic.checked){
+      getMotionRects().forEach(rect => applyGlassMosaic(rect, 'rect'));
+    }
+    regions.forEach(r => {
+      const rect = getRectAtTime(r, t);
+      if(rect) applyGlassMosaic(rect, r.shape);
+    });
+    revealRegions.forEach(r => {
+      const rect = getRectAtTime(r, t);
+      if(rect) revealOriginal(rect, r.shape);
+    });
+    if(editing) drawHandles(t);
+  }
+
+  function getMotionRects(){
+    const cols = 64;
+    const rows = Math.max(36, Math.round(cols * stage.height / stage.width));
+    motionCanvas.width = cols;
+    motionCanvas.height = rows;
+    motionCtx.drawImage(srcVideo, 0, 0, cols, rows);
+    const current = motionCtx.getImageData(0, 0, cols, rows);
+    if(!previousMotionData || previousMotionData.width !== cols || previousMotionData.height !== rows){
+      previousMotionData = current;
+      return [];
+    }
+
+    const threshold = Number(motionSensitivity.value) || 24;
+    const mask = new Uint8Array(cols * rows);
+    for(let i=0, p=0; i<current.data.length; i+=4, p++){
+      const dr = Math.abs(current.data[i] - previousMotionData.data[i]);
+      const dg = Math.abs(current.data[i+1] - previousMotionData.data[i+1]);
+      const db = Math.abs(current.data[i+2] - previousMotionData.data[i+2]);
+      mask[p] = ((dr + dg + db) / 3) > threshold ? 1 : 0;
+    }
+    previousMotionData = current;
+
+    const visited = new Uint8Array(cols * rows);
+    const rects = [];
+    const queue = [];
+    for(let y=0; y<rows; y++){
+      for(let x=0; x<cols; x++){
+        const start = y * cols + x;
+        if(!mask[start] || visited[start]) continue;
+        let minX=x, maxX=x, minY=y, maxY=y, count=0;
+        queue.length = 0;
+        queue.push(start);
+        visited[start] = 1;
+        for(let qi=0; qi<queue.length; qi++){
+          const idx = queue[qi];
+          const cx = idx % cols;
+          const cy = Math.floor(idx / cols);
+          count++;
+          if(cx < minX) minX = cx; if(cx > maxX) maxX = cx;
+          if(cy < minY) minY = cy; if(cy > maxY) maxY = cy;
+          const neighbors = [idx-1, idx+1, idx-cols, idx+cols];
+          for(const ni of neighbors){
+            if(ni < 0 || ni >= mask.length || visited[ni] || !mask[ni]) continue;
+            const nx = ni % cols;
+            if(Math.abs(nx - cx) > 1) continue;
+            visited[ni] = 1;
+            queue.push(ni);
+          }
+        }
+        if(count < 5) continue;
+        const padX = 5;
+        const padY = 8;
+        const sx = stage.width / cols;
+        const sy = stage.height / rows;
+        rects.push({
+          x: Math.max(0, minX * sx - padX),
+          y: Math.max(0, minY * sy - padY),
+          w: Math.min(stage.width, (maxX - minX + 1) * sx + padX * 2),
+          h: Math.min(stage.height, (maxY - minY + 1) * sy + padY * 2),
+          block: 18,
+        });
+      }
+    }
+    return rects.slice(0, 24);
+  }
+
+  function revealOriginal(rect, shape){
+    const {x,y,w,h} = rect;
+    if(w < 2 || h < 2) return;
+    ctx.save();
+    ctx.beginPath();
+    if(shape === 'ellipse'){
+      ctx.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2);
+    } else {
+      ctx.rect(x,y,w,h);
+    }
+    ctx.clip();
+    ctx.drawImage(srcVideo, 0, 0, stage.width, stage.height);
+    ctx.restore();
+  }
+
+  function drawHandles(t){
+    if(!selectedRegionId) return;
+    const r = allRegions().find(rg => rg.id === selectedRegionId);
+    if(!r) return;
+    const rect = getRectAtTime(r, t);
+    if(!rect) return;
+    ctx.save();
+    ctx.strokeStyle = r.reveal ? 'rgba(255,255,255,0.95)' : r.color;
+    ctx.setLineDash([7,4]);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 2;
+    const hs = 12;
+    [[rect.x,rect.y],[rect.x+rect.w,rect.y],[rect.x,rect.y+rect.h],[rect.x+rect.w,rect.y+rect.h]].forEach(([hx,hy]) => {
+      ctx.fillRect(hx-hs/2, hy-hs/2, hs, hs);
+      ctx.strokeRect(hx-hs/2, hy-hs/2, hs, hs);
+    });
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    const cx = rect.x + rect.w/2;
+    const cy = rect.y + rect.h/2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 13, 0, Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(cx-7, cy-1, 14, 2);
+    ctx.fillRect(cx-1, cy-7, 2, 14);
+    ctx.restore();
+  }
+
+  // ---------------- Region management ----------------
+  function allRegions(){
+    return regions.concat(revealRegions);
+  }
+
+  addRegionBtn.addEventListener('click', () => {
+    const r = { id: uid(), color: COLORS[regions.length % COLORS.length], shape: 'rect', keyframes: [], pendingPlace: true };
+    regions.push(r);
+    selectedRegionId = r.id;
+    renderRegionList();
+  });
+
+  addRevealBtn.addEventListener('click', () => {
+    const r = { id: uid(), color: '#ffffff', shape: 'rect', keyframes: [], pendingPlace: true, reveal: true };
+    revealRegions.push(r);
+    selectedRegionId = r.id;
+    renderRegionList();
+  });
+
+  function upsertKeyframe(region, t, rect, block){
+    const eps = 0.04;
+    const existing = region.keyframes.find(k => Math.abs(k.t - t) < eps);
+    if(existing){
+      existing.x = rect.x; existing.y = rect.y; existing.w = rect.w; existing.h = rect.h;
+      existing.block = block !== undefined ? block : existing.block;
+    } else {
+      region.keyframes.push({t, x:rect.x, y:rect.y, w:rect.w, h:rect.h, block: block !== undefined ? block : 18});
+      region.keyframes.sort((a,b) => a.t - b.t);
+    }
+  }
+
+  function canvasCoords(e){
+    const r = stage.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (stage.width / r.width), y: (e.clientY - r.top) * (stage.height / r.height) };
+  }
+
+  function hitTest(region, t, p){
+    const rect = getRectAtTime(region, t);
+    if(!rect) return null;
+    const hs = 14;
+    const corners = { tl:[rect.x, rect.y], tr:[rect.x+rect.w, rect.y], bl:[rect.x, rect.y+rect.h], br:[rect.x+rect.w, rect.y+rect.h] };
+    for(const [k,[cx,cy]] of Object.entries(corners)){
+      if(Math.abs(p.x-cx)<hs && Math.abs(p.y-cy)<hs) return {mode:'resize', corner:k, rect};
+    }
+    if(p.x>=rect.x && p.x<=rect.x+rect.w && p.y>=rect.y && p.y<=rect.y+rect.h) return {mode:'move', rect};
+    return null;
+  }
+
+  function cursorForHit(hit){
+    if(!hit) return 'crosshair';
+    if(hit.mode === 'move') return 'move';
+    if(hit.corner === 'tl' || hit.corner === 'br') return 'nwse-resize';
+    if(hit.corner === 'tr' || hit.corner === 'bl') return 'nesw-resize';
+    return 'crosshair';
+  }
+
+  function updateStageCursor(e){
+    if(drag){
+      if(drag.type === 'move') stage.style.cursor = 'move';
+      else if(drag.type === 'resize') stage.style.cursor = cursorForHit({mode:'resize', corner:drag.corner});
+      else stage.style.cursor = 'crosshair';
+      return;
+    }
+    const pending = allRegions().find(r => r.pendingPlace);
+    if(pending){ stage.style.cursor = 'crosshair'; return; }
+    const p = canvasCoords(e);
+    const t = srcVideo.currentTime;
+    if(selectedRegionId){
+      const region = allRegions().find(r => r.id === selectedRegionId);
+      const hit = hitTest(region, t, p);
+      if(hit){ stage.style.cursor = cursorForHit(hit); return; }
+    }
+    for(const region of allRegions()){
+      const hit = hitTest(region, t, p);
+      if(hit){ stage.style.cursor = cursorForHit(hit); return; }
+    }
+    stage.style.cursor = 'crosshair';
+  }
+
+  stage.addEventListener('mousemove', updateStageCursor);
+  stage.addEventListener('mouseleave', () => { stage.style.cursor = 'crosshair'; });
+
+  stage.addEventListener('mousedown', (e) => {
+    const p = canvasCoords(e);
+    const t = srcVideo.currentTime;
+    const pending = allRegions().find(r => r.pendingPlace);
+    if(pending){ drag = { type:'new', region: pending, startX:p.x, startY:p.y }; return; }
+    if(selectedRegionId){
+      const region = allRegions().find(r => r.id === selectedRegionId);
+      const hit = hitTest(region, t, p);
+      if(hit){ drag = { type: hit.mode, region, corner: hit.corner, startRect: {...hit.rect}, startX:p.x, startY:p.y }; return; }
+    }
+    const selectableRegions = allRegions();
+    for(let i=selectableRegions.length-1;i>=0;i--){
+      const hit = hitTest(selectableRegions[i], t, p);
+      if(hit){
+        selectedRegionId = selectableRegions[i].id;
+        renderRegionList();
+        drag = { type: hit.mode, region: selectableRegions[i], corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
+        return;
+      }
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if(!drag) return;
+    const p = canvasCoords(e);
+    const t = srcVideo.currentTime;
+    if(drag.type === 'new'){
+      const x = Math.min(drag.startX, p.x), y = Math.min(drag.startY, p.y);
+      const w = Math.abs(p.x - drag.startX), h = Math.abs(p.y - drag.startY);
+      drawFrame(t, {editing:true});
+      ctx.save(); ctx.strokeStyle = drag.region.color; ctx.setLineDash([5,4]); ctx.strokeRect(x,y,w,h); ctx.restore();
+      drag.rect = {x,y,w,h};
+      return;
+    }
+    if(drag.type === 'move'){
+      const dx = p.x - drag.startX, dy = p.y - drag.startY;
+      const rect = { x: drag.startRect.x+dx, y: drag.startRect.y+dy, w: drag.startRect.w, h: drag.startRect.h };
+      upsertKeyframe(drag.region, t, rect, currentBlockOf(drag.region, t));
+      drawFrame(t, {editing:true});
+      return;
+    }
+    if(drag.type === 'resize'){
+      let {x,y,w,h} = drag.startRect;
+      const dx = p.x - drag.startX, dy = p.y - drag.startY;
+      if(drag.corner === 'br'){ w += dx; h += dy; }
+      if(drag.corner === 'bl'){ x += dx; w -= dx; h += dy; }
+      if(drag.corner === 'tr'){ y += dy; w += dx; h -= dy; }
+      if(drag.corner === 'tl'){ x += dx; y += dy; w -= dx; h -= dy; }
+      w = Math.max(10,w); h = Math.max(10,h);
+      upsertKeyframe(drag.region, t, {x,y,w,h}, currentBlockOf(drag.region, t));
+      drawFrame(t, {editing:true});
+      return;
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if(drag && drag.type === 'new' && drag.rect && drag.rect.w > 5 && drag.rect.h > 5){
+      const t = srcVideo.currentTime;
+      upsertKeyframe(drag.region, t, drag.rect, 18);
+      drag.region.pendingPlace = false;
+      renderRegionList();
+      drawFrame(t, {editing:true});
+    }
+    drag = null;
+    stage.style.cursor = 'crosshair';
+  });
+
+  function currentBlockOf(region, t){
+    const rect = getRectAtTime(region, t);
+    return rect ? rect.block : 18;
+  }
+
+  function renderRegionList(){
+    regionList.innerHTML = '';
+    const items = allRegions();
+    if(items.length === 0){ regionList.innerHTML = '<div class="sub">추가된 모자이크 영역이 없습니다.</div>'; return; }
+    items.forEach((r) => {
+      const div = document.createElement('div');
+      div.className = 'region-item' + (r.id === selectedRegionId ? ' selected' : '');
+      const kfLabel = r.keyframes.map(k => `<span class="kf-chip">${fmt(k.t)}</span>`).join('') || '<span class="sub">아직 위치 없음 (캔버스를 드래그하세요)</span>';
+      const curBlock = r.keyframes.length ? currentBlockOf(r, srcVideo.currentTime) : 18;
+      div.innerHTML = `
+        <div class="title">
+          <span><span class="swatch" style="background:${r.color}"></span>${r.reveal ? '제외 영역' : '모자이크 영역'}</span>
+          <div class="row" style="gap:4px;">
+            <button data-act="select">선택</button>
+            <button data-act="delete" class="warn">삭제</button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="sub">모자이크 크기</label>
+          <input type="range" data-act="block" min="6" max="60" value="${curBlock}" style="width:100px;">
+          <select data-act="shape">
+            <option value="ellipse" ${r.shape==='ellipse'?'selected':''}>타원(인체)</option>
+            <option value="rect" ${r.shape==='rect'?'selected':''}>사각형</option>
+          </select>
+        </div>
+        <div class="kf-list">${kfLabel}</div>
+      `;
+      div.querySelector('[data-act="select"]').addEventListener('click', () => { selectedRegionId = r.id; renderRegionList(); drawFrame(undefined,{editing:true}); });
+      div.querySelector('[data-act="delete"]').addEventListener('click', () => {
+        regions = regions.filter(x => x.id !== r.id);
+        revealRegions = revealRegions.filter(x => x.id !== r.id);
+        if(selectedRegionId === r.id) selectedRegionId = null;
+        renderRegionList(); drawFrame(undefined,{editing:true});
+      });
+      div.querySelector('[data-act="shape"]').addEventListener('change', (e) => { r.shape = e.target.value; drawFrame(undefined,{editing:true}); });
+      div.querySelector('[data-act="block"]').addEventListener('input', (e) => {
+        const t = srcVideo.currentTime;
+        const rect = getRectAtTime(r, t);
+        if(rect) upsertKeyframe(r, t, rect, Number(e.target.value));
+        renderRegionList();
+        drawFrame(t, {editing:true});
+      });
+      regionList.appendChild(div);
+    });
+  }
+
+  // ---------------- Timeline segments ----------------
+  splitBtn.addEventListener('click', () => {
+    const t = srcVideo.currentTime;
+    const idx = segments.findIndex(s => t > s.start + 0.05 && t < s.end - 0.05);
+    if(idx === -1) return;
+    const s = segments[idx];
+    segments.splice(idx, 1, {id:uid(), start:s.start, end:t}, {id:uid(), start:t, end:s.end});
+    renderSegments();
+  });
+
+  function renderSegments(){
+    timeTrack.querySelectorAll('.seg-block').forEach(el => el.remove());
+    segments.forEach(s => {
+      const el = document.createElement('div');
+      el.className = 'seg-block' + (s.id === selectedSegmentId ? ' selected' : '');
+      el.style.left = (s.start/duration*100) + '%';
+      el.style.width = Math.max(((s.end-s.start)/duration*100),0.5) + '%';
+      el.textContent = `${fmt(s.start)}-${fmt(s.end)}`;
+      el.addEventListener('click', () => { selectedSegmentId = s.id; renderSegments(); });
+      timeTrack.insertBefore(el, playhead);
+    });
+    segList.innerHTML = '';
+    segments.forEach((s, i) => {
+      const row = document.createElement('div');
+      row.className = 'seg-row';
+      row.innerHTML = `
+        <span>${i+1}. ${fmt(s.start)} ~ ${fmt(s.end)} <span class="sub">(${(s.end-s.start).toFixed(1)}s)</span></span>
+        <div class="row" style="gap:4px;">
+          <button data-act="up">↑</button>
+          <button data-act="down">↓</button>
+          <button data-act="del" class="warn">제외</button>
+        </div>
+      `;
+      row.querySelector('[data-act="up"]').addEventListener('click', () => { if(i>0){ [segments[i-1],segments[i]] = [segments[i],segments[i-1]]; renderSegments(); } });
+      row.querySelector('[data-act="down"]').addEventListener('click', () => { if(i<segments.length-1){ [segments[i+1],segments[i]] = [segments[i],segments[i+1]]; renderSegments(); } });
+      row.querySelector('[data-act="del"]').addEventListener('click', () => { segments.splice(i,1); renderSegments(); });
+      segList.appendChild(row);
+    });
+  }
+
+  // ---------------- Export (render segments to WebM, no on-screen handles baked in) ----------------
+  exportBtn.addEventListener('click', async () => {
+    if(segments.length === 0){ alert('내보낼 구간이 없습니다.'); return; }
+    exportBtn.disabled = true;
+    progressWrap.style.display = 'block';
+    progressBar.style.width = '0%';
+    exportResult.innerHTML = '';
+
+    const wasPlaying = playing;
+    srcVideo.pause(); playing = false; playBtn.textContent = '▶ 재생';
+
+    const stream = stage.captureStream(30);
+    let mimeType = 'video/webm;codecs=vp9';
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+    const recorder = new MediaRecorder(stream, { mimeType });
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if(e.data.size>0) chunks.push(e.data); };
+
+    const totalDur = segments.reduce((a,s) => a + (s.end-s.start), 0) || 1;
+    let elapsed = 0;
+    const done = new Promise((resolve) => { recorder.onstop = resolve; });
+    recorder.start();
+
+    for(const seg of segments){
+      await seekTo(seg.start);
+      await playSegment(seg, (t) => {
+        progressBar.style.width = Math.min(100, ((elapsed + (t-seg.start))/totalDur*100)) + '%';
+      });
+      elapsed += (seg.end - seg.start);
+    }
+    recorder.stop();
+    await done;
+
+    const blob = new Blob(chunks, {type:'video/webm'});
+    const url = URL.createObjectURL(blob);
+    exportResult.innerHTML = `
+      <div class="row">
+        <a class="dl" href="${url}" download="edited_${Date.now()}.webm">⬇ WebM으로 저장</a>
+        <button id="saveMp4Btn">MP4로 PC 저장</button>
+      </div>
+      <div class="hint" id="mp4Status" style="margin-top:6px;">Windows 기본 영상 앱으로 보려면 MP4 저장을 사용하세요.</div>`;
+    window.__lastExportBlob = blob;
+    $('saveMp4Btn').addEventListener('click', saveLastExportAsMp4);
+    savePkgBtn.disabled = false;
+    saveHtmlPkgBtn.disabled = false;
+    progressWrap.style.display = 'none';
+    exportBtn.disabled = false;
+    if(wasPlaying){ srcVideo.play(); playing = true; playBtn.textContent = '⏸ 일시정지'; requestAnimationFrame(loop); }
+  });
+
+  function seekTo(t){
+    return new Promise((resolve) => {
+      const handler = () => { srcVideo.removeEventListener('seeked', handler); resolve(); };
+      srcVideo.addEventListener('seeked', handler);
+      srcVideo.currentTime = t;
+    });
+  }
+
+  async function saveLastExportAsMp4(){
+    const blob = window.__lastExportBlob;
+    if(!blob) return;
+    const btn = $('saveMp4Btn');
+    const status = $('mp4Status');
+    btn.disabled = true;
+    status.textContent = 'MP4 변환 중... 영상 길이에 따라 시간이 걸릴 수 있습니다.';
+    try{
+      const libs = await loadFFmpegLibs();
+      const ff = await ensureFFmpegLoaded();
+      const inName = `rendered_${Date.now()}.webm`;
+      const outName = `edited_${Date.now()}.mp4`;
+      await ff.writeFile(inName, await libs.fetchFile(blob));
+      await ff.exec(['-i', inName, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outName]);
+      const data = await ff.readFile(outName);
+      const mp4Blob = new Blob([data.buffer], {type:'video/mp4'});
+      const url = URL.createObjectURL(mp4Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = outName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      status.innerHTML = `<span style="color:var(--accent)">MP4 저장이 완료되었습니다. Windows 기본 영상 앱에서 열 수 있습니다.</span> <a class="dl" href="${url}" download="${outName}">다시 다운로드</a>`;
+      if(ff.deleteFile){
+        try{ await ff.deleteFile(inName); } catch(e){}
+        try{ await ff.deleteFile(outName); } catch(e){}
+      }
+    } catch(err){
+      console.error(err);
+      status.innerHTML = '<span style="color:var(--danger)">MP4 변환에 실패했습니다. WebM 파일은 브라우저/Chrome/Edge에서 열 수 있습니다.</span>';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function playSegment(seg, onProgress){
+    return new Promise((resolve) => {
+      srcVideo.play();
+      function step(){
+        drawFrame(srcVideo.currentTime, {editing:false}); // no handles baked into export
+        onProgress(srcVideo.currentTime);
+        if(srcVideo.currentTime >= seg.end - 0.02 || srcVideo.paused){ srcVideo.pause(); resolve(); return; }
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  }
+
+  // ---------------- Crypto helpers (AES-GCM + PBKDF2) ----------------
+  function bytesToBase64(bytes){
+    let binary = '';
+    const chunk = 0x8000;
+    for(let i=0;i<bytes.length;i+=chunk){
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+    }
+    return btoa(binary);
+  }
+  function base64ToBytes(b64){
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+  async function deriveKey(password, saltBytes){
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt: saltBytes, iterations: 150000, hash:'SHA-256'},
+      keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+    );
+  }
+  async function encryptBlob(blob, password){
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt);
+    const buf = await blob.arrayBuffer();
+    const cipherBuf = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, buf);
+    return { salt, iv, cipherBuf };
+  }
+  async function decryptPackage(pkg, password){
+    const salt = base64ToBytes(pkg.salt);
+    const iv = base64ToBytes(pkg.iv);
+    const key = await deriveKey(password, salt);
+    const cipherBytes = base64ToBytes(pkg.cipher);
+    const plainBuf = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, cipherBytes.buffer);
+    return new Blob([plainBuf], {type:'video/webm'});
+  }
+
+  async function buildPrivacyPackage(blob, name, password, expiresAt){
+    const now = Date.now();
+    const { salt, iv, cipherBuf } = await encryptBlob(blob, password);
+    return {
+      format: 'cctv-privacy-package', version: 1,
+      name, createdAt: now, expiresAt,
+      salt: bytesToBase64(salt), iv: bytesToBase64(iv),
+      cipher: bytesToBase64(new Uint8Array(cipherBuf)),
+    };
+  }
+
+  function getPackageFormValues(){
+    const name = $('pkgName').value.trim() || `영상_${Date.now()}`;
+    const pw = $('pkgPassword').value;
+    const pw2 = $('pkgPassword2').value;
+    if(!pw) throw new Error('열람 암호를 입력하세요.');
+    if(pw !== pw2) throw new Error('암호가 서로 다릅니다.');
+    const date = pkgExpireDate.value;
+    const time = pkgExpireTime.value || '23:59';
+    const expiresAt = date ? new Date(`${date}T${time}:59`).getTime() : NaN;
+    if(!Number.isFinite(expiresAt)) throw new Error('만료 날짜와 시간을 확인하세요.');
+    if(expiresAt <= Date.now()) throw new Error('만료 시점은 현재 시간 이후여야 합니다.');
+    return { name, pw, expiresAt };
+  }
+
+  function buildDistributionHtml(pkg){
+    const pkgJson = JSON.stringify(pkg).replace(/</g, '\\u003c');
+    return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(pkg.name)} 열람</title>
+<style>
+  body{margin:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 18px;}
+  h1{font-size:20px;margin:0 0 16px;}
+  .panel{background:#181c24;border:1px solid #303746;border-radius:10px;padding:18px;margin-top:14px;}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  input,button{font-size:14px;border-radius:8px;padding:9px 12px;}
+  input{background:#222833;border:1px solid #3a4352;color:#fff;}
+  button{background:#4fd1c5;border:1px solid #4fd1c5;color:#071717;font-weight:700;cursor:pointer;}
+  button.danger{background:#e2555a;border-color:#e2555a;color:#fff;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  .sub{color:#aeb7c7;font-size:13px;line-height:1.6;}
+  .dangerText{color:#ffb2b4;}
+  video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CCTV 개인정보 보호 영상 열람</h1>
+  <div id="app" class="panel"></div>
+</div>
+<script>
+const pkg = ${pkgJson};
+const app = document.getElementById('app');
+function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
+async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
+async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:'video/webm'});}
+function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+pkg.name+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;}
+async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls autoplay></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
+function renderExpired(){app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다.</h1><p class="sub">표준 개인정보 보호 지침에 따라 파기 바랍니다.</p><p class="sub">아래 파기 버튼은 브라우저가 로컬 파일 삭제 권한을 지원하는 경우에만 동작합니다. 지원하지 않으면 이 HTML 파일을 직접 삭제한 뒤 휴지통도 비워주세요.</p><button id="destroy" class="danger">파기</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
+async function destroyFile(){const msg=document.getElementById('destroyMsg');if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 파일 직접 파기를 지원하지 않습니다. 현재 열려 있는 배부용 HTML 파일을 직접 삭제하고 휴지통을 비워주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일을 파기했습니다.</span>';}else{msg.innerHTML='이 브라우저는 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워주세요.';}}catch(e){msg.textContent='파기가 취소되었거나 실패했습니다.';}}
+render();
+<\/script>
+</body>
+</html>`;
+  }
+
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  // ---------------- Save as encrypted + expiring package (PC download) ----------------
+  savePkgBtn.addEventListener('click', async () => {
+    const blob = window.__lastExportBlob;
+    if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
+    savePkgBtn.disabled = true;
+    $('savePkgMsg').textContent = '암호화 패키지를 만드는 중...';
+    try{
+      const { name, pw, expiresAt } = getPackageFormValues();
+      const pkg = await buildPrivacyPackage(blob, name, pw, expiresAt);
+      const jsonStr = JSON.stringify(pkg);
+      const outBlob = new Blob([jsonStr], {type:'application/json'});
+      const url = URL.createObjectURL(outBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${name}.cctvpkg`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">✔ PC에 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
+    } catch(err){
+      console.error(err);
+      $('savePkgMsg').innerHTML = `<span style="color:var(--danger)">${err.message || '암호화 저장에 실패했습니다.'}</span>`;
+    } finally {
+      savePkgBtn.disabled = false;
+    }
+  });
+
+  saveHtmlPkgBtn.addEventListener('click', async () => {
+    const blob = window.__lastExportBlob;
+    if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
+    saveHtmlPkgBtn.disabled = true;
+    $('savePkgMsg').textContent = '민원인 배부용 HTML 파일을 만드는 중...';
+    try{
+      const { name, pw, expiresAt } = getPackageFormValues();
+      const pkg = await buildPrivacyPackage(blob, name, pw, expiresAt);
+      const html = buildDistributionHtml(pkg);
+      const outBlob = new Blob([html], {type:'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(outBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}_열람용.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">✔ 민원인 배부용 HTML이 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
+    } catch(err){
+      console.error(err);
+      $('savePkgMsg').innerHTML = `<span style="color:var(--danger)">${err.message || '배부용 HTML 저장에 실패했습니다.'}</span>`;
+    } finally {
+      saveHtmlPkgBtn.disabled = false;
+    }
+  });
+
+  // ---------------- Open a received package ----------------
+  const openPkgInput = $('openPkgInput');
+  const openPkgStatus = $('openPkgStatus');
+
+  openPkgInput.addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if(!f) return;
+    openPkgStatus.innerHTML = '<span class="sub">읽는 중...</span>';
+    try{
+      const text = await f.text();
+      const pkg = JSON.parse(text);
+      if(pkg.format !== 'cctv-privacy-package') throw new Error('invalid format');
+      renderPkgInfo(pkg);
+    } catch(err){
+      openPkgStatus.innerHTML = '<div class="notice danger">올바른 패키지 파일(.cctvpkg)이 아닙니다.</div>';
+    }
+  });
+
+  function renderPkgInfo(pkg){
+    const now = Date.now();
+    const expired = now > pkg.expiresAt;
+    if(expired){
+      openPkgStatus.innerHTML = `
+        <div class="notice danger">
+          ⛔ <strong>보관기간이 만료되었습니다.</strong><br>
+          이 영상은 더 이상 열 수 없습니다.<br>
+          <span class="sub">만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>
+        </div>`;
+      return;
+    }
+    const dday = Math.max(0, Math.ceil((pkg.expiresAt-now)/86400000));
+    openPkgStatus.innerHTML = `
+      <div class="notice ok">
+        <strong>${pkg.name}</strong><br>
+        <span class="sub">만료일: ${new Date(pkg.expiresAt).toLocaleString()} (D-${dday})</span>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input type="password" id="unlockPw" placeholder="열람 암호">
+        <button id="unlockBtn">잠금 해제</button>
+      </div>
+      <div id="unlockMsg" class="hint" style="margin-top:6px;"></div>
+      <div id="unlockPlayer" style="margin-top:8px;"></div>
+    `;
+    $('unlockBtn').addEventListener('click', async () => {
+      if(Date.now() > pkg.expiresAt){
+        renderPkgInfo(pkg); // re-render as expired
+        return;
+      }
+      const pw = $('unlockPw').value;
+      $('unlockMsg').textContent = '확인 중...';
+      try{
+        const blob = await decryptPackage(pkg, pw);
+        $('unlockMsg').textContent = '';
+        const url = URL.createObjectURL(blob);
+        $('unlockPlayer').innerHTML = `
+          <video src="${url}" controls style="width:100%; border-radius:8px; background:#000;"></video>
+          <div class="row" style="margin-top:6px;">
+            <a class="dl" href="${url}" download="${pkg.name}.webm">⬇ 이 PC에 영상 저장</a>
+          </div>
+        `;
+      } catch(err){
+        $('unlockMsg').innerHTML = '<span style="color:var(--danger)">암호가 올바르지 않습니다.</span>';
+      }
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
