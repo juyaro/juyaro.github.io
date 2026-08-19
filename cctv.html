@@ -38,6 +38,8 @@
   }
   button:hover{border-color:var(--accent);}
   button.primary{background:var(--accent); color:#08191a; border-color:var(--accent); font-weight:600;}
+  button.public-html{background:var(--accent2); color:#1f1204; border-color:var(--accent2); font-weight:800; box-shadow:0 0 0 2px rgba(242,161,84,0.18);}
+  button.public-html:hover{border-color:#ffd08c; box-shadow:0 0 0 3px rgba(242,161,84,0.24);}
   button.warn{background:var(--danger); color:#fff; border-color:var(--danger);}
   button:disabled{opacity:.4; cursor:not-allowed;}
   input[type=file]{color:var(--sub); font-size:12px;}
@@ -144,9 +146,9 @@
       <div class="row" style="margin-top:8px;">
         <div class="field">
           <label>모자이크 투명도</label>
-          <input type="range" id="mosaicOpacity" min="20" max="95" value="58">
+          <input type="range" id="mosaicOpacity" min="50" max="100" value="75">
         </div>
-        <span class="sub" id="mosaicOpacityLabel">58%</span>
+        <span class="sub" id="mosaicOpacityLabel">75%</span>
         <label class="sub"><input type="checkbox" id="autoMotionMosaic"> 움직임 자동 모자이크</label>
       </div>
       <div class="row">
@@ -211,8 +213,8 @@
         <span class="sub">기본값은 지정일 저녁 24시입니다.</span>
       </div>
       <div class="row" style="margin-top:6px;">
+        <button id="saveHtmlPkgBtn" class="public-html" disabled>민원인 배부용 HTML 저장</button>
         <button id="savePkgBtn" class="primary" disabled>🔒 암호화 패키지로 PC에 저장</button>
-        <button id="saveHtmlPkgBtn" disabled>민원인 배부용 HTML 저장</button>
       </div>
       <div id="savePkgMsg" class="hint" style="margin-top:6px;"></div>
       <div class="hint" style="margin-top:8px;">
@@ -638,7 +640,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     return kfs[kfs.length-1];
   }
 
-  // Softer transparent-vinyl mosaic: keeps the scene readable while masking detail.
+  // Plain mosaic. The opacity slider only blends pixelated video with the original.
   function applyGlassMosaic(rect, shape){
     const {x,y,w,h,block} = rect;
     if(w < 2 || h < 2) return;
@@ -658,15 +660,13 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     }
     ctx.clip();
     ctx.imageSmoothingEnabled = true;
-    try{ ctx.filter = 'blur(0.7px)'; } catch(e){}
-    ctx.globalAlpha = Number(mosaicOpacity.value) / 100;
+
+    const opacity = Number(mosaicOpacity.value) / 100;
+    ctx.globalAlpha = opacity;
     ctx.drawImage(tempCanvas, 0,0,bw,bh, x,y,w,h);
-    ctx.globalAlpha = 1 - (Number(mosaicOpacity.value) / 100);
+    ctx.globalAlpha = 1 - opacity;
     ctx.drawImage(srcVideo, 0, 0, stage.width, stage.height);
     ctx.globalAlpha = 1;
-    ctx.filter = 'none';
-    ctx.fillStyle = 'rgba(255,255,255,0.14)';
-    ctx.fillRect(x,y,w,h);
     ctx.restore();
   }
 
@@ -690,7 +690,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   }
 
   function getMotionRects(){
-    const cols = 64;
+    const cols = 80;
     const rows = Math.max(36, Math.round(cols * stage.height / stage.width));
     motionCanvas.width = cols;
     motionCanvas.height = rows;
@@ -711,13 +711,28 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     }
     previousMotionData = current;
 
+    const expandedMask = new Uint8Array(cols * rows);
+    const growRadius = 1;
+    for(let y=0; y<rows; y++){
+      for(let x=0; x<cols; x++){
+        if(!mask[y * cols + x]) continue;
+        for(let gy=-growRadius; gy<=growRadius; gy++){
+          for(let gx=-growRadius; gx<=growRadius; gx++){
+            const nx = x + gx;
+            const ny = y + gy;
+            if(nx >= 0 && nx < cols && ny >= 0 && ny < rows) expandedMask[ny * cols + nx] = 1;
+          }
+        }
+      }
+    }
+
     const visited = new Uint8Array(cols * rows);
-    const rects = [];
+    const blobs = [];
     const queue = [];
     for(let y=0; y<rows; y++){
       for(let x=0; x<cols; x++){
         const start = y * cols + x;
-        if(!mask[start] || visited[start]) continue;
+        if(!expandedMask[start] || visited[start]) continue;
         let minX=x, maxX=x, minY=y, maxY=y, count=0;
         queue.length = 0;
         queue.push(start);
@@ -731,28 +746,106 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
           if(cy < minY) minY = cy; if(cy > maxY) maxY = cy;
           const neighbors = [idx-1, idx+1, idx-cols, idx+cols];
           for(const ni of neighbors){
-            if(ni < 0 || ni >= mask.length || visited[ni] || !mask[ni]) continue;
+            if(ni < 0 || ni >= expandedMask.length || visited[ni] || !expandedMask[ni]) continue;
             const nx = ni % cols;
             if(Math.abs(nx - cx) > 1) continue;
             visited[ni] = 1;
             queue.push(ni);
           }
         }
-        if(count < 5) continue;
-        const padX = 5;
-        const padY = 8;
-        const sx = stage.width / cols;
-        const sy = stage.height / rows;
-        rects.push({
-          x: Math.max(0, minX * sx - padX),
-          y: Math.max(0, minY * sy - padY),
-          w: Math.min(stage.width, (maxX - minX + 1) * sx + padX * 2),
-          h: Math.min(stage.height, (maxY - minY + 1) * sy + padY * 2),
-          block: 18,
-        });
+        if(count < 8) continue;
+        blobs.push({minX, maxX, minY, maxY, count});
       }
     }
-    return rects.slice(0, 24);
+
+    const sx = stage.width / cols;
+    const sy = stage.height / rows;
+    const people = blobs
+      .map(blob => {
+        const rawW = (blob.maxX - blob.minX + 1) * sx;
+        const rawH = (blob.maxY - blob.minY + 1) * sy;
+        if(!isPersonLikeMotionBlob(rawW, rawH, blob.count, cols, rows)) return null;
+
+        let x = blob.minX * sx;
+        let y = blob.minY * sy;
+        let w = rawW;
+        let h = rawH;
+
+        // 움직임은 팔/다리 일부만 잡히는 경우가 많아서 인체 전체가 들어오도록 박스를 확장한다.
+        const minBodyH = Math.max(h * 2.15, w * 2.45, stage.height * 0.13);
+        const minBodyW = Math.max(w * 1.9, minBodyH * 0.34, stage.width * 0.045);
+        const cx = x + w / 2;
+        const footBias = Math.min(stage.height * 0.05, minBodyH * 0.12);
+        h = Math.max(h + sy * 4, minBodyH);
+        w = Math.max(w + sx * 4, minBodyW);
+        x = cx - w / 2;
+        y = y - h * 0.34 + footBias;
+
+        return {
+          x: Math.max(0, x),
+          y: Math.max(0, y),
+          w: Math.min(stage.width - Math.max(0, x), w),
+          h: Math.min(stage.height - Math.max(0, y), h),
+          block: 18,
+          area: w * h,
+        };
+      })
+      .filter(rect => rect && rect.w >= stage.width * 0.035 && rect.h >= stage.height * 0.08)
+      .sort((a,b) => b.area - a.area);
+
+    return mergeMotionRects(people).filter(isPersonLikeMosaicRect).slice(0, 12);
+  }
+
+  function isPersonLikeMotionBlob(w, h, count, cols, rows){
+    const frameArea = stage.width * stage.height;
+    const area = w * h;
+    const ratio = h / Math.max(1, w);
+    const cellW = stage.width / cols;
+    const cellH = stage.height / rows;
+    const gridFill = count / Math.max(1, (w / cellW) * (h / cellH));
+    if(area < frameArea * 0.00022) return false;
+    if(area > frameArea * 0.22) return false;
+    if(ratio < 0.7 && w > stage.width * 0.10) return false;
+    if(ratio > 8.5) return false;
+    if(gridFill > 0.92 && w > stage.width * 0.18) return false;
+    return true;
+  }
+
+  function isPersonLikeMosaicRect(rect){
+    const frameArea = stage.width * stage.height;
+    const ratio = rect.h / Math.max(1, rect.w);
+    if(rect.area > frameArea * 0.34) return false;
+    if(ratio < 1.05) return false;
+    if(rect.w > stage.width * 0.45 && rect.h < stage.height * 0.45) return false;
+    return true;
+  }
+
+  function mergeMotionRects(rects){
+    const merged = [];
+    const closeEnough = (a, b) => {
+      const ax2 = a.x + a.w, ay2 = a.y + a.h;
+      const bx2 = b.x + b.w, by2 = b.y + b.h;
+      const gapX = Math.max(0, Math.max(a.x, b.x) - Math.min(ax2, bx2));
+      const gapY = Math.max(0, Math.max(a.y, b.y) - Math.min(ay2, by2));
+      return gapX < stage.width * 0.045 && gapY < stage.height * 0.08;
+    };
+    rects.forEach(rect => {
+      let target = merged.find(item => closeEnough(item, rect));
+      if(!target){
+        merged.push({...rect});
+        return;
+      }
+      const x1 = Math.min(target.x, rect.x);
+      const y1 = Math.min(target.y, rect.y);
+      const x2 = Math.max(target.x + target.w, rect.x + rect.w);
+      const y2 = Math.max(target.y + target.h, rect.y + rect.h);
+      target.x = x1;
+      target.y = y1;
+      target.w = x2 - x1;
+      target.h = y2 - y1;
+      target.area = target.w * target.h;
+    });
+    return merged.sort((a,b) => b.area - a.area);
   }
 
   function revealOriginal(rect, shape){
@@ -809,10 +902,15 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     return regions.concat(revealRegions);
   }
 
-  addRegionBtn.addEventListener('click', () => {
-    const r = { id: uid(), color: COLORS[regions.length % COLORS.length], shape: 'rect', keyframes: [], pendingPlace: true };
+  function createMosaicRegion(pendingPlace){
+    const r = { id: uid(), color: COLORS[regions.length % COLORS.length], shape: 'rect', keyframes: [], pendingPlace };
     regions.push(r);
     selectedRegionId = r.id;
+    return r;
+  }
+
+  addRegionBtn.addEventListener('click', () => {
+    createMosaicRegion(true);
     renderRegionList();
   });
 
@@ -906,6 +1004,9 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         return;
       }
     }
+    const r = createMosaicRegion(false);
+    renderRegionList();
+    drag = { type:'new', region: r, startX:p.x, startY:p.y, autoCreated:true };
   });
 
   window.addEventListener('mousemove', (e) => {
@@ -948,6 +1049,11 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       drag.region.pendingPlace = false;
       renderRegionList();
       drawFrame(t, {editing:true});
+    } else if(drag && drag.type === 'new' && drag.autoCreated){
+      regions = regions.filter(x => x.id !== drag.region.id);
+      if(selectedRegionId === drag.region.id) selectedRegionId = null;
+      renderRegionList();
+      drawFrame(undefined, {editing:true});
     }
     drag = null;
     stage.style.cursor = 'crosshair';
@@ -1198,6 +1304,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     return {
       format: 'cctv-privacy-package', version: 1,
       name, createdAt: now, expiresAt,
+      expectedDestroyFileName: `${name}_열람용.html`,
       salt: bytesToBase64(salt), iv: bytesToBase64(iv),
       cipher: bytesToBase64(new Uint8Array(cipherBuf)),
     };
@@ -1218,7 +1325,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   }
 
   function buildDistributionHtml(pkg){
-    const pkgJson = JSON.stringify(pkg).replace(/</g, '\\u003c');
+    const pkgEncoded = bytesToBase64(new TextEncoder().encode(JSON.stringify(pkg)));
     return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -1247,15 +1354,18 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   <div id="app" class="panel"></div>
 </div>
 <script>
-const pkg = ${pkgJson};
+const pkg = decodePkg('${pkgEncoded}');
 const app = document.getElementById('app');
+document.addEventListener('contextmenu', function(e){e.preventDefault();});
+document.addEventListener('keydown', function(e){if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||(e.ctrlKey&&e.key.toUpperCase()==='U'))e.preventDefault();});
+function decodePkg(encoded){const bin=atob(encoded);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return JSON.parse(new TextDecoder().decode(bytes));}
 function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
 async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
 async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:'video/webm'});}
-function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+pkg.name+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;}
+function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+pkg.name+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
 async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls autoplay></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
-function renderExpired(){app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다.</h1><p class="sub">표준 개인정보 보호 지침에 따라 파기 바랍니다.</p><p class="sub">아래 파기 버튼은 브라우저가 로컬 파일 삭제 권한을 지원하는 경우에만 동작합니다. 지원하지 않으면 이 HTML 파일을 직접 삭제한 뒤 휴지통도 비워주세요.</p><button id="destroy" class="danger">파기</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
-async function destroyFile(){const msg=document.getElementById('destroyMsg');if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 파일 직접 파기를 지원하지 않습니다. 현재 열려 있는 배부용 HTML 파일을 직접 삭제하고 휴지통을 비워주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일을 파기했습니다.</span>';}else{msg.innerHTML='이 브라우저는 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워주세요.';}}catch(e){msg.textContent='파기가 취소되었거나 실패했습니다.';}}
+function renderExpired(){const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다.</h1><p class="sub">표준 개인정보 보호 지침에 따라 파기 바랍니다.</p><p class="sub">파기 버튼을 누른 뒤 배부받은 HTML 파일을 선택하세요. 선택한 파일 이름이 <strong>'+expected+'</strong>와 다르면 이름 상이 오류가 표시되고 파기하지 않습니다.</p><button id="destroy" class="danger">파기</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
+async function destroyFile(){const msg=document.getElementById('destroyMsg');const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 파일 직접 파기를 지원하지 않습니다. 파일 이름이 <strong>'+expected+'</strong>인지 확인한 뒤 해당 배부용 HTML 파일을 직접 삭제하고 휴지통을 비워주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.name!==expected){msg.innerHTML='<span class="dangerText">이름 상이 오류: 파기 대상 파일 이름이 저장된 배부용 파일 이름과 다릅니다.</span><br>선택한 파일: <strong>'+handle.name+'</strong><br>파기 대상 파일: <strong>'+expected+'</strong>';return;}if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일을 파기했습니다.</span>';}else{msg.innerHTML='파일 이름은 일치하지만 이 브라우저는 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워주세요.';}}catch(e){msg.textContent='파기가 취소되었거나 실패했습니다.';}}
 render();
 <\/script>
 </body>
