@@ -8,7 +8,13 @@
   :root{
     --bg:#0f1115; --panel:#171a21; --panel2:#1e2229; --line:#2a2f3a;
     --text:#e7e9ee; --sub:#9aa3b2; --accent:#4fd1c5; --accent2:#f2a154;
-    --danger:#e2555a; --radius:10px;
+    --danger:#e2555a; --radius:10px; --header:#0f1115;
+    --focus-ring:rgba(242,161,84,0.28);
+  }
+  body.light-mode{
+    --bg:#f4f6f8; --panel:#ffffff; --panel2:#eef2f6; --line:#cfd7e3;
+    --text:#17202c; --sub:#526173; --accent:#078f88; --accent2:#d97706;
+    --danger:#c9363f; --header:#ffffff; --focus-ring:rgba(217,119,6,0.26);
   }
   *{box-sizing:border-box;}
   body{
@@ -17,11 +23,24 @@
     font-size:14px;
   }
   header{
-    padding:14px 20px; border-bottom:1px solid var(--line);
-    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    background:var(--header); border-bottom:1px solid var(--line);
+  }
+  .header-inner{
+    max-width:1440px; margin:0 auto; padding:14px 16px;
+    display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:12px;
   }
   header h1{font-size:16px; margin:0; letter-spacing:.02em;}
   header .badge{color:var(--sub); font-size:12px;}
+  .theme-toggle{
+    width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    border-color:var(--line); color:var(--text); white-space:nowrap;
+  }
+  .theme-toggle svg{width:18px; height:18px; display:block;}
+  .theme-toggle:hover{box-shadow:0 0 0 3px rgba(79,209,197,0.16);}
+  @media (max-width:700px){
+    .header-inner{grid-template-columns:1fr auto;}
+    header .badge{grid-column:1 / -1; justify-self:start;}
+  }
   .layout{display:grid; grid-template-columns:1fr 320px; gap:16px; padding:16px; max-width:1440px; margin:0 auto;}
   @media (max-width:900px){ .layout{grid-template-columns:1fr;} }
   .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px;}
@@ -38,10 +57,17 @@
   }
   button:hover{border-color:var(--accent);}
   button.primary{background:var(--accent); color:#08191a; border-color:var(--accent); font-weight:600;}
+  button.attention{
+    border-color:var(--accent2);
+    box-shadow:0 0 0 2px var(--focus-ring);
+    font-weight:700;
+  }
+  button.attention:hover{box-shadow:0 0 0 3px var(--focus-ring);}
   button.public-html{background:var(--accent2); color:#1f1204; border-color:var(--accent2); font-weight:800; box-shadow:0 0 0 2px rgba(242,161,84,0.18);}
   button.public-html:hover{border-color:#ffd08c; box-shadow:0 0 0 3px rgba(242,161,84,0.24);}
   button.warn{background:var(--danger); color:#fff; border-color:var(--danger);}
   button:disabled{opacity:.4; cursor:not-allowed;}
+  button.attention:disabled{opacity:.75;}
   input[type=file]{color:var(--sub); font-size:12px;}
   input[type=range]{accent-color:var(--accent); width:100%;}
   input[type=number], input[type=text], input[type=password]{
@@ -88,8 +114,11 @@
 <body>
 
 <header>
-  <h1>🎥 CCTV 개인정보 보호 편집기</h1>
-  <span class="badge">모자이크 · 타임라인 편집 · 암호/만료 잠금 패키지로 PC 저장</span>
+  <div class="header-inner">
+    <h1>🎥 CCTV 개인정보 보호 편집기</h1>
+    <span class="badge">모자이크 · 타임라인 편집 · 암호/만료 잠금 패키지로 PC 저장</span>
+    <button type="button" id="themeToggle" class="theme-toggle" aria-pressed="true" aria-label="다크모드 전환" title="다크모드 전환"></button>
+  </div>
 </header>
 
 <div class="layout">
@@ -139,8 +168,8 @@
     <div class="panel">
       <h2>2. 모자이크(유리판) 영역</h2>
       <div class="row">
-        <button id="addRegionBtn" disabled>+ 모자이크 영역 추가</button>
-        <button id="addRevealBtn" disabled>+ 모자이크 제외 영역</button>
+        <button id="addRegionBtn" class="attention" disabled>+ 모자이크 영역 추가</button>
+        <button id="addRevealBtn" class="attention" disabled>+ 모자이크 제외 영역</button>
         <span class="hint">추가 후 캔버스에서 드래그해 영역을 그리세요. 재생하며 위치를 다시 맞추면 그 시점이 자동으로 키프레임(추적 지점)으로 저장됩니다.</span>
       </div>
       <div class="row" style="margin-top:8px;">
@@ -245,6 +274,38 @@
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
+
+  const themeToggle = $('themeToggle');
+  const moonIcon = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.8A8.6 8.6 0 1 1 11.2 3a6.7 6.7 0 0 0 9.8 9.8z"></path>
+    </svg>`;
+  const sunIcon = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2"></path><path d="M12 20v2"></path>
+      <path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path>
+      <path d="M2 12h2"></path><path d="M20 12h2"></path>
+      <path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>
+    </svg>`;
+  function applyTheme(mode){
+    const light = mode === 'light';
+    document.body.classList.toggle('light-mode', light);
+    if(themeToggle){
+      themeToggle.innerHTML = light ? moonIcon : sunIcon;
+      themeToggle.title = light ? '다크모드로 전환' : '라이트모드로 전환';
+      themeToggle.setAttribute('aria-label', light ? '다크모드로 전환' : '라이트모드로 전환');
+      themeToggle.setAttribute('aria-pressed', String(!light));
+    }
+  }
+  applyTheme(localStorage.getItem('cctvTheme') || 'dark');
+  if(themeToggle){
+    themeToggle.addEventListener('click', () => {
+      const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+      localStorage.setItem('cctvTheme', next);
+      applyTheme(next);
+    });
+  }
 
   function blockPageInspection(){
     document.addEventListener('contextmenu', (e) => e.preventDefault());
