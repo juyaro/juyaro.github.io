@@ -86,6 +86,10 @@
     display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--accent); cursor:pointer;
   }
   .seg-block.selected{outline:2px solid var(--accent2);}
+  .vis-block{
+    position:absolute; left:0; bottom:3px; height:8px; border-radius:4px;
+    background:var(--accent2); opacity:.8; pointer-events:none;
+  }
   .playhead{
     position:absolute; top:0; bottom:0; width:2px; background:var(--accent2); pointer-events:none;
   }
@@ -587,6 +591,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   let regions = [];
   let revealRegions = [];
   let selectedRegionId = null;
+  let selectedRegionIds = new Set();
   let segments = [];
   let selectedSegmentId = null;
   let drag = null;
@@ -667,6 +672,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     seek.max = Math.floor(duration*1000);
     regions = [];
     revealRegions = [];
+    setSingleSelectedRegion(null);
     previousMotionData = null;
     segments = [{id:uid(), start:0, end:duration}];
     selectedSegmentId = segments[0].id;
@@ -703,6 +709,135 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     seek.value = Math.floor(t*1000);
     timeLabel.textContent = `${fmt(t)} / ${fmt(duration)}`;
     playhead.style.left = (duration ? (t/duration*100) : 0) + '%';
+  }
+
+  function getSegmentAtTime(t){
+    return segments.find(s => t >= s.start - 0.001 && t <= s.end + 0.001) || null;
+  }
+
+  function getCurrentSegment(){
+    return segments.find(s => s.id === selectedSegmentId) || getSegmentAtTime(srcVideo.currentTime) || segments[0] || null;
+  }
+
+  function setSingleSelectedRegion(id){
+    selectedRegionId = id || null;
+    selectedRegionIds = new Set(id ? [id] : []);
+  }
+
+  function syncPrimarySelection(){
+    selectedRegionId = selectedRegionIds.size ? Array.from(selectedRegionIds).at(-1) : null;
+  }
+
+  function isRegionSelected(id){
+    return selectedRegionIds.has(id) || selectedRegionId === id;
+  }
+
+  function toggleRegionSelection(id){
+    if(selectedRegionIds.has(id)) selectedRegionIds.delete(id);
+    else selectedRegionIds.add(id);
+    syncPrimarySelection();
+  }
+
+  function ensureRegionTimeline(region){
+    if(Array.isArray(region.visibilityKeys)) return;
+    if(Array.isArray(region.segmentIds)){
+      const ranges = segments
+        .filter(s => region.segmentIds.includes(s.id))
+        .map(s => ({start:s.start, end:s.end}));
+      region.visibilityKeys = rangesToVisibilityKeys(mergeTimeRanges(ranges));
+    } else {
+      region.visibilityKeys = [{t:0, visible:true}];
+    }
+  }
+
+  function regionVisibleAtTime(region, t){
+    ensureRegionTimeline(region);
+    let visible = false;
+    for(const key of region.visibilityKeys){
+      if(t + 0.001 >= key.t) visible = key.visible;
+      else break;
+    }
+    return visible;
+  }
+
+  function mergeTimeRanges(ranges){
+    const clean = ranges
+      .map(r => ({start:Math.max(0, Math.min(duration || 0, r.start)), end:Math.max(0, Math.min(duration || 0, r.end))}))
+      .filter(r => r.end - r.start > 0.001)
+      .sort((a,b) => a.start - b.start);
+    const merged = [];
+    clean.forEach((r) => {
+      const last = merged[merged.length - 1];
+      if(last && r.start <= last.end + 0.001) last.end = Math.max(last.end, r.end);
+      else merged.push({...r});
+    });
+    return merged;
+  }
+
+  function visibilityKeysToRanges(region){
+    ensureRegionTimeline(region);
+    const keys = region.visibilityKeys.slice().sort((a,b) => a.t - b.t);
+    const ranges = [];
+    let visible = false;
+    let start = 0;
+    keys.forEach((key) => {
+      const t = Math.max(0, Math.min(duration || 0, key.t));
+      if(visible && t > start) ranges.push({start, end:t});
+      visible = key.visible;
+      start = t;
+    });
+    if(visible && duration > start) ranges.push({start, end:duration});
+    return mergeTimeRanges(ranges);
+  }
+
+  function rangesToVisibilityKeys(ranges){
+    const keys = [{t:0, visible:false}];
+    mergeTimeRanges(ranges).forEach((r) => {
+      keys.push({t:r.start, visible:true});
+      keys.push({t:r.end, visible:false});
+    });
+    return normalizeVisibilityKeys(keys);
+  }
+
+  function normalizeVisibilityKeys(keys){
+    const sorted = keys
+      .map(k => ({t:Math.max(0, Math.min(duration || 0, k.t)), visible:!!k.visible}))
+      .sort((a,b) => a.t - b.t || Number(a.visible) - Number(b.visible));
+    const out = [];
+    sorted.forEach((k) => {
+      const last = out[out.length - 1];
+      if(last && Math.abs(last.t - k.t) < 0.001) last.visible = k.visible;
+      else if(!last || last.visible !== k.visible) out.push(k);
+    });
+    return out.length ? out : [{t:0, visible:false}];
+  }
+
+  function setVisibleRange(region, start, end, visible){
+    const next = [];
+    visibilityKeysToRanges(region).forEach((r) => {
+      if(r.end <= start || r.start >= end) next.push(r);
+      else {
+        if(r.start < start) next.push({start:r.start, end:start});
+        if(r.end > end) next.push({start:end, end:r.end});
+      }
+    });
+    if(visible) next.push({start, end});
+    region.visibilityKeys = rangesToVisibilityKeys(next);
+  }
+
+  function setVisibleFromTime(region, t, visible){
+    setVisibleRange(region, t, duration, visible);
+  }
+
+  function visibilitySummary(region){
+    const ranges = visibilityKeysToRanges(region);
+    if(ranges.length === 0) return '비현시 구간만 있음';
+    if(ranges.length === 1 && ranges[0].start <= 0.001 && ranges[0].end >= duration - 0.001) return '전체 현시';
+    return ranges.map(r => `${fmt(r.start)}-${fmt(r.end)}`).join(', ');
+  }
+
+  function selectedRegions(){
+    return allRegions().filter(r => selectedRegionIds.has(r.id));
   }
 
   // ---------------- Mosaic rendering ----------------
@@ -764,10 +899,12 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       getMotionRects().forEach(rect => applyGlassMosaic(rect, 'rect'));
     }
     regions.forEach(r => {
+      if(!regionVisibleAtTime(r, t)) return;
       const rect = getRectAtTime(r, t);
       if(rect) applyGlassMosaic(rect, r.shape);
     });
     revealRegions.forEach(r => {
+      if(!regionVisibleAtTime(r, t)) return;
       const rect = getRectAtTime(r, t);
       if(rect) revealOriginal(rect, r.shape);
     });
@@ -949,36 +1086,36 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   }
 
   function drawHandles(t){
-    if(!selectedRegionId) return;
-    const r = allRegions().find(rg => rg.id === selectedRegionId);
-    if(!r) return;
-    const rect = getRectAtTime(r, t);
-    if(!rect) return;
     ctx.save();
-    ctx.strokeStyle = r.reveal ? 'rgba(255,255,255,0.95)' : r.color;
-    ctx.setLineDash([7,4]);
-    ctx.lineWidth = 2;
-    ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#fff';
-    ctx.strokeStyle = '#111';
-    ctx.lineWidth = 2;
-    const hs = 12;
-    [[rect.x,rect.y],[rect.x+rect.w,rect.y],[rect.x,rect.y+rect.h],[rect.x+rect.w,rect.y+rect.h]].forEach(([hx,hy]) => {
-      ctx.fillRect(hx-hs/2, hy-hs/2, hs, hs);
-      ctx.strokeRect(hx-hs/2, hy-hs/2, hs, hs);
+    selectedRegions().forEach((r) => {
+      if(!regionVisibleAtTime(r, t)) return;
+      const rect = getRectAtTime(r, t);
+      if(!rect) return;
+      ctx.strokeStyle = r.reveal ? 'rgba(255,255,255,0.95)' : r.color;
+      ctx.setLineDash([7,4]);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      const hs = 12;
+      [[rect.x,rect.y],[rect.x+rect.w,rect.y],[rect.x,rect.y+rect.h],[rect.x+rect.w,rect.y+rect.h]].forEach(([hx,hy]) => {
+        ctx.fillRect(hx-hs/2, hy-hs/2, hs, hs);
+        ctx.strokeRect(hx-hs/2, hy-hs/2, hs, hs);
+      });
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      const cx = rect.x + rect.w/2;
+      const cy = rect.y + rect.h/2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 13, 0, Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(cx-7, cy-1, 14, 2);
+      ctx.fillRect(cx-1, cy-7, 2, 14);
     });
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    const cx = rect.x + rect.w/2;
-    const cy = rect.y + rect.h/2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 13, 0, Math.PI*2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(cx-7, cy-1, 14, 2);
-    ctx.fillRect(cx-1, cy-7, 2, 14);
     ctx.restore();
   }
 
@@ -988,22 +1125,28 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   }
 
   function createMosaicRegion(pendingPlace){
-    const r = { id: uid(), color: COLORS[regions.length % COLORS.length], shape: 'rect', keyframes: [], pendingPlace };
+    const seg = getCurrentSegment();
+    const visibleRange = seg ? [{start:seg.start, end:seg.end}] : [{start:0, end:duration}];
+    const r = { id: uid(), color: COLORS[regions.length % COLORS.length], shape: 'rect', keyframes: [], pendingPlace, visibilityKeys: rangesToVisibilityKeys(visibleRange) };
     regions.push(r);
-    selectedRegionId = r.id;
+    setSingleSelectedRegion(r.id);
     return r;
   }
 
   addRegionBtn.addEventListener('click', () => {
     createMosaicRegion(true);
     renderRegionList();
+    renderSegments();
   });
 
   addRevealBtn.addEventListener('click', () => {
-    const r = { id: uid(), color: '#ffffff', shape: 'rect', keyframes: [], pendingPlace: true, reveal: true };
+    const seg = getCurrentSegment();
+    const visibleRange = seg ? [{start:seg.start, end:seg.end}] : [{start:0, end:duration}];
+    const r = { id: uid(), color: '#ffffff', shape: 'rect', keyframes: [], pendingPlace: true, reveal: true, visibilityKeys: rangesToVisibilityKeys(visibleRange) };
     revealRegions.push(r);
-    selectedRegionId = r.id;
+    setSingleSelectedRegion(r.id);
     renderRegionList();
+    renderSegments();
   });
 
   function upsertKeyframe(region, t, rect, block){
@@ -1024,6 +1167,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   }
 
   function hitTest(region, t, p){
+    if(!regionVisibleAtTime(region, t)) return null;
     const rect = getRectAtTime(region, t);
     if(!rect) return null;
     const hs = 14;
@@ -1070,11 +1214,12 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   stage.addEventListener('mouseleave', () => { stage.style.cursor = 'crosshair'; });
 
   stage.addEventListener('mousedown', (e) => {
+    if(e.button !== 0) return;
     const p = canvasCoords(e);
     const t = srcVideo.currentTime;
     const pending = allRegions().find(r => r.pendingPlace);
     if(pending){ drag = { type:'new', region: pending, startX:p.x, startY:p.y }; return; }
-    if(selectedRegionId){
+    if(selectedRegionId && selectedRegionIds.size <= 1){
       const region = allRegions().find(r => r.id === selectedRegionId);
       const hit = hitTest(region, t, p);
       if(hit){ drag = { type: hit.mode, region, corner: hit.corner, startRect: {...hit.rect}, startX:p.x, startY:p.y }; return; }
@@ -1083,14 +1228,34 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     for(let i=selectableRegions.length-1;i>=0;i--){
       const hit = hitTest(selectableRegions[i], t, p);
       if(hit){
-        selectedRegionId = selectableRegions[i].id;
+        const region = selectableRegions[i];
+        if(e.ctrlKey){
+          toggleRegionSelection(region.id);
+          renderRegionList();
+          renderSegments();
+          drawFrame(t, {editing:true});
+          if(selectedRegionIds.has(region.id)){
+            const moving = selectedRegions().filter(r => regionVisibleAtTime(r, t)).map(r => ({region:r, rect:getRectAtTime(r, t)})).filter(item => item.rect);
+            drag = { type:'multi-move', items:moving, startX:p.x, startY:p.y };
+          }
+          return;
+        }
+        if(!selectedRegionIds.has(region.id)) setSingleSelectedRegion(region.id);
         renderRegionList();
-        drag = { type: hit.mode, region: selectableRegions[i], corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
+        renderSegments();
+        if(hit.mode === 'move' && selectedRegionIds.size > 1){
+          const moving = selectedRegions().filter(r => regionVisibleAtTime(r, t)).map(r => ({region:r, rect:getRectAtTime(r, t)})).filter(item => item.rect);
+          drag = { type:'multi-move', items:moving, startX:p.x, startY:p.y };
+        } else {
+          drag = { type: hit.mode, region, corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
+        }
         return;
       }
     }
+    setSingleSelectedRegion(null);
     const r = createMosaicRegion(false);
     renderRegionList();
+    renderSegments();
     drag = { type:'new', region: r, startX:p.x, startY:p.y, autoCreated:true };
   });
 
@@ -1110,6 +1275,15 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       const dx = p.x - drag.startX, dy = p.y - drag.startY;
       const rect = { x: drag.startRect.x+dx, y: drag.startRect.y+dy, w: drag.startRect.w, h: drag.startRect.h };
       upsertKeyframe(drag.region, t, rect, currentBlockOf(drag.region, t));
+      drawFrame(t, {editing:true});
+      return;
+    }
+    if(drag.type === 'multi-move'){
+      const dx = p.x - drag.startX, dy = p.y - drag.startY;
+      drag.items.forEach(({region, rect:startRect}) => {
+        const rect = { x:startRect.x+dx, y:startRect.y+dy, w:startRect.w, h:startRect.h };
+        upsertKeyframe(region, t, rect, currentBlockOf(region, t));
+      });
       drawFrame(t, {editing:true});
       return;
     }
@@ -1133,11 +1307,14 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       upsertKeyframe(drag.region, t, drag.rect, 18);
       drag.region.pendingPlace = false;
       renderRegionList();
+      renderSegments();
       drawFrame(t, {editing:true});
     } else if(drag && drag.type === 'new' && drag.autoCreated){
       regions = regions.filter(x => x.id !== drag.region.id);
-      if(selectedRegionId === drag.region.id) selectedRegionId = null;
+      selectedRegionIds.delete(drag.region.id);
+      if(selectedRegionId === drag.region.id) syncPrimarySelection();
       renderRegionList();
+      renderSegments();
       drawFrame(undefined, {editing:true});
     }
     drag = null;
@@ -1153,11 +1330,15 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     regionList.innerHTML = '';
     const items = allRegions();
     if(items.length === 0){ regionList.innerHTML = '<div class="sub">추가된 모자이크 영역이 없습니다.</div>'; return; }
+    const curSeg = getCurrentSegment();
     items.forEach((r) => {
+      ensureRegionTimeline(r);
       const div = document.createElement('div');
-      div.className = 'region-item' + (r.id === selectedRegionId ? ' selected' : '');
+      div.className = 'region-item' + (isRegionSelected(r.id) ? ' selected' : '');
       const kfLabel = r.keyframes.map(k => `<span class="kf-chip">${fmt(k.t)}</span>`).join('') || '<span class="sub">아직 위치 없음 (캔버스를 드래그하세요)</span>';
       const curBlock = r.keyframes.length ? currentBlockOf(r, srcVideo.currentTime) : 18;
+      const currentVisible = regionVisibleAtTime(r, srcVideo.currentTime);
+      const visibleSummary = visibilitySummary(r);
       div.innerHTML = `
         <div class="title">
           <span><span class="swatch" style="background:${r.color}"></span>${r.reveal ? '제외 영역' : '모자이크 영역'}</span>
@@ -1174,16 +1355,53 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
             <option value="rect" ${r.shape==='rect'?'selected':''}>사각형</option>
           </select>
         </div>
+        <div class="row" style="margin-top:6px;">
+          <label class="sub"><input type="checkbox" data-act="segmentVisible" ${currentVisible ? 'checked' : ''}> 현재 타임라인 구간에 표시</label>
+          <button data-act="showAll">전체 표시</button>
+          <button data-act="hideAll">전체 숨김</button>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <button data-act="showFromHere">현재부터 현시</button>
+          <button data-act="hideFromHere">현재부터 비현시</button>
+          <span class="sub">현시: ${visibleSummary}</span>
+        </div>
         <div class="kf-list">${kfLabel}</div>
       `;
-      div.querySelector('[data-act="select"]').addEventListener('click', () => { selectedRegionId = r.id; renderRegionList(); drawFrame(undefined,{editing:true}); });
+      div.querySelector('[data-act="select"]').addEventListener('click', (e) => {
+        if(e.ctrlKey) toggleRegionSelection(r.id);
+        else setSingleSelectedRegion(r.id);
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+      });
       div.querySelector('[data-act="delete"]').addEventListener('click', () => {
         regions = regions.filter(x => x.id !== r.id);
         revealRegions = revealRegions.filter(x => x.id !== r.id);
-        if(selectedRegionId === r.id) selectedRegionId = null;
-        renderRegionList(); drawFrame(undefined,{editing:true});
+        selectedRegionIds.delete(r.id);
+        if(selectedRegionId === r.id) syncPrimarySelection();
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
       });
       div.querySelector('[data-act="shape"]').addEventListener('change', (e) => { r.shape = e.target.value; drawFrame(undefined,{editing:true}); });
+      div.querySelector('[data-act="segmentVisible"]').addEventListener('change', (e) => {
+        const seg = getCurrentSegment();
+        if(!seg) return;
+        setVisibleRange(r, seg.start, seg.end, e.target.checked);
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+      });
+      div.querySelector('[data-act="showAll"]').addEventListener('click', () => {
+        r.visibilityKeys = rangesToVisibilityKeys([{start:0, end:duration}]);
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+      });
+      div.querySelector('[data-act="hideAll"]').addEventListener('click', () => {
+        r.visibilityKeys = rangesToVisibilityKeys([]);
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+      });
+      div.querySelector('[data-act="showFromHere"]').addEventListener('click', () => {
+        setVisibleFromTime(r, srcVideo.currentTime, true);
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+      });
+      div.querySelector('[data-act="hideFromHere"]').addEventListener('click', () => {
+        setVisibleFromTime(r, srcVideo.currentTime, false);
+        renderRegionList(); drawFrame(undefined,{editing:true});
+      });
       div.querySelector('[data-act="block"]').addEventListener('input', (e) => {
         const t = srcVideo.currentTime;
         const rect = getRectAtTime(r, t);
@@ -1201,21 +1419,36 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     const idx = segments.findIndex(s => t > s.start + 0.05 && t < s.end - 0.05);
     if(idx === -1) return;
     const s = segments[idx];
-    segments.splice(idx, 1, {id:uid(), start:s.start, end:t}, {id:uid(), start:t, end:s.end});
+    const left = {id:uid(), start:s.start, end:t};
+    const right = {id:uid(), start:t, end:s.end};
+    segments.splice(idx, 1, left, right);
+    selectedSegmentId = left.id;
     renderSegments();
+    renderRegionList();
+    drawFrame(undefined, {editing:true});
   });
 
   function renderSegments(){
-    timeTrack.querySelectorAll('.seg-block').forEach(el => el.remove());
+    timeTrack.querySelectorAll('.seg-block,.vis-block').forEach(el => el.remove());
     segments.forEach(s => {
       const el = document.createElement('div');
       el.className = 'seg-block' + (s.id === selectedSegmentId ? ' selected' : '');
       el.style.left = (s.start/duration*100) + '%';
       el.style.width = Math.max(((s.end-s.start)/duration*100),0.5) + '%';
       el.textContent = `${fmt(s.start)}-${fmt(s.end)}`;
-      el.addEventListener('click', () => { selectedSegmentId = s.id; renderSegments(); });
+      el.addEventListener('click', () => { selectedSegmentId = s.id; renderSegments(); renderRegionList(); drawFrame(undefined,{editing:true}); });
       timeTrack.insertBefore(el, playhead);
     });
+    const selectedRegion = allRegions().find(r => r.id === selectedRegionId);
+    if(selectedRegion){
+      visibilityKeysToRanges(selectedRegion).forEach((range) => {
+        const el = document.createElement('div');
+        el.className = 'vis-block';
+        el.style.left = (range.start/duration*100) + '%';
+        el.style.width = Math.max(((range.end-range.start)/duration*100),0.4) + '%';
+        timeTrack.insertBefore(el, playhead);
+      });
+    }
     segList.innerHTML = '';
     segments.forEach((s, i) => {
       const row = document.createElement('div');
@@ -1228,9 +1461,14 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
           <button data-act="del" class="warn">제외</button>
         </div>
       `;
-      row.querySelector('[data-act="up"]').addEventListener('click', () => { if(i>0){ [segments[i-1],segments[i]] = [segments[i],segments[i-1]]; renderSegments(); } });
-      row.querySelector('[data-act="down"]').addEventListener('click', () => { if(i<segments.length-1){ [segments[i+1],segments[i]] = [segments[i],segments[i+1]]; renderSegments(); } });
-      row.querySelector('[data-act="del"]').addEventListener('click', () => { segments.splice(i,1); renderSegments(); });
+      row.querySelector('[data-act="up"]').addEventListener('click', () => { if(i>0){ [segments[i-1],segments[i]] = [segments[i],segments[i-1]]; renderSegments(); renderRegionList(); } });
+      row.querySelector('[data-act="down"]').addEventListener('click', () => { if(i<segments.length-1){ [segments[i+1],segments[i]] = [segments[i],segments[i+1]]; renderSegments(); renderRegionList(); } });
+      row.querySelector('[data-act="del"]').addEventListener('click', () => {
+        const removed = segments[i];
+        segments.splice(i,1);
+        if(selectedSegmentId === removed.id) selectedSegmentId = segments[0] ? segments[0].id : null;
+        renderSegments(); renderRegionList(); drawFrame(undefined,{editing:true});
+      });
       segList.appendChild(row);
     });
   }
