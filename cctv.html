@@ -1705,6 +1705,93 @@ render();
     return String(value).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
 
+  buildDistributionHtml = function(pkg){
+    const guardSeed = crypto.getRandomValues(new Uint8Array(24));
+    const pkgBytes = new TextEncoder().encode(JSON.stringify(pkg));
+    const maskedPkg = new Uint8Array(pkgBytes.length);
+    for(let i=0;i<pkgBytes.length;i++){
+      maskedPkg[i] = pkgBytes[i] ^ guardSeed[i % guardSeed.length] ^ ((i * 31 + 17) & 255);
+    }
+    const payloadParts = bytesToBase64(maskedPkg).match(/.{1,72}/g).reverse();
+    const guardKey = bytesToBase64(guardSeed).split('').reverse().join('');
+    const scriptBody = `
+const app=document.getElementById('app');
+const guardedPayloadParts=${JSON.stringify(payloadParts)};
+const guardedKey='${guardKey}';
+const expectedIntegrity='__INTEGRITY__';
+function showGuardError(){document.body.innerHTML='<div class="wrap"><div class="panel"><h1 class="dangerText">보안 검증 오류</h1><p class="sub">배부용 HTML 파일이 수정되었거나 손상되어 영상을 열 수 없습니다. 원본 배부 파일을 다시 사용해 주세요.</p></div></div>';}
+function hashText(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(36);}
+function verifySelf(){const src=document.currentScript.textContent.replace("const expectedIntegrity='"+expectedIntegrity+"';","const expectedIntegrity='__INTEGRITY__';").trimEnd();return hashText(src)===expectedIntegrity;}
+if(!verifySelf()){showGuardError();throw new Error('integrity check failed');}
+blockPageInspection();
+const pkg=decodeProtectedPackage();
+function blockPageInspection(){
+document.addEventListener('contextmenu',function(e){e.preventDefault();});
+document.addEventListener('selectstart',function(e){if(!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))e.preventDefault();});
+document.addEventListener('dragstart',function(e){e.preventDefault();});
+document.addEventListener('copy',function(e){if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault();});
+document.addEventListener('keydown',function(e){const k=e.key.toUpperCase();if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C','K'].includes(k))||(e.ctrlKey&&['U','S'].includes(k))){e.preventDefault();e.stopPropagation();}},true);
+let opened=false;const probe=document.createElement('div');Object.defineProperty(probe,'id',{get:function(){opened=true;return 'x';}});
+setInterval(function(){opened=false;console.log(probe);if(opened){const player=document.getElementById('player');if(player)player.replaceChildren();const msg=document.getElementById('msg');if(msg)msg.innerHTML='<span class="dangerText">분석 도구가 감지되어 재생을 중지했습니다.</span>';}},1800);
+}
+function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
+function decodeProtectedPackage(){const seed=b64ToBytes(guardedKey.split('').reverse().join(''));const masked=b64ToBytes(guardedPayloadParts.slice().reverse().join(''));const plain=new Uint8Array(masked.length);for(let i=0;i<masked.length;i++)plain[i]=masked[i]^seed[i%seed.length]^((i*31+17)&255);return JSON.parse(new TextDecoder().decode(plain));}
+async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
+async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:'video/webm'});}
+function esc(v){return String(v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+esc(pkg.name)+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
+async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);if(Date.now()>pkg.expiresAt){renderExpired();return;}const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls autoplay controlsList="nodownload"></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않거나 파일이 손상되었습니다.</span>';}}
+function renderExpired(){const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다</h1><p class="sub">개인정보 보호 지침에 따라 더 이상 영상을 열 수 없습니다.</p><p class="sub">배부받은 HTML 파일을 삭제해 주세요. 대상 파일명: <strong>'+esc(expected)+'</strong></p><button id="destroy" class="danger">삭제 안내 확인</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
+async function destroyFile(){const msg=document.getElementById('destroyMsg');const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 직접 삭제 기능을 지원하지 않습니다. <strong>'+esc(expected)+'</strong> 파일을 직접 삭제하고 휴지통을 비워 주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.name!==expected){msg.innerHTML='<span class="dangerText">파일명이 일치하지 않습니다.</span><br>선택 파일: <strong>'+esc(handle.name)+'</strong><br>대상 파일: <strong>'+esc(expected)+'</strong>';return;}if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일이 삭제되었습니다.</span>';}else{msg.innerHTML='파일명은 일치하지만 이 브라우저가 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워 주세요.';}}catch(e){msg.textContent='삭제 확인이 취소되었거나 실패했습니다.';}}
+let trustedTimeState=null;
+async function fetchJsonTime(url,read){const controller=new AbortController();const timer=setTimeout(function(){controller.abort();},4500);try{const res=await fetch(url,{cache:'no-store',signal:controller.signal});if(!res.ok)throw new Error('time api failed');const data=await res.json();const value=read(data);if(!Number.isFinite(value))throw new Error('bad time');return value;}finally{clearTimeout(timer);}}
+async function syncTrustedNow(){const sources=[function(){return fetchJsonTime('https://worldtimeapi.org/api/timezone/Etc/UTC',function(d){return Date.parse(d.utc_datetime||d.datetime);});},function(){return fetchJsonTime('https://timeapi.io/api/TimeZone/zone?timeZone=UTC',function(d){return Date.parse(d.currentLocalTime+'Z');});}];let lastErr=null;for(const source of sources){try{const serverNow=await source();trustedTimeState={serverNow:serverNow,perfNow:performance.now(),syncedAt:Date.now()};return trustedNow();}catch(e){lastErr=e;}}throw lastErr||new Error('time sync failed');}
+function trustedNow(){if(!trustedTimeState)throw new Error('time not synced');return trustedTimeState.serverNow+(performance.now()-trustedTimeState.perfNow);}
+async function ensureTrustedNow(){if(!trustedTimeState||performance.now()-trustedTimeState.perfNow>300000)return syncTrustedNow();return trustedNow();}
+function renderTimeSyncError(){app.innerHTML='<h1 class="dangerText">표준시 동기화 실패</h1><p class="sub">만료 여부를 PC 시간이 아닌 실시간 표준시 기준으로 확인해야 하므로 인터넷 연결이 필요합니다.</p><p class="sub">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</p><button id="retry">다시 동기화</button><div id="msg" class="sub" style="margin-top:10px;"></div>';document.getElementById('retry').onclick=render;}
+async function render(){app.innerHTML='<p class="sub">실시간 표준시 동기화 중...</p>';let now;try{now=await ensureTrustedNow();}catch(e){renderTimeSyncError();return;}if(now>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-now)/86400000);app.innerHTML='<strong>'+esc(pkg.name)+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><p class="sub">실시간 표준시 동기화 완료: '+new Date(now).toLocaleString()+'</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
+async function openVideo(){const msg=document.getElementById('msg');msg.textContent='실시간 표준시 확인 중...';let now;try{now=await ensureTrustedNow();}catch(e){msg.innerHTML='<span class="dangerText">표준시 동기화에 실패하여 영상을 열 수 없습니다.</span>';return;}if(now>pkg.expiresAt){renderExpired();return;}msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);now=await ensureTrustedNow();if(now>pkg.expiresAt){renderExpired();return;}const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls autoplay controlsList="nodownload"></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않거나 파일이 손상되었습니다.</span>';}}
+render();`;
+    let h = 2166136261;
+    const scriptForHash = scriptBody.trimEnd();
+    for(let i=0;i<scriptForHash.length;i++){
+      h ^= scriptForHash.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    const guardedScript = scriptBody.replace('__INTEGRITY__', (h >>> 0).toString(36));
+    return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(pkg.name)} 열람</title>
+<style>
+  body{margin:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 18px;}
+  h1{font-size:20px;margin:0 0 16px;}
+  .panel{background:#181c24;border:1px solid #303746;border-radius:10px;padding:18px;margin-top:14px;}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  input,button{font-size:14px;border-radius:8px;padding:9px 12px;}
+  input{background:#222833;border:1px solid #3a4352;color:#fff;}
+  button{background:#4fd1c5;border:1px solid #4fd1c5;color:#071717;font-weight:700;cursor:pointer;}
+  button.danger{background:#e2555a;border-color:#e2555a;color:#fff;}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  .sub{color:#aeb7c7;font-size:13px;line-height:1.6;}
+  .dangerText{color:#ffb2b4;}
+  video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CCTV 개인정보 보호 영상 열람</h1>
+  <div id="app" class="panel"></div>
+</div>
+<script>${guardedScript}
+<\/script>
+</body>
+</html>`;
+  };
+
   // ---------------- Save as encrypted + expiring package (PC download) ----------------
   savePkgBtn.addEventListener('click', async () => {
     const blob = window.__lastExportBlob;
