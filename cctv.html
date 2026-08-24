@@ -112,6 +112,14 @@
   .notice{border-radius:8px; padding:10px; font-size:12px; line-height:1.6;}
   .notice.danger{background:rgba(226,85,90,0.12); border:1px solid var(--danger); color:#ffb2b4;}
   .notice.ok{background:rgba(79,209,197,0.1); border:1px solid var(--accent); color:var(--accent);}
+  .workflow-guide{margin-top:12px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); overflow:hidden;}
+  .workflow-step{display:grid; grid-template-columns:28px 1fr; gap:8px; padding:10px; border-top:1px solid var(--line);}
+  .workflow-step:first-child{border-top:0;}
+  .workflow-num{width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--accent2); color:#1f1204; font-weight:800; font-size:12px;}
+  .workflow-step strong{display:block; color:var(--text); font-size:12px; margin-bottom:3px;}
+  .workflow-step span{display:block; color:var(--sub); font-size:12px; line-height:1.5;}
+  .workflow-step a{color:var(--accent); font-weight:700; text-decoration:none;}
+  .workflow-note{padding:10px; border-top:1px solid var(--line); color:#ffb2b4; font-size:12px; line-height:1.5; background:rgba(226,85,90,0.08);}
   code{background:#10151c; border:1px solid var(--line); border-radius:4px; padding:1px 4px; color:var(--text);}
 </style>
 </head>
@@ -174,7 +182,8 @@
       <div class="row">
         <button id="addRegionBtn" class="attention" disabled>+ 모자이크 영역 추가</button>
         <button id="addRevealBtn" class="attention" disabled>+ 모자이크 제외 영역</button>
-        <span class="hint">추가 후 캔버스에서 드래그해 영역을 그리세요. 재생하며 위치를 다시 맞추면 그 시점이 자동으로 키프레임(추적 지점)으로 저장됩니다.</span>
+        <button id="clearGroupBtn" class="warn" style="display:none;">✂ 묶음 분리 (선택 해제)</button>
+        <span class="hint">추가 후 캔버스에서 드래그해 영역을 그리세요. Ctrl+클릭으로 모자이크/제외 영역을 묶어 함께 이동시킬 수 있습니다.</span>
       </div>
       <div class="row" style="margin-top:8px;">
         <div class="field">
@@ -247,20 +256,51 @@
       </div>
       <div class="row" style="margin-top:6px;">
         <button id="saveHtmlPkgBtn" class="public-html" disabled>민원인 배부용 HTML 저장</button>
-        <button id="savePkgBtn" class="primary" disabled>🔒 암호화 패키지로 PC에 저장</button>
       </div>
       <div id="savePkgMsg" class="hint" style="margin-top:6px;"></div>
-      <div class="hint" style="margin-top:8px;">
-        렌더링을 먼저 완료해야 저장할 수 있습니다. 다운로드된 파일(.cctvpkg)은 설정한 암호 없이는 열리지 않고, 만료일이 지나면 어떤 암호로도 열 수 없습니다. 민원인에게는 파일을 메일로 보내고, 암호는 전화·문자 등 다른 경로로 별도 전달하세요.
-      </div>
     </div>
 
     <div class="panel">
-      <h2>패키지 열기 (수신한 영상 확인)</h2>
+      <h2>휴대폰 재생용 HTML 저장</h2>
       <div class="row">
-        <input type="file" id="openPkgInput" accept=".cctvpkg,.json,application/json">
+        <button id="saveMobileHtmlBtn" class="public-html" disabled>H.264 MP4 변환 후 HTML 저장</button>
       </div>
-      <div id="openPkgStatus" style="margin-top:10px;"></div>
+      <div class="hint" style="margin-top:8px;">
+        민원인이 아이폰/안드로이드 휴대폰에서 열어볼 수 있도록 저용량 H.264 MP4로 만든 뒤 암호+열람기한으로 잠긴 배부용 HTML 한 파일로 저장합니다. (영상 자체는 호환성을 위해 암호화하지 않고, 암호와 열람기한으로만 접근을 제한합니다.)
+      </div>
+      <div id="mobileHtmlProgressWrap" class="progress" style="margin-top:8px;"><div id="mobileHtmlProgressBar"></div></div>
+      <div id="mobileHtmlProgressText" class="hint" style="margin-top:4px;"></div>
+      <div class="workflow-guide" aria-label="Netlify 배포 업무 절차">
+        <div class="workflow-step">
+          <div class="workflow-num">1</div>
+          <div>
+            <strong>휴대폰 재생용 HTML 파일 저장</strong>
+            <span>위 버튼으로 H.264 MP4 변환 후 배부용 HTML 파일을 PC에 저장합니다.</span>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-num">2</div>
+          <div>
+            <strong>Netlify Drop에 파일 업로드</strong>
+            <span><a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer">app.netlify.com/drop</a> 사이트를 열고, 저장된 HTML 파일을 직접 드래그 앤 드롭합니다.</span>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-num">3</div>
+          <div>
+            <strong>임시 HTTPS 주소에서 확인</strong>
+            <span>무료 HTTPS 호스팅과 자동 배포가 완료되면 임시 URL이 생성됩니다. 해당 웹사이트에서 영상 재생, 암호 입력, 열람기한 작동을 확인합니다.</span>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-num">4</div>
+          <div>
+            <strong>CCTV 요청인에게 URL 송부</strong>
+            <span>확인된 임시 URL 주소를 메일로 보내고, 열람 암호는 전화나 문자 등 별도 경로로 전달합니다.</span>
+          </div>
+        </div>
+        <div class="workflow-note">송부 전에는 반드시 본인이 먼저 URL에 접속해 재생 및 보안 확인을 완료하세요.</div>
+      </div>
     </div>
 
     <div class="panel">
@@ -568,8 +608,11 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   const playhead = $('playhead');
   const segList = $('segList');
   const regionList = $('regionList');
-  const savePkgBtn = $('savePkgBtn');
+  const savePkgBtn = null;
   const saveHtmlPkgBtn = $('saveHtmlPkgBtn');
+  const saveMobileHtmlBtn = $('saveMobileHtmlBtn');
+  const saveWebarchiveBtn = null;
+  const saveZipBtn = null;
   const mosaicOpacity = $('mosaicOpacity');
   const mosaicOpacityLabel = $('mosaicOpacityLabel');
   const autoMotionMosaic = $('autoMotionMosaic');
@@ -653,6 +696,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
     const url = URL.createObjectURL(f);
     lastLoadedURL = url;
+    emptyHint.style.display = 'flex';
+    emptyHint.textContent = '영상 정보를 읽는 중입니다...';
     srcVideo.src = url;
     srcVideo.load();
     previousMotionData = null;
@@ -678,6 +723,17 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     selectedSegmentId = segments[0].id;
     renderRegionList();
     renderSegments();
+    if(srcVideo.readyState >= 2){
+      drawFrame(undefined, {editing:true});
+    } else {
+      emptyHint.style.display = 'flex';
+      emptyHint.textContent = '첫 화면을 준비하는 중입니다...';
+    }
+  });
+
+  srcVideo.addEventListener('loadeddata', () => {
+    if(!duration) return;
+    emptyHint.style.display = 'none';
     drawFrame(undefined, {editing:true});
   });
 
@@ -892,9 +948,15 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
 
   function drawFrame(atTime, opts){
     if(!duration) return;
+    if(srcVideo.readyState < 2) return;
     const editing = opts && opts.editing;
     const t = atTime !== undefined ? atTime : srcVideo.currentTime;
-    ctx.drawImage(srcVideo, 0, 0, stage.width, stage.height);
+    try{
+      ctx.drawImage(srcVideo, 0, 0, stage.width, stage.height);
+    } catch(err){
+      console.warn('video frame is not ready yet', err);
+      return;
+    }
     if(autoMotionMosaic.checked){
       getMotionRects().forEach(rect => applyGlassMosaic(rect, 'rect'));
     }
@@ -1219,13 +1281,9 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     const t = srcVideo.currentTime;
     const pending = allRegions().find(r => r.pendingPlace);
     if(pending){ drag = { type:'new', region: pending, startX:p.x, startY:p.y }; return; }
-    if(selectedRegionId && selectedRegionIds.size <= 1){
-      const region = allRegions().find(r => r.id === selectedRegionId);
-      const hit = hitTest(region, t, p);
-      if(hit){ drag = { type: hit.mode, region, corner: hit.corner, startRect: {...hit.rect}, startX:p.x, startY:p.y }; return; }
-    }
+
     const selectableRegions = allRegions();
-    for(let i=selectableRegions.length-1;i>=0;i--){
+    for(let i=selectableRegions.length-1; i>=0; i--){
       const hit = hitTest(selectableRegions[i], t, p);
       if(hit){
         const region = selectableRegions[i];
@@ -1240,18 +1298,29 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
           }
           return;
         }
-        if(!selectedRegionIds.has(region.id)) setSingleSelectedRegion(region.id);
+
+        // Keep multi-selection group bound together continuously until user unselects
+        if(selectedRegionIds.has(region.id) && selectedRegionIds.size > 1){
+          renderRegionList();
+          renderSegments();
+          if(hit.mode === 'move'){
+            const moving = selectedRegions().filter(r => regionVisibleAtTime(r, t)).map(r => ({region:r, rect:getRectAtTime(r, t)})).filter(item => item.rect);
+            drag = { type:'multi-move', items:moving, startX:p.x, startY:p.y };
+          } else {
+            drag = { type: hit.mode, region, corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
+          }
+          return;
+        }
+
+        setSingleSelectedRegion(region.id);
         renderRegionList();
         renderSegments();
-        if(hit.mode === 'move' && selectedRegionIds.size > 1){
-          const moving = selectedRegions().filter(r => regionVisibleAtTime(r, t)).map(r => ({region:r, rect:getRectAtTime(r, t)})).filter(item => item.rect);
-          drag = { type:'multi-move', items:moving, startX:p.x, startY:p.y };
-        } else {
-          drag = { type: hit.mode, region, corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
-        }
+        drag = { type: hit.mode, region, corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
         return;
       }
     }
+
+    // Clicked empty canvas space -> Unselect / separate group
     setSingleSelectedRegion(null);
     const r = createMosaicRegion(false);
     renderRegionList();
@@ -1273,15 +1342,35 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     }
     if(drag.type === 'move'){
       const dx = p.x - drag.startX, dy = p.y - drag.startY;
-      const rect = { x: drag.startRect.x+dx, y: drag.startRect.y+dy, w: drag.startRect.w, h: drag.startRect.h };
+      const rect = {
+        x: Math.max(0, Math.min(stage.width - drag.startRect.w, drag.startRect.x + dx)),
+        y: Math.max(0, Math.min(stage.height - drag.startRect.h, drag.startRect.y + dy)),
+        w: drag.startRect.w,
+        h: drag.startRect.h
+      };
       upsertKeyframe(drag.region, t, rect, currentBlockOf(drag.region, t));
       drawFrame(t, {editing:true});
       return;
     }
     if(drag.type === 'multi-move'){
       const dx = p.x - drag.startX, dy = p.y - drag.startY;
+      let minDx = -Infinity, maxDx = Infinity, minDy = -Infinity, maxDy = Infinity;
+      drag.items.forEach(({rect}) => {
+        minDx = Math.max(minDx, -rect.x);
+        maxDx = Math.min(maxDx, stage.width - (rect.x + rect.w));
+        minDy = Math.max(minDy, -rect.y);
+        maxDy = Math.min(maxDy, stage.height - (rect.y + rect.h));
+      });
+      const clampedDx = Math.max(minDx, Math.min(maxDx, dx));
+      const clampedDy = Math.max(minDy, Math.min(maxDy, dy));
+
       drag.items.forEach(({region, rect:startRect}) => {
-        const rect = { x:startRect.x+dx, y:startRect.y+dy, w:startRect.w, h:startRect.h };
+        const rect = {
+          x: Math.max(0, Math.min(stage.width - startRect.w, startRect.x + clampedDx)),
+          y: Math.max(0, Math.min(stage.height - startRect.h, startRect.y + clampedDy)),
+          w: startRect.w,
+          h: startRect.h
+        };
         upsertKeyframe(region, t, rect, currentBlockOf(region, t));
       });
       drawFrame(t, {editing:true});
@@ -1294,7 +1383,10 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       if(drag.corner === 'bl'){ x += dx; w -= dx; h += dy; }
       if(drag.corner === 'tr'){ y += dy; w += dx; h -= dy; }
       if(drag.corner === 'tl'){ x += dx; y += dy; w -= dx; h -= dy; }
-      w = Math.max(10,w); h = Math.max(10,h);
+      x = Math.max(0, Math.min(stage.width - 10, x));
+      y = Math.max(0, Math.min(stage.height - 10, y));
+      w = Math.max(10, Math.min(stage.width - x, w));
+      h = Math.max(10, Math.min(stage.height - y, h));
       upsertKeyframe(drag.region, t, {x,y,w,h}, currentBlockOf(drag.region, t));
       drawFrame(t, {editing:true});
       return;
@@ -1328,6 +1420,24 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
 
   function renderRegionList(){
     regionList.innerHTML = '';
+    const clearGroupBtn = document.getElementById('clearGroupBtn');
+    if(clearGroupBtn){
+      if(selectedRegionIds.size > 1){
+        clearGroupBtn.style.display = 'inline-block';
+        clearGroupBtn.textContent = '✂ 묶음 분리 (' + selectedRegionIds.size + '개 선택됨)';
+      } else {
+        clearGroupBtn.style.display = 'none';
+      }
+      if(!clearGroupBtn.dataset.bound){
+        clearGroupBtn.dataset.bound = 'true';
+        clearGroupBtn.addEventListener('click', () => {
+          setSingleSelectedRegion(null);
+          renderRegionList();
+          renderSegments();
+          drawFrame(undefined, {editing:true});
+        });
+      }
+    }
     const items = allRegions();
     if(items.length === 0){ regionList.innerHTML = '<div class="sub">추가된 모자이크 영역이 없습니다.</div>'; return; }
     const curSeg = getCurrentSegment();
@@ -1516,9 +1626,10 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       </div>
       <div class="hint" id="mp4Status" style="margin-top:6px;">Windows 기본 영상 앱으로 보려면 MP4 저장을 사용하세요.</div>`;
     window.__lastExportBlob = blob;
+    window.__lastMobileMp4Blob = null;
     $('saveMp4Btn').addEventListener('click', saveLastExportAsMp4);
-    savePkgBtn.disabled = false;
     saveHtmlPkgBtn.disabled = false;
+    if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = false;
     progressWrap.style.display = 'none';
     exportBtn.disabled = false;
     if(wasPlaying){ srcVideo.play(); playing = true; playBtn.textContent = '⏸ 일시정지'; requestAnimationFrame(loop); }
@@ -1532,6 +1643,59 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     });
   }
 
+  function getSupportedMp4RecorderMime(){
+    const types = [
+      'video/mp4;codecs="avc1.42E01E"',
+      'video/mp4;codecs=avc1.42E01E',
+      'video/mp4;codecs="avc1.4D401E"',
+      'video/mp4;codecs=avc1.4D401E',
+      'video/mp4'
+    ];
+    return types.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+  }
+
+  async function renderSegmentsWithRecorder(mimeType, onProgress, options){
+    options = options || {};
+    const wasPlaying = playing;
+    srcVideo.pause();
+    playing = false;
+    const previousPlayText = playBtn.textContent;
+    playBtn.textContent = '재생';
+    try{
+      const stream = stage.captureStream(options.fps || 24);
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: options.videoBitsPerSecond || 2500000 });
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if(e.data.size>0) chunks.push(e.data); };
+      const totalDur = segments.reduce((a,s) => a + (s.end-s.start), 0) || 1;
+      let elapsed = 0;
+      const done = new Promise((resolve, reject) => {
+        recorder.onstop = resolve;
+        recorder.onerror = (e) => reject(e.error || new Error('recording failed'));
+      });
+      recorder.start(1000);
+      for(const seg of segments){
+        await seekTo(seg.start);
+        await playSegment(seg, (t) => {
+          const percent = Math.min(100, Math.round(((elapsed + (t-seg.start))/totalDur) * 100));
+          if(onProgress) onProgress(`휴대폰용 MP4 직접 렌더링 ${percent}%`, 20 + Math.round(percent * 0.55));
+        });
+        elapsed += (seg.end - seg.start);
+      }
+      recorder.stop();
+      await done;
+      return new Blob(chunks, {type:mimeType.split(';')[0] || 'video/mp4'});
+    } finally {
+      if(wasPlaying){
+        srcVideo.play();
+        playing = true;
+        playBtn.textContent = previousPlayText;
+        requestAnimationFrame(loop);
+      } else {
+        playBtn.textContent = previousPlayText;
+      }
+    }
+  }
+
   async function saveLastExportAsMp4(){
     const blob = window.__lastExportBlob;
     if(!blob) return;
@@ -1540,14 +1704,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     btn.disabled = true;
     status.textContent = 'MP4 변환 중... 영상 길이에 따라 시간이 걸릴 수 있습니다.';
     try{
-      const libs = await loadFFmpegLibs();
-      const ff = await ensureFFmpegLoaded();
-      const inName = `rendered_${Date.now()}.webm`;
       const outName = `edited_${Date.now()}.mp4`;
-      await ff.writeFile(inName, await libs.fetchFile(blob));
-      await ff.exec(['-i', inName, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outName]);
-      const data = await ff.readFile(outName);
-      const mp4Blob = new Blob([data.buffer], {type:'video/mp4'});
+      const mp4Blob = await transcodeBlobToMobileMp4(blob, outName);
       const url = URL.createObjectURL(mp4Blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1556,15 +1714,61 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       a.click();
       a.remove();
       status.innerHTML = `<span style="color:var(--accent)">MP4 저장이 완료되었습니다. Windows 기본 영상 앱에서 열 수 있습니다.</span> <a class="dl" href="${url}" download="${outName}">다시 다운로드</a>`;
-      if(ff.deleteFile){
-        try{ await ff.deleteFile(inName); } catch(e){}
-        try{ await ff.deleteFile(outName); } catch(e){}
-      }
     } catch(err){
       console.error(err);
       status.innerHTML = '<span style="color:var(--danger)">MP4 변환에 실패했습니다. WebM 파일은 브라우저/Chrome/Edge에서 열 수 있습니다.</span>';
     } finally {
       btn.disabled = false;
+    }
+  }
+
+  async function transcodeBlobToMobileMp4(blob, outName, onProgress){
+    if(window.__lastMobileMp4Blob){
+      if(onProgress) onProgress('이미 변환된 H.264 MP4를 재사용합니다.', 72);
+      return window.__lastMobileMp4Blob;
+    }
+    if(onProgress) onProgress('변환 엔진을 준비합니다.', 20);
+    const libs = await loadFFmpegLibs();
+    const ff = await ensureFFmpegLoaded();
+    let lastPercent = -1;
+    const progressHandler = ({ progress, time }) => {
+      const percent = Math.max(0, Math.min(100, Math.round((progress || 0) * 100)));
+      if(percent >= 0 && percent !== lastPercent && (percent === 100 || percent - lastPercent >= 10)){
+        lastPercent = percent;
+        if(onProgress) onProgress(`H.264 MP4 변환 진행률 ${percent}%`, 25 + Math.round(percent * 0.45));
+      }
+    };
+    if(ff.on) ff.on('progress', progressHandler);
+    const stamp = Date.now();
+    const inName = `rendered_${stamp}.webm`;
+    const finalOutName = outName || `mobile_${stamp}.mp4`;
+    try{
+      if(onProgress) onProgress('렌더링된 영상을 변환 엔진에 넣는 중입니다.', 25);
+      await ff.writeFile(inName, await libs.fetchFile(blob));
+      if(onProgress) onProgress('휴대폰 재생 가능한 H.264 MP4로 변환을 시작합니다.', 30);
+      await ff.exec([
+        '-i', inName,
+        '-an',
+        '-c:v', 'libx264',
+        '-profile:v', 'baseline',
+        '-level', '3.1',
+        '-preset', 'ultrafast',
+        '-crf', '23',
+        '-pix_fmt', 'yuv420p',
+        '-movflags', '+faststart',
+        finalOutName
+      ]);
+      if(onProgress) onProgress('변환된 MP4 파일을 꺼내는 중입니다.', 72);
+      const data = await ff.readFile(finalOutName);
+      const mp4Blob = new Blob([data.buffer], {type:'video/mp4'});
+      window.__lastMobileMp4Blob = mp4Blob;
+      return mp4Blob;
+    } finally {
+      if(ff.deleteFile){
+        try{ await ff.deleteFile(inName); } catch(e){}
+        try{ await ff.deleteFile(finalOutName); } catch(e){}
+      }
+      if(ff.off) ff.off('progress', progressHandler);
     }
   }
 
@@ -1579,6 +1783,274 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       }
       requestAnimationFrame(step);
     });
+  }
+
+  // ---------------- 휴대폰에서 100% 여는 비밀번호 보호 ZIP (자바스크립트 없이 OS 기본 압축 해제만으로 재생) ----------------
+  // 아이폰의 "미리보기(Quick Look)"는 HTML 안의 자바스크립트를 절대 실행하지 않기 때문에,
+  // 어떤 코드를 넣어도 그 화면 자체를 원천적으로 우회할 수 없습니다. 대신 아이폰 파일 앱과
+  // 안드로이드 파일관리자가 자바스크립트 없이 네이티브로 지원하는 "암호 걸린 ZIP 압축 풀기"
+  // 기능을 이용해, 압축을 풀면 영상이 OS 기본 동영상 재생기로 바로 열리게 만듭니다.
+  // (이 방식은 코드가 실행되지 않으므로 "열람기한 자동 만료"는 적용되지 않고, 압축 암호로만
+  //  접근을 제한합니다 — 대신 Quick Look 문제 자체가 생길 여지가 없어 가장 확실하게 열립니다.)
+  const CRC32_TABLE = (function(){
+    const table = new Uint32Array(256);
+    for(let n=0;n<256;n++){
+      let c=n;
+      for(let k=0;k<8;k++){ c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); }
+      table[n]=c>>>0;
+    }
+    return table;
+  })();
+  function crc32Bytes(bytes){
+    let c = 0xFFFFFFFF;
+    for(let i=0;i<bytes.length;i++){ c = CRC32_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8); }
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function makeZipCryptoKeys(password){
+    let key0=0x12345678, key1=0x23456789, key2=0x34567890;
+    function crcByte(crcVal, b){ return CRC32_TABLE[(crcVal ^ b) & 0xFF] ^ (crcVal >>> 8); }
+    function updateKeys(b){
+      key0 = crcByte(key0, b) >>> 0;
+      key1 = (key1 + (key0 & 0xFF)) >>> 0;
+      key1 = (Math.imul(key1, 134775813) + 1) >>> 0;
+      key2 = crcByte(key2, (key1 >>> 24) & 0xFF) >>> 0;
+    }
+    const pwBytes = new TextEncoder().encode(password);
+    for(let i=0;i<pwBytes.length;i++) updateKeys(pwBytes[i]);
+    return {
+      updateKeys,
+      decryptByte: function(){
+        const temp = (key2 | 2) & 0xFFFF;
+        return (Math.imul(temp, temp ^ 1) >> 8) & 0xFF;
+      }
+    };
+  }
+  function zipCryptoEncrypt(password, plainBytes, crcHighByte){
+    const ks = makeZipCryptoKeys(password);
+    const header = new Uint8Array(12);
+    for(let i=0;i<11;i++) header[i] = Math.floor(Math.random()*256);
+    header[11] = crcHighByte;
+    const out = new Uint8Array(12 + plainBytes.length);
+    for(let i=0;i<12;i++){
+      const p = header[i];
+      out[i] = (p ^ ks.decryptByte()) & 0xFF;
+      ks.updateKeys(p);
+    }
+    for(let i=0;i<plainBytes.length;i++){
+      const p = plainBytes[i];
+      out[12+i] = (p ^ ks.decryptByte()) & 0xFF;
+      ks.updateKeys(p);
+    }
+    return out;
+  }
+  function zipWriteU32(arr, offset, value){
+    arr[offset]=value&0xFF; arr[offset+1]=(value>>>8)&0xFF; arr[offset+2]=(value>>>16)&0xFF; arr[offset+3]=(value>>>24)&0xFF;
+  }
+  function zipWriteU16(arr, offset, value){
+    arr[offset]=value&0xFF; arr[offset+1]=(value>>>8)&0xFF;
+  }
+  function zipDosDateTime(date){
+    const dosTime = ((date.getHours()&0x1F)<<11) | ((date.getMinutes()&0x3F)<<5) | ((date.getSeconds()>>1)&0x1F);
+    const dosDate = (((date.getFullYear()-1980)&0x7F)<<9) | (((date.getMonth()+1)&0xF)<<5) | (date.getDate()&0x1F);
+    return { dosTime, dosDate };
+  }
+  function buildZipEntry(nameBytes, plainBytes, password, dosTime, dosDate, localOffset){
+    const crc = crc32Bytes(plainBytes);
+    const crcHighByte = (crc >>> 24) & 0xFF;
+    const encryptedData = zipCryptoEncrypt(password, plainBytes, crcHighByte);
+    const compressedSize = encryptedData.length;
+    const uncompressedSize = plainBytes.length;
+
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    zipWriteU32(localHeader, 0, 0x04034b50);
+    zipWriteU16(localHeader, 4, 20);
+    zipWriteU16(localHeader, 6, 0x0001);
+    zipWriteU16(localHeader, 8, 0);
+    zipWriteU16(localHeader, 10, dosTime);
+    zipWriteU16(localHeader, 12, dosDate);
+    zipWriteU32(localHeader, 14, crc);
+    zipWriteU32(localHeader, 18, compressedSize);
+    zipWriteU32(localHeader, 22, uncompressedSize);
+    zipWriteU16(localHeader, 26, nameBytes.length);
+    zipWriteU16(localHeader, 28, 0);
+    localHeader.set(nameBytes, 30);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    zipWriteU32(centralHeader, 0, 0x02014b50);
+    zipWriteU16(centralHeader, 4, 20);
+    zipWriteU16(centralHeader, 6, 20);
+    zipWriteU16(centralHeader, 8, 0x0001);
+    zipWriteU16(centralHeader, 10, 0);
+    zipWriteU16(centralHeader, 12, dosTime);
+    zipWriteU16(centralHeader, 14, dosDate);
+    zipWriteU32(centralHeader, 16, crc);
+    zipWriteU32(centralHeader, 20, compressedSize);
+    zipWriteU32(centralHeader, 24, uncompressedSize);
+    zipWriteU16(centralHeader, 28, nameBytes.length);
+    zipWriteU16(centralHeader, 30, 0);
+    zipWriteU16(centralHeader, 32, 0);
+    zipWriteU16(centralHeader, 34, 0);
+    zipWriteU16(centralHeader, 36, 0);
+    zipWriteU32(centralHeader, 38, 0);
+    zipWriteU32(centralHeader, 42, localOffset);
+    centralHeader.set(nameBytes, 46);
+
+    const localBlockSize = localHeader.length + encryptedData.length;
+    return { localHeader, encryptedData, centralHeader, localBlockSize };
+  }
+
+  // entries: [{ name, bytes }, ...] — 모두 같은 암호로 각각 독립 암호화되어 압축됩니다.
+  async function buildPasswordZipMulti(entries, password){
+    const { dosTime, dosDate } = zipDosDateTime(new Date());
+    const parts = [];
+    const centralHeaders = [];
+    let offset = 0;
+    for(const entry of entries){
+      const nameBytes = new TextEncoder().encode(entry.name);
+      const built = buildZipEntry(nameBytes, entry.bytes, password, dosTime, dosDate, offset);
+      parts.push(built.localHeader, built.encryptedData);
+      centralHeaders.push(built.centralHeader);
+      offset += built.localBlockSize;
+    }
+    const centralDirOffset = offset;
+    let centralDirSize = 0;
+    for(const ch of centralHeaders) centralDirSize += ch.length;
+
+    const endRecord = new Uint8Array(22);
+    zipWriteU32(endRecord, 0, 0x06054b50);
+    zipWriteU16(endRecord, 4, 0);
+    zipWriteU16(endRecord, 6, 0);
+    zipWriteU16(endRecord, 8, entries.length);
+    zipWriteU16(endRecord, 10, entries.length);
+    zipWriteU32(endRecord, 12, centralDirSize);
+    zipWriteU32(endRecord, 16, centralDirOffset);
+    zipWriteU16(endRecord, 20, 0);
+
+    return new Blob([...parts, ...centralHeaders, endRecord], { type: 'application/zip' });
+  }
+
+  async function buildPasswordZip(blob, entryName, password){
+    const plainBytes = new Uint8Array(await blob.arrayBuffer());
+    return buildPasswordZipMulti([{ name: entryName, bytes: plainBytes }], password);
+  }
+
+  // ---------------- 아이폰 전용: .webarchive 컨테이너 (Safari가 직접 핸들러라 미리보기를 거치지 않음) ----------------
+  // 아이폰이 .html 파일을 "미리보기"로 처리하는 것과 달리, .webarchive는 Safari 자체 포맷으로
+  // 등록되어 있어 탭하면 Safari가 곧바로 열리고 자바스크립트도 정상 실행됩니다.
+  // 서버 없이, 완성된 자기완결형 HTML 문자열 하나를 그대로 이 컨테이너로 감쌉니다.
+  // (바이너리 plist(bplist00) 포맷을 직접 구현 — 외부 라이브러리/네트워크 불필요)
+  function bplistEncodeIntBytes(value){
+    if(value <= 0xFF) return Uint8Array.from([0x10, value & 0xFF]);
+    if(value <= 0xFFFF) return Uint8Array.from([0x11, (value>>>8)&0xFF, value&0xFF]);
+    if(value <= 0xFFFFFFFF) return Uint8Array.from([0x12, (value>>>24)&0xFF, (value>>>16)&0xFF, (value>>>8)&0xFF, value&0xFF]);
+    const hi = Math.floor(value / 0x100000000), lo = value >>> 0;
+    return Uint8Array.from([0x13, (hi>>>24)&0xFF,(hi>>>16)&0xFF,(hi>>>8)&0xFF,hi&0xFF, (lo>>>24)&0xFF,(lo>>>16)&0xFF,(lo>>>8)&0xFF,lo&0xFF]);
+  }
+  function bplistConcat(chunks){
+    let total = 0;
+    for(const c of chunks) total += c.length;
+    const out = new Uint8Array(total);
+    let pos = 0;
+    for(const c of chunks){ out.set(c, pos); pos += c.length; }
+    return out;
+  }
+  function bplistLengthHeader(highNibble, length){
+    if(length < 15) return Uint8Array.from([(highNibble<<4) | length]);
+    return bplistConcat([Uint8Array.from([(highNibble<<4)|0x0F]), bplistEncodeIntBytes(length)]);
+  }
+  function bplistEncodeRef(index, refSize){
+    if(refSize===1) return Uint8Array.from([index & 0xFF]);
+    if(refSize===2) return Uint8Array.from([(index>>>8)&0xFF, index&0xFF]);
+    return Uint8Array.from([(index>>>24)&0xFF,(index>>>16)&0xFF,(index>>>8)&0xFF,index&0xFF]);
+  }
+  function bplistEncodeObject(obj, refSize){
+    if(obj.type === 'data'){
+      return bplistConcat([bplistLengthHeader(0x4, obj.bytes.length), obj.bytes]);
+    }
+    if(obj.type === 'string'){
+      const strBytes = new TextEncoder().encode(obj.value); // 내부 메타 문자열은 항상 ASCII만 사용
+      return bplistConcat([bplistLengthHeader(0x5, strBytes.length), strBytes]);
+    }
+    if(obj.type === 'dict'){
+      const head = bplistLengthHeader(0xD, obj.entries.length);
+      const keyRefs = obj.entries.map(([k]) => bplistEncodeRef(k, refSize));
+      const valRefs = obj.entries.map(([,v]) => bplistEncodeRef(v, refSize));
+      return bplistConcat([head, ...keyRefs, ...valRefs]);
+    }
+    throw new Error('지원하지 않는 plist 타입');
+  }
+  // rootObj: 문자열이나 {__plistData:true, bytes:Uint8Array} 또는 Map(중첩 dict) 조합
+  function buildBinaryPlist(rootObj){
+    const objects = [];
+    function walk(o){
+      if(o && o.__plistData){
+        const idx = objects.length; objects.push({ type:'data', bytes:o.bytes }); return idx;
+      }
+      if(typeof o === 'string'){
+        const idx = objects.length; objects.push({ type:'string', value:o }); return idx;
+      }
+      if(o instanceof Map){
+        const idx = objects.length; objects.push(null); // 자리 예약 (자식 인덱스가 먼저 필요)
+        const entries = [];
+        for(const [k,v] of o.entries()){
+          entries.push([walk(k), walk(v)]);
+        }
+        objects[idx] = { type:'dict', entries };
+        return idx;
+      }
+      throw new Error('지원하지 않는 plist 값');
+    }
+    const rootIndex = walk(rootObj);
+    const refSize = objects.length <= 0xFF ? 1 : (objects.length <= 0xFFFF ? 2 : 4);
+
+    const header = new TextEncoder().encode('bplist00');
+    const objectBytesList = [];
+    const offsets = [];
+    let cursor = header.length;
+    for(let i=0;i<objects.length;i++){
+      offsets.push(cursor);
+      const bytes = bplistEncodeObject(objects[i], refSize);
+      objectBytesList.push(bytes);
+      cursor += bytes.length;
+    }
+    const offsetTableStart = cursor;
+    const offsetIntSize = offsetTableStart <= 0xFF ? 1 : (offsetTableStart <= 0xFFFF ? 2 : (offsetTableStart <= 0xFFFFFFFF ? 4 : 8));
+    function encodeOffset(off){
+      if(offsetIntSize===1) return Uint8Array.from([off&0xFF]);
+      if(offsetIntSize===2) return Uint8Array.from([(off>>>8)&0xFF, off&0xFF]);
+      if(offsetIntSize===4) return Uint8Array.from([(off>>>24)&0xFF,(off>>>16)&0xFF,(off>>>8)&0xFF,off&0xFF]);
+      const hi = Math.floor(off/0x100000000), lo = off>>>0;
+      return Uint8Array.from([(hi>>>24)&0xFF,(hi>>>16)&0xFF,(hi>>>8)&0xFF,hi&0xFF,(lo>>>24)&0xFF,(lo>>>16)&0xFF,(lo>>>8)&0xFF,lo&0xFF]);
+    }
+    const offsetTableBytesList = offsets.map(encodeOffset);
+
+    function writeBE64(arr, off, value){
+      const hi = Math.floor(value/0x100000000), lo = value>>>0;
+      arr[off]=(hi>>>24)&0xFF; arr[off+1]=(hi>>>16)&0xFF; arr[off+2]=(hi>>>8)&0xFF; arr[off+3]=hi&0xFF;
+      arr[off+4]=(lo>>>24)&0xFF; arr[off+5]=(lo>>>16)&0xFF; arr[off+6]=(lo>>>8)&0xFF; arr[off+7]=lo&0xFF;
+    }
+    const trailer = new Uint8Array(32);
+    trailer[6] = offsetIntSize;
+    trailer[7] = refSize;
+    writeBE64(trailer, 8, objects.length);
+    writeBE64(trailer, 16, rootIndex);
+    writeBE64(trailer, 24, offsetTableStart);
+
+    return bplistConcat([header, ...objectBytesList, ...offsetTableBytesList, trailer]);
+  }
+  function buildWebArchiveFromHtml(htmlString){
+    const htmlBytes = new TextEncoder().encode(htmlString);
+    const mainResource = new Map([
+      ['WebResourceData', { __plistData:true, bytes: htmlBytes }],
+      ['WebResourceMIMEType', 'text/html'],
+      ['WebResourceTextEncodingName', 'UTF-8'],
+      ['WebResourceURL', 'https://localhost/cctv-view.html'],
+    ]);
+    const root = new Map([
+      ['WebMainResource', mainResource],
+    ]);
+    const bytes = buildBinaryPlist(root);
+    return new Blob([bytes], { type: 'application/x-webarchive' });
   }
 
   // ---------------- Crypto helpers (AES-GCM + PBKDF2) ----------------
@@ -1596,18 +2068,19 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
     return bytes;
   }
-  async function deriveKey(password, saltBytes){
+  async function deriveKey(password, saltBytes, iterations){
     const enc = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
     return crypto.subtle.deriveKey(
-      {name:'PBKDF2', salt: saltBytes, iterations: 150000, hash:'SHA-256'},
+
+      {name:'PBKDF2', salt: saltBytes, iterations: iterations || 150000, hash:'SHA-256'},
       keyMaterial, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
     );
   }
-  async function encryptBlob(blob, password){
+  async function encryptBlob(blob, password, iterations){
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const key = await deriveKey(password, salt);
+    const key = await deriveKey(password, salt, iterations);
     const buf = await blob.arrayBuffer();
     const cipherBuf = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, buf);
     return { salt, iv, cipherBuf };
@@ -1615,18 +2088,22 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   async function decryptPackage(pkg, password){
     const salt = base64ToBytes(pkg.salt);
     const iv = base64ToBytes(pkg.iv);
-    const key = await deriveKey(password, salt);
+    const key = await deriveKey(password, salt, pkg.kdfIterations || 150000);
     const cipherBytes = base64ToBytes(pkg.cipher);
     const plainBuf = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, cipherBytes.buffer);
-    return new Blob([plainBuf], {type:'video/webm'});
+    return new Blob([plainBuf], {type: pkg.mimeType || 'video/webm'});
   }
 
-  async function buildPrivacyPackage(blob, name, password, expiresAt){
+  async function buildPrivacyPackage(blob, name, password, expiresAt, mimeType, options){
+    options = options || {};
     const now = Date.now();
-    const { salt, iv, cipherBuf } = await encryptBlob(blob, password);
+    const kdfIterations = options.kdfIterations || 150000;
+    const { salt, iv, cipherBuf } = await encryptBlob(blob, password, kdfIterations);
     return {
       format: 'cctv-privacy-package', version: 1,
       name, createdAt: now, expiresAt,
+      mimeType: mimeType || blob.type || 'video/webm',
+      kdfIterations,
       expectedDestroyFileName: `${name}_열람용.html`,
       salt: bytesToBase64(salt), iv: bytesToBase64(iv),
       cipher: bytesToBase64(new Uint8Array(cipherBuf)),
@@ -1669,6 +2146,13 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   .sub{color:#aeb7c7;font-size:13px;line-height:1.6;}
   .dangerText{color:#ffb2b4;}
   video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:14px;}
+  video::-internal-media-controls-download-button,
+  video::-webkit-media-controls-download-button {
+    display: none !important;
+  }
+  video::-webkit-media-controls-enclosure {
+    overflow: hidden;
+  }
 </style>
 </head>
 <body>
@@ -1676,7 +2160,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   <h1>CCTV 개인정보 보호 영상 열람</h1>
   <div id="app" class="panel"></div>
 </div>
-<script>
+${'<scr' + 'ipt>'}
 const pkg = decodePkg('${pkgEncoded}');
 const app = document.getElementById('app');
 blockPageInspection();
@@ -1690,13 +2174,13 @@ document.addEventListener('keydown',function(e){const k=e.key.toUpperCase();if(e
 function decodePkg(encoded){const bin=atob(encoded);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return JSON.parse(new TextDecoder().decode(bytes));}
 function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
 async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
-async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:'video/webm'});}
+async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:pkg.mimeType||'video/mp4'});}
 function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+pkg.name+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
-async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls autoplay></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
+async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;" autoplay playsinline></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
 function renderExpired(){const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다.</h1><p class="sub">표준 개인정보 보호 지침에 따라 파기 바랍니다.</p><p class="sub">파기 버튼을 누른 뒤 배부받은 HTML 파일을 선택하세요. 선택한 파일 이름이 <strong>'+expected+'</strong>와 다르면 이름 상이 오류가 표시되고 파기하지 않습니다.</p><button id="destroy" class="danger">파기</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
 async function destroyFile(){const msg=document.getElementById('destroyMsg');const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 파일 직접 파기를 지원하지 않습니다. 파일 이름이 <strong>'+expected+'</strong>인지 확인한 뒤 해당 배부용 HTML 파일을 직접 삭제하고 휴지통을 비워주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.name!==expected){msg.innerHTML='<span class="dangerText">이름 상이 오류: 파기 대상 파일 이름이 저장된 배부용 파일 이름과 다릅니다.</span><br>선택한 파일: <strong>'+handle.name+'</strong><br>파기 대상 파일: <strong>'+expected+'</strong>';return;}if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일을 파기했습니다.</span>';}else{msg.innerHTML='파일 이름은 일치하지만 이 브라우저는 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워주세요.';}}catch(e){msg.textContent='파기가 취소되었거나 실패했습니다.';}}
 render();
-<\/script>
+${'</scr' + 'ipt>'}
 </body>
 </html>`;
   }
@@ -1705,94 +2189,506 @@ render();
     return String(value).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
 
-  buildDistributionHtml = function(pkg){
-    const guardSeed = crypto.getRandomValues(new Uint8Array(24));
-    const pkgBytes = new TextEncoder().encode(JSON.stringify(pkg));
-    const maskedPkg = new Uint8Array(pkgBytes.length);
-    for(let i=0;i<pkgBytes.length;i++){
-      maskedPkg[i] = pkgBytes[i] ^ guardSeed[i % guardSeed.length] ^ ((i * 31 + 17) & 255);
+  async function buildMobileDistributionHtml(pkg){
+    const cipherBytes = base64ToBytes(pkg.cipher);
+    const PART_SIZE = 64 * 1024;
+    const parts = [];
+    for(let offset=0; offset<cipherBytes.length; offset += PART_SIZE){
+      parts.push(bytesToBase64(cipherBytes.subarray(offset, Math.min(offset + PART_SIZE, cipherBytes.length))));
     }
-    const payloadParts = bytesToBase64(maskedPkg).match(/.{1,72}/g).reverse();
-    const guardKey = bytesToBase64(guardSeed).split('').reverse().join('');
-    const scriptBody = `
-const app=document.getElementById('app');
-const guardedPayloadParts=${JSON.stringify(payloadParts)};
-const guardedKey='${guardKey}';
-const expectedIntegrity='__INTEGRITY__';
-function showGuardError(){document.body.innerHTML='<div class="wrap"><div class="panel"><h1 class="dangerText">보안 검증 오류</h1><p class="sub">배부용 HTML 파일이 수정되었거나 손상되어 영상을 열 수 없습니다. 원본 배부 파일을 다시 사용해 주세요.</p></div></div>';}
-function hashText(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(36);}
-function verifySelf(){const src=document.currentScript.textContent.replace("const expectedIntegrity='"+expectedIntegrity+"';","const expectedIntegrity='__INTEGRITY__';").trimEnd();return hashText(src)===expectedIntegrity;}
-if(!verifySelf()){showGuardError();throw new Error('integrity check failed');}
-blockPageInspection();
-const pkg=decodeProtectedPackage();
-function blockPageInspection(){
-document.addEventListener('contextmenu',function(e){e.preventDefault();});
-document.addEventListener('selectstart',function(e){if(!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))e.preventDefault();});
-document.addEventListener('dragstart',function(e){e.preventDefault();});
-document.addEventListener('copy',function(e){if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault();});
-document.addEventListener('keydown',function(e){const k=e.key.toUpperCase();if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C','K'].includes(k))||(e.ctrlKey&&['U','S'].includes(k))){e.preventDefault();e.stopPropagation();}},true);
-let opened=false;const probe=document.createElement('div');Object.defineProperty(probe,'id',{get:function(){opened=true;return 'x';}});
-setInterval(function(){opened=false;console.log(probe);if(opened){const player=document.getElementById('player');if(player)player.replaceChildren();const msg=document.getElementById('msg');if(msg)msg.innerHTML='<span class="dangerText">분석 도구가 감지되어 재생을 중지했습니다.</span>';}},1800);
+    const meta = {...pkg};
+    delete meta.cipher;
+    meta.mobileFormat = 'cctv-mobile-v10';
+    meta.cipherEncoding = 'base64-binary-div-parts';
+    meta.cipherPartCount = parts.length;
+    meta.cipherByteLength = cipherBytes.length;
+    const metaJson = JSON.stringify(meta).replace(/</g,'\u003c').replace(/>/g,'\u003e').replace(/&/g,'\u0026');
+    const partMarkup = parts.map((part,i)=>'<div class="cctvCipherPart" data-index="'+i+'">'+part+'</div>').join('');
+    const safeName = escapeHtml(pkg.name || 'CCTV 영상');
+    const safeExpiry = new Date(pkg.expiresAt).toLocaleString();
+    const expectedDays = Math.max(0, Math.ceil((pkg.expiresAt - Date.now()) / 86400000));
+
+    const mobileScript = `(function(){
+'use strict';
+var META=${metaJson};
+var busy=false;
+function el(id){return document.getElementById(id);}
+function setMsg(text,error){var e=el('msg');if(e){e.textContent=text;e.className=error?'sub dangerText':'sub';}}
+function setBar(n){var e=el('bar');if(e)e.style.width=Math.max(0,Math.min(100,n))+'%';}
+// [추가] 어떤 예외든(자바스크립트 문법을 벗어난 브라우저별 예외 포함) 화면에 반드시 보이도록
+// 전역 에러 핸들러를 등록합니다. 이게 없으면 특정 휴대폰/인앱 브라우저에서
+// 아무 메시지 없이 "그냥 멈춘 것처럼" 보이는 문제를 진단할 방법이 없습니다.
+window.addEventListener('error',function(ev){
+  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+' (다른 브라우저로 다시 열어보세요)',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+});
+window.addEventListener('unhandledrejection',function(ev){
+  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+' (다른 브라우저로 다시 열어보세요)',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+});
+function b64(s){var bin=atob(String(s||'').trim()),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
+function togglePassword(){
+  var p=el('pw'),b=el('togglePw');
+  if(!p)return false;
+  var isPw=p.type==='password';
+  p.type=isPw?'text':'password';
+  if(b)b.textContent=isPw?'숨김':'보기';
+  return false;
 }
-function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
-function decodeProtectedPackage(){const seed=b64ToBytes(guardedKey.split('').reverse().join(''));const masked=b64ToBytes(guardedPayloadParts.slice().reverse().join(''));const plain=new Uint8Array(masked.length);for(let i=0;i<masked.length;i++)plain[i]=masked[i]^seed[i%seed.length]^((i*31+17)&255);return JSON.parse(new TextDecoder().decode(plain));}
-async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
-async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:'video/webm'});}
-function esc(v){return String(v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
-function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+esc(pkg.name)+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
-async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);if(Date.now()>pkg.expiresAt){renderExpired();return;}const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls autoplay controlsList="nodownload"></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않거나 파일이 손상되었습니다.</span>';}}
-function renderExpired(){const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다</h1><p class="sub">개인정보 보호 지침에 따라 더 이상 영상을 열 수 없습니다.</p><p class="sub">배부받은 HTML 파일을 삭제해 주세요. 대상 파일명: <strong>'+esc(expected)+'</strong></p><button id="destroy" class="danger">삭제 안내 확인</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
-async function destroyFile(){const msg=document.getElementById('destroyMsg');const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 직접 삭제 기능을 지원하지 않습니다. <strong>'+esc(expected)+'</strong> 파일을 직접 삭제하고 휴지통을 비워 주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.name!==expected){msg.innerHTML='<span class="dangerText">파일명이 일치하지 않습니다.</span><br>선택 파일: <strong>'+esc(handle.name)+'</strong><br>대상 파일: <strong>'+esc(expected)+'</strong>';return;}if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일이 삭제되었습니다.</span>';}else{msg.innerHTML='파일명은 일치하지만 이 브라우저가 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워 주세요.';}}catch(e){msg.textContent='삭제 확인이 취소되었거나 실패했습니다.';}}
-let trustedTimeState=null;
-async function fetchJsonTime(url,read){const controller=new AbortController();const timer=setTimeout(function(){controller.abort();},4500);try{const res=await fetch(url,{cache:'no-store',signal:controller.signal});if(!res.ok)throw new Error('time api failed');const data=await res.json();const value=read(data);if(!Number.isFinite(value))throw new Error('bad time');return value;}finally{clearTimeout(timer);}}
-async function syncTrustedNow(){const sources=[function(){return fetchJsonTime('https://worldtimeapi.org/api/timezone/Etc/UTC',function(d){return Date.parse(d.utc_datetime||d.datetime);});},function(){return fetchJsonTime('https://timeapi.io/api/TimeZone/zone?timeZone=UTC',function(d){return Date.parse(d.currentLocalTime+'Z');});}];let lastErr=null;for(const source of sources){try{const serverNow=await source();trustedTimeState={serverNow:serverNow,perfNow:performance.now(),syncedAt:Date.now()};return trustedNow();}catch(e){lastErr=e;}}throw lastErr||new Error('time sync failed');}
-function trustedNow(){if(!trustedTimeState)throw new Error('time not synced');return trustedTimeState.serverNow+(performance.now()-trustedTimeState.perfNow);}
-async function ensureTrustedNow(){if(!trustedTimeState||performance.now()-trustedTimeState.perfNow>300000)return syncTrustedNow();return trustedNow();}
-function renderTimeSyncError(){app.innerHTML='<h1 class="dangerText">표준시 동기화 실패</h1><p class="sub">만료 여부를 PC 시간이 아닌 실시간 표준시 기준으로 확인해야 하므로 인터넷 연결이 필요합니다.</p><p class="sub">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</p><button id="retry">다시 동기화</button><div id="msg" class="sub" style="margin-top:10px;"></div>';document.getElementById('retry').onclick=render;}
-async function render(){app.innerHTML='<p class="sub">실시간 표준시 동기화 중...</p>';let now;try{now=await ensureTrustedNow();}catch(e){renderTimeSyncError();return;}if(now>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-now)/86400000);app.innerHTML='<strong>'+esc(pkg.name)+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><p class="sub">실시간 표준시 동기화 완료: '+new Date(now).toLocaleString()+'</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
-async function openVideo(){const msg=document.getElementById('msg');msg.textContent='실시간 표준시 확인 중...';let now;try{now=await ensureTrustedNow();}catch(e){msg.innerHTML='<span class="dangerText">표준시 동기화에 실패하여 영상을 열 수 없습니다.</span>';return;}if(now>pkg.expiresAt){renderExpired();return;}msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);now=await ensureTrustedNow();if(now>pkg.expiresAt){renderExpired();return;}const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls autoplay controlsList="nodownload"></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않거나 파일이 손상되었습니다.</span>';}}
-render();`;
-    let h = 2166136261;
-    const scriptForHash = scriptBody.trimEnd();
-    for(let i=0;i<scriptForHash.length;i++){
-      h ^= scriptForHash.charCodeAt(i);
-      h = Math.imul(h, 16777619);
+function restoreCipher(onYield){
+  var box=el('cctvCipherStore'),count=Number(META.cipherPartCount)||0,expected=Number(META.cipherByteLength)||0;
+  if(!box||count<1||expected<1)throw new Error('암호화 영상 데이터 형식이 올바르지 않습니다.');
+  var nodes=box.querySelectorAll('.cctvCipherPart');
+  if(nodes.length!==count)throw new Error('암호화 영상 데이터 조각 수가 맞지 않습니다.');
+  var chunks=new Array(count),total=0;
+  for(var i=0;i<nodes.length;i++){
+    var idx=Number(nodes[i].getAttribute('data-index'));
+    if(!Number.isInteger(idx)||idx<0||idx>=count)throw new Error('암호화 영상 데이터 순서가 올바르지 않습니다.');
+    chunks[idx]=nodes[i].textContent||'';
+  }
+  var out=new Uint8Array(expected),pos=0;
+  return new Promise(function(resolve,reject){
+    var j=0;
+    function step(){
+      try{
+        var batchEnd=Math.min(count, j+40); // 40개 조각씩 처리 후 화면에 양보 (UI가 멈춘 것처럼 보이지 않도록)
+        for(; j<batchEnd; j++){
+          var q=b64(chunks[j]);
+          if(pos+q.length>expected){ reject(new Error('암호화 영상 데이터 크기가 올바르지 않습니다.')); return; }
+          out.set(q,pos);
+          pos+=q.length;
+        }
+        setBar(5+Math.round(pos/expected*30));
+        if(onYield) onYield(pos, expected);
+        if(j<count){
+          setTimeout(step,0); // 다음 배치 전에 브라우저가 화면을 그릴 수 있도록 양보
+        } else {
+          if(pos!==expected){ reject(new Error('암호화 영상 데이터가 일부 누락되었습니다.')); return; }
+          resolve(out);
+        }
+      }catch(e){ reject(e); }
     }
-    const guardedScript = scriptBody.replace('__INTEGRITY__', (h >>> 0).toString(36));
-    return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(pkg.name)} 열람</title>
-<style>
-  body{margin:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
-  .wrap{max-width:920px;margin:0 auto;padding:28px 18px;}
-  h1{font-size:20px;margin:0 0 16px;}
-  .panel{background:#181c24;border:1px solid #303746;border-radius:10px;padding:18px;margin-top:14px;}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-  input,button{font-size:14px;border-radius:8px;padding:9px 12px;}
-  input{background:#222833;border:1px solid #3a4352;color:#fff;}
-  button{background:#4fd1c5;border:1px solid #4fd1c5;color:#071717;font-weight:700;cursor:pointer;}
-  button.danger{background:#e2555a;border-color:#e2555a;color:#fff;}
-  button:disabled{opacity:.45;cursor:not-allowed;}
-  .sub{color:#aeb7c7;font-size:13px;line-height:1.6;}
-  .dangerText{color:#ffb2b4;}
-  video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:14px;}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <h1>CCTV 개인정보 보호 영상 열람</h1>
-  <div id="app" class="panel"></div>
-</div>
-<script>${guardedScript}
-<\/script>
-</body>
-</html>`;
-  };
+    step();
+  });
+}
+function withTimeout(promise,ms,message){
+  return new Promise(function(resolve,reject){
+    var done=false;
+    var timer=setTimeout(function(){
+      if(done)return;
+      done=true;
+      reject(new Error(message));
+    },ms);
+    promise.then(function(v){ if(done)return; done=true; clearTimeout(timer); resolve(v); },
+      function(e){ if(done)return; done=true; clearTimeout(timer); reject(e); });
+  });
+}
+function isLikelyInAppBrowser(){
+  var ua=(navigator.userAgent||'').toLowerCase();
+  var markers=['kakaotalk','fban','fbav','instagram','; wv)','naver(inapp','line/','samsungmessages','messengerliteforios','snapchat'];
+  for(var m=0;m<markers.length;m++){ if(ua.indexOf(markers[m])!==-1) return true; }
+  return false;
+}
+async function openVideo(){
+  if(busy)return false;
+  if(Date.now()>Number(META.expiresAt)){
+    setMsg('⛔ 열람 가능 기간이 만료되었습니다. 더 이상 영상을 열 수 없습니다.',true);
+    var op=el('open');if(op)op.disabled=true;
+    return false;
+  }
+  var p=el('pw');
+  if(!p||!p.value){setMsg('열람 암호를 입력해 주세요.',true);if(p)p.focus();return false;}
+  busy=true;
+  var open=el('open');if(open)open.disabled=true;
+  var CRYPTO_TIMEOUT_MS=15000;
+  var inAppHint=isLikelyInAppBrowser()?' 현재 카카오톡·문자·SNS 앱 내장 브라우저로 열려 있는 것 같습니다. 화면의 메뉴(⋮) 또는 공유 아이콘에서 "다른 브라우저로 열기 / Safari로 열기"를 선택한 뒤 다시 시도해 주세요.':' 화면 상단 메뉴 또는 공유 아이콘에서 Chrome이나 Safari로 열어서 다시 시도해 주세요.';
+  try{
+    if(!window.crypto||!window.crypto.subtle)throw new Error('이 브라우저에서는 보안 영상 복호화를 지원하지 않습니다.'+inAppHint);
+    setMsg('암호화 영상 데이터를 준비하는 중...');
+    setBar(5);
+    var cipher=await restoreCipher(function(pos,expected){
+      setMsg('암호화 영상 데이터를 준비하는 중... ('+Math.round(pos/expected*100)+'%)');
+    });
+    setMsg('보안 키를 생성하는 중...');
+    setBar(42);
+    var salt=b64(META.salt),iv=b64(META.iv);
+    var km;
+    try{
+      km=await withTimeout(
+        window.crypto.subtle.importKey('raw',new TextEncoder().encode(p.value),{name:'PBKDF2'},false,['deriveKey']),
+        CRYPTO_TIMEOUT_MS,
+        '보안 키 생성이 응답하지 않습니다.'+inAppHint
+      );
+    }catch(e){ throw e; }
+    var key;
+    try{
+      key=await withTimeout(
+        window.crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:Number(META.kdfIterations)||30000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']),
+        CRYPTO_TIMEOUT_MS,
+        '보안 키 생성이 응답하지 않습니다.'+inAppHint
+      );
+    }catch(e){ throw e; }
+    setMsg('영상 잠금을 해제하는 중...');
+    setBar(70);
+    var plain;
+    try{
+      plain=await withTimeout(
+        window.crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,cipher),
+        CRYPTO_TIMEOUT_MS,
+        '영상 복호화가 응답하지 않습니다.'+inAppHint
+      );
+    }catch(e){
+      if(/응답하지 않습니다/.test(e&&e.message)) throw e;
+      throw new Error('암호가 올바르지 않습니다.');
+    }
+    setMsg('영상 플레이어를 준비하는 중...');
+    setBar(92);
+    var v=document.createElement('video');
+    v.controls=true;
+    v.setAttribute('controlsList','nodownload');
+    v.setAttribute('disablePictureInPicture','');
+    v.disablePictureInPicture=true;
+    v.setAttribute('oncontextmenu','return false;');
+    v.oncontextmenu=function(e){ e.preventDefault(); return false; };
+    v.addEventListener('contextmenu',function(e){ e.preventDefault(); });
+    v.playsInline=true;
+    v.setAttribute('playsinline','');
+    v.setAttribute('webkit-playsinline','');
+    v.preload='metadata';
+    v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';
+    v.onerror=function(){
+      setMsg('영상 파일 형식을 재생할 수 없습니다. 다른 브라우저(Chrome/Safari)로 다시 열어 보세요.',true);
+    };
+    v.src=URL.createObjectURL(new Blob([plain],{type:META.mimeType||'video/mp4'}));
+    var pl=el('player');
+    if(pl){ pl.innerHTML=''; pl.appendChild(v); }
+    v.load();
+    setBar(100);
+    setMsg('✔ 영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+  }catch(e){
+    console.error(e);
+    setBar(0);
+    setMsg(e&&e.message?e.message:'영상 열기에 실패했습니다.'+inAppHint,true);
+  }finally{
+    busy=false;
+    if(open)open.disabled=false;
+  }
+  return false;
+}
+window.cctvTogglePassword=togglePassword;
+window.cctvOpenVideo=openVideo;
+function init(){
+  document.addEventListener('contextmenu',function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart',function(e){ e.preventDefault(); });
+  document.addEventListener('keydown',function(e){
+    var k=(e.key||'').toUpperCase();
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C','K'].indexOf(k)!==-1)||(e.ctrlKey&&['U','S','P'].indexOf(k)!==-1)){
+      e.preventDefault(); e.stopPropagation();
+    }
+  },true);
+  var warn=el('jsViewerWarning');
+  if(warn) warn.style.display='none';
+  var toggleBtn=el('togglePw');
+  if(toggleBtn) toggleBtn.onclick=togglePassword;
+  var openBtn=el('open');
+  if(openBtn){
+    openBtn.onclick=openVideo;
+    openBtn.addEventListener('click',openVideo); // 백업 바인딩(안전장치, busy 플래그로 중복 실행 방지됨)
+  }
+  var pwInput=el('pw');
+  if(pwInput){
+    pwInput.onkeydown=function(e){
+      if(e.key==='Enter'||e.keyCode===13){
+        e.preventDefault();
+        openVideo();
+      }
+    };
+  }
+  if(Date.now()>Number(META.expiresAt)){
+    setMsg('⛔ 열람 가능 기간이 만료되었습니다 ('+new Date(META.expiresAt).toLocaleString()+').',true);
+    var op=el('open');if(op)op.disabled=true;
+  }else if(!window.crypto||!window.crypto.subtle){
+    setMsg('⚠ 이 화면에서는 보안 기능(암호 해제)을 사용할 수 없습니다. 파일을 다운로드한 뒤, 폴더(파일 앱/다운로드)에서 직접 눌러 Chrome이나 Safari로 열어 주세요. 메시지 앱 안에서 바로 "열기"를 누르면 이 문제가 흔히 발생합니다.',true);
+    var opB=el('open');if(opB)opB.disabled=true;
+  }else if(isLikelyInAppBrowser()){
+    setMsg('⚠ 카카오톡·문자·SNS 등 앱 내장 브라우저에서 열려 있는 것으로 보입니다. 이 화면에서는 암호 해제가 멈추거나 실패할 수 있으니, 화면의 메뉴(⋮) 또는 공유 아이콘에서 "다른 브라우저로 열기 / Safari로 열기"를 선택한 뒤 암호를 입력해 주세요.',true);
+  }else{
+    setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
+  }
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',init);
+}else{
+  init();
+}
+})();`;
+    const scriptSafe = mobileScript.replace(/<\/script/gi, '<\\/script');
+    const openScriptTag = '<scr' + 'ipt>';
+    const closeScriptTag = '</scr' + 'ipt>';
+    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>'+safeName+' 열람</title><style>'+
+      '*{box-sizing:border-box}html,body{margin:0;padding:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#aeb7c7;font-size:14px;line-height:1.6}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:12px;border-radius:9px;background:#202633;color:#cbd4e3;font-size:13px}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvCipherPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
+      '</style></head><body><div class="wrap"><h1>📹 CCTV 개인정보 보호 영상</h1><div id="jsViewerWarning" style="background:#3b181c;border:2px solid #e2555a;border-radius:10px;padding:14px;margin-bottom:14px;color:#ffccd0;font-size:13px;line-height:1.6;"><strong>⚠️ [안내] 인터넷 브라우저 앱으로 열어주세요!</strong><br>현재 화면은 휴대폰의 단순 <strong>HTML 뷰어 / 미리보기</strong> 상태로, 보안상 <strong>자바스크립트가 차단되어 암호 확인 및 영상 재생이 진행되지 않습니다.</strong><br><br>📱 <strong>해결 방법:</strong><br>• <strong>갤럭시(안드로이드)</strong>: 화면 상단/하단의 <strong>⋮ (더보기 메뉴)</strong> → <strong>[다른 앱으로 열기]</strong> → <strong>[Chrome]</strong> 또는 <strong>[삼성 인터넷]</strong>을 선택하여 열어주세요.<br>• <strong>아이폰(iOS)</strong>: 화면 하단의 <strong>공유(내보내기) 아이콘</strong> → <strong>[Safari]</strong> 또는 <strong>[Chrome]</strong>을 선택하여 열어주세요.</div><div class="panel"><strong>'+safeName+'</strong><p class="sub">열람 가능 기간: '+safeExpiry+'까지 (D-'+expectedDays+')</p><div class="hint">암호를 입력한 후 「영상 열기」를 누르세요.</div><div class="pwBox"><input id="pw" type="password" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="열람 암호"><button type="button" id="togglePw" onclick="return window.cctvTogglePassword?window.cctvTogglePassword():false">보기</button></div><button type="button" id="open" class="openBtn" onclick="return window.cctvOpenVideo?window.cctvOpenVideo():false">영상 열기</button><div id="msg" class="sub" style="margin-top:12px">준비 중...</div><div class="progress"><div id="bar"></div></div><div id="player"></div></div></div><div id="cctvCipherStore">'+partMarkup+'</div><noscript><div class="wrap"><div class="panel dangerText">이 파일을 여는 환경에서는 JavaScript를 실행할 수 없습니다. Chrome, 삼성 인터넷 또는 Safari에서 HTML 파일을 열어 주세요.</div></div></noscript>'+openScriptTag+scriptSafe+closeScriptTag+'</body></html>';
+  }
+
+  // ---------------- 휴대폰용: 영상은 암호화하지 않고 암호+열람기한으로만 접근을 제한 ----------------
+  // (PC용 "민원인 배부용 HTML 저장" = buildPrivacyPackage/buildMobileDistributionHtml, AES-GCM 암호화 그대로 유지)
+  // 휴대폰용은 Web Crypto(AES-GCM decrypt)에 대한 일부 모바일 브라우저/인앱 웹뷰의 호환성 문제를
+  // 근본적으로 피하기 위해, 영상 바이트 자체는 암호화 없이 base64로만 담고,
+  // 접근 제한은 비밀번호 확인(가능하면 SHA-256 해시 비교, 안 되면 평문 비교로 자동 전환)과
+  // 만료 시각 검사로만 처리합니다.
+  async function hashPasswordSHA256(password){
+    try{
+      if(!window.crypto || !window.crypto.subtle) return null;
+      const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+      return bytesToBase64(new Uint8Array(digest));
+    }catch(e){
+      return null;
+    }
+  }
+
+  async function buildSimpleMobileDistributionHtml(blob, name, password, expiresAt, mimeType){
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    const PART_SIZE = 64 * 1024;
+    const parts = [];
+    for(let offset=0; offset<buf.length; offset += PART_SIZE){
+      parts.push(bytesToBase64(buf.subarray(offset, Math.min(offset + PART_SIZE, buf.length))));
+    }
+    const pwHash = await hashPasswordSHA256(password);
+    const meta = {
+      format: 'cctv-simple-mobile-package',
+      version: 1,
+      name,
+      createdAt: Date.now(),
+      expiresAt,
+      mimeType: mimeType || blob.type || 'video/mp4',
+      pwHash: pwHash, // SHA-256 해시(가능한 브라우저는 이걸로 비교; 실제 영상 접근에는 사용되지 않음)
+      pwPlainB64: bytesToBase64(new TextEncoder().encode(password)), // 해시 비교가 불가능한 극히 일부 브라우저를 위한 대비용(약한 보호)
+      videoPartCount: parts.length,
+      videoByteLength: buf.length,
+      videoEncoding: 'base64-binary-div-parts',
+      expectedDestroyFileName: `${name}_열람용.html`,
+    };
+    const metaJson = JSON.stringify(meta).replace(/</g,'\u003c').replace(/>/g,'\u003e').replace(/&/g,'\u0026');
+    const partMarkup = parts.map((part,i)=>'<div class="cctvVideoPart" data-index="'+i+'">'+part+'</div>').join('');
+    const safeName = escapeHtml(name || 'CCTV 영상');
+    const safeExpiry = new Date(expiresAt).toLocaleString();
+    const expectedDays = Math.max(0, Math.ceil((expiresAt - Date.now()) / 86400000));
+
+    const mobileScript = `(function(){
+'use strict';
+var META=${metaJson};
+var busy=false;
+function el(id){return document.getElementById(id);}
+function setMsg(text,error){var e=el('msg');if(e){e.textContent=text;e.className=error?'sub dangerText':'sub';}}
+function setBar(n){var e=el('bar');if(e)e.style.width=Math.max(0,Math.min(100,n))+'%';}
+window.addEventListener('error',function(ev){
+  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+' (다른 브라우저로 다시 열어보세요)',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+});
+window.addEventListener('unhandledrejection',function(ev){
+  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+' (다른 브라우저로 다시 열어보세요)',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+});
+function b64(s){var bin=atob(String(s||'').trim()),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
+function bytesToB64(bytes){var binary='';var chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk){binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));}return btoa(binary);}
+function isLikelyInAppBrowser(){
+  var ua=(navigator.userAgent||'').toLowerCase();
+  var markers=['kakaotalk','fban','fbav','instagram','; wv)','naver(inapp','line/','samsungmessages','messengerliteforios','snapchat'];
+  for(var m=0;m<markers.length;m++){ if(ua.indexOf(markers[m])!==-1) return true; }
+  return false;
+}
+function restoreVideo(onYield){
+  var box=el('cctvVideoStore'),count=Number(META.videoPartCount)||0,expected=Number(META.videoByteLength)||0;
+  if(!box||count<1||expected<1)throw new Error('영상 데이터 형식이 올바르지 않습니다.');
+  var nodes=box.querySelectorAll('.cctvVideoPart');
+  if(nodes.length!==count)throw new Error('영상 데이터 조각 수가 맞지 않습니다.');
+  var chunksText=new Array(count);
+  for(var i=0;i<nodes.length;i++){
+    var idx=Number(nodes[i].getAttribute('data-index'));
+    if(!Number.isInteger(idx)||idx<0||idx>=count)throw new Error('영상 데이터 순서가 올바르지 않습니다.');
+    chunksText[idx]=nodes[i].textContent||'';
+  }
+  // [수정] 전체 크기만큼 큰 연속 메모리 배열을 미리 하나로 합치지 않습니다.
+  // 64KB 조각을 그대로 모아뒀다가 Blob 생성자에 배열째로 넘겨서, 브라우저가
+  // 내부적으로 이어붙이게 합니다. 이렇게 하면 큰 영상에서 "연속된 메모리 한
+  // 덩어리"를 한 번에 할당하다 실패(=아무 에러 없이 그냥 멈춤)하는 문제를 피할 수 있습니다.
+  var byteChunks=new Array(count);
+  var totalBytes=0;
+  return new Promise(function(resolve,reject){
+    var j=0;
+    function step(){
+      try{
+        var batchEnd=Math.min(count, j+40);
+        for(; j<batchEnd; j++){
+          var q=b64(chunksText[j]);
+          byteChunks[j]=q;
+          chunksText[j]=null; // base64 텍스트는 즉시 해제 (메모리 절약)
+          totalBytes+=q.length;
+        }
+        setBar(10+Math.round(totalBytes/expected*80));
+        if(onYield) onYield(totalBytes, expected, count>200);
+        if(j<count){
+          setTimeout(step,0);
+        } else {
+          if(totalBytes!==expected){ reject(new Error('영상 데이터 크기가 올바르지 않습니다.')); return; }
+          resolve(byteChunks);
+        }
+      }catch(e){ reject(e); }
+    }
+    step();
+  });
+}
+function withTimeout(promise, ms){
+  return new Promise(function(resolve, reject){
+    var done=false;
+    var t=setTimeout(function(){ if(done)return; done=true; reject(new Error('timeout')); }, ms);
+    promise.then(
+      function(v){ if(done)return; done=true; clearTimeout(t); resolve(v); },
+      function(e){ if(done)return; done=true; clearTimeout(t); reject(e); }
+    );
+  });
+}
+async function checkPassword(input){
+  if(META.pwHash){
+    try{
+      if(window.crypto && window.crypto.subtle){
+        // [수정] 일부 모바일 인앱 웹뷰에서는 crypto.subtle.digest()가 에러 없이
+        // 그냥 응답하지 않고 멈추는 경우가 있습니다. 5초 안에 응답이 없으면
+        // 포기하고 아래 평문 비교로 넘어가서, 화면이 영영 멈추는 일이 없게 합니다.
+        var digest=await withTimeout(window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(input)), 5000);
+        var hashB64=bytesToB64(new Uint8Array(digest));
+        return hashB64===META.pwHash;
+      }
+    }catch(e){ /* 실패/타임아웃 시 아래 평문 비교로 전환 */ }
+  }
+  if(META.pwPlainB64){
+    try{
+      var bytes=b64(META.pwPlainB64);
+      var decoded=new TextDecoder().decode(bytes);
+      return decoded===input;
+    }catch(e){ return false; }
+  }
+  return false;
+}
+function togglePassword(){
+  var p=el('pw'); if(!p) return false;
+  p.type = p.type==='password' ? 'text' : 'password';
+  return false;
+}
+async function openVideo(){
+  if(busy)return false;
+  if(Date.now()>Number(META.expiresAt)){
+    setMsg('⛔ 열람 가능 기간이 만료되었습니다. 더 이상 영상을 열 수 없습니다.',true);
+    var op=el('open');if(op)op.disabled=true;
+    return false;
+  }
+  var p=el('pw');
+  if(!p||!p.value){setMsg('열람 암호를 입력해 주세요.',true);if(p)p.focus();return false;}
+  busy=true;
+  var open=el('open');if(open)open.disabled=true;
+  try{
+    setMsg('암호를 확인하는 중...');
+    setBar(5);
+    var ok=await checkPassword(p.value);
+    if(!ok){ throw new Error('암호가 올바르지 않습니다.'); }
+    setMsg('영상 데이터를 준비하는 중...');
+    var isLarge=false;
+    var videoChunks=await restoreVideo(function(pos,expected,large){
+      isLarge=large;
+      var pct=Math.round(pos/expected*100);
+      setMsg('영상 데이터를 준비하는 중... ('+pct+'%)'+(large?' — 대용량 영상입니다. 화면을 벗어나지 말고 잠시만 기다려주세요.':''));
+    });
+    setMsg('영상 플레이어를 준비하는 중...');
+    setBar(95);
+    var v=document.createElement('video');
+    v.controls=true;
+    v.setAttribute('controlsList','nodownload');
+    v.setAttribute('disablePictureInPicture','');
+    v.disablePictureInPicture=true;
+    v.setAttribute('oncontextmenu','return false;');
+    v.oncontextmenu=function(e){ e.preventDefault(); return false; };
+    v.addEventListener('contextmenu',function(e){ e.preventDefault(); });
+    v.playsInline=true;
+    v.setAttribute('playsinline','');
+    v.setAttribute('webkit-playsinline','');
+    v.preload='metadata';
+    v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';
+    v.onerror=function(){
+      setMsg('영상 파일 형식을 재생할 수 없습니다. 다른 브라우저(Chrome/Safari)로 다시 열어 보세요.',true);
+    };
+    var videoBlob;
+    try{
+      videoBlob=new Blob(videoChunks,{type:META.mimeType||'video/mp4'});
+    }catch(e){
+      throw new Error('영상 용량이 너무 커서 이 기기의 메모리로 처리할 수 없습니다. 영상 구간을 더 짧게 나눠서 다시 만들어 주세요.');
+    }
+    v.src=URL.createObjectURL(videoBlob);
+    var pl=el('player');
+    if(pl){ pl.innerHTML=''; pl.appendChild(v); }
+    v.load();
+    setBar(100);
+    setMsg('✔ 영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+  }catch(e){
+    console.error(e);
+    setBar(0);
+    setMsg(e&&e.message?e.message:'영상 열기에 실패했습니다.',true);
+  }finally{
+    busy=false;
+    if(open)open.disabled=false;
+  }
+  return false;
+}
+window.cctvOpenVideo=openVideo;
+window.cctvTogglePassword=togglePassword;
+function init(){
+  document.addEventListener('contextmenu',function(e){ e.preventDefault(); });
+  document.addEventListener('dragstart',function(e){ e.preventDefault(); });
+  document.addEventListener('keydown',function(e){
+    var k=(e.key||'').toUpperCase();
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C','K'].indexOf(k)!==-1)||(e.ctrlKey&&['U','S','P'].indexOf(k)!==-1)){
+      e.preventDefault(); e.stopPropagation();
+    }
+  },true);
+  var warn=el('jsViewerWarning');
+  if(warn) warn.style.display='none';
+  var openBtn=el('open');
+  if(openBtn){
+    openBtn.disabled=false; // 스크립트가 실제로 실행됐다는 뜻이므로 여기서 활성화
+    openBtn.onclick=openVideo;
+    openBtn.addEventListener('click',openVideo);
+  }
+  var toggleBtn=el('togglePw');
+  if(toggleBtn) toggleBtn.onclick=togglePassword;
+  var pwInput=el('pw');
+  if(pwInput){
+    pwInput.onkeydown=function(e){
+      if(e.key==='Enter'||e.keyCode===13){
+        e.preventDefault();
+        openVideo();
+      }
+    };
+  }
+  if(Date.now()>Number(META.expiresAt)){
+    setMsg('⛔ 열람 가능 기간이 만료되었습니다 ('+new Date(META.expiresAt).toLocaleString()+').',true);
+    var op=el('open');if(op)op.disabled=true;
+  }else if(isLikelyInAppBrowser()){
+    setMsg('⚠ 카카오톡·문자·SNS 등 앱 내장 브라우저에서 열려 있는 것으로 보입니다. 이 화면에서는 재생이 실패할 수 있으니, 화면의 메뉴(⋮) 또는 공유 아이콘에서 "다른 브라우저로 열기 / Safari로 열기"를 선택한 뒤 암호를 입력해 주세요.',true);
+  }else{
+    setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
+  }
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',init);
+}else{
+  init();
+}
+})();`;
+    const scriptSafe = mobileScript.replace(/<\/script/gi, '<\\/script');
+    const openScriptTag = '<scr' + 'ipt>';
+    const closeScriptTag = '</scr' + 'ipt>';
+    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>'+safeName+' 열람</title><style>'+
+      '*{box-sizing:border-box}html,body{margin:0;padding:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#aeb7c7;font-size:14px;line-height:1.6}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:12px;border-radius:9px;background:#202633;color:#cbd4e3;font-size:13px}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.openBtn:disabled{background:#3a4150;color:#8a93a3;filter:grayscale(1)}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvVideoPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
+      '</style></head><body><div class="wrap"><h1>📹 CCTV 개인정보 보호 영상</h1><div id="jsViewerWarning" style="background:#3b181c;border:2px solid #e2555a;border-radius:10px;padding:14px;margin-bottom:14px;color:#ffccd0;font-size:13px;line-height:1.6;"><strong>⚠️ [안내] 인터넷 브라우저 앱으로 열어주세요!</strong><br>현재 화면은 휴대폰의 단순 <strong>HTML 뷰어 / 미리보기</strong> 상태로, 보안상 <strong>자바스크립트가 차단되어 암호 확인 및 영상 재생이 진행되지 않습니다.</strong><br><br>📱 <strong>해결 방법:</strong><br>• <strong>갤럭시(안드로이드)</strong>: 화면 상단/하단의 <strong>⋮ (더보기 메뉴)</strong> → <strong>[다른 앱으로 열기]</strong> → <strong>[Chrome]</strong> 또는 <strong>[삼성 인터넷]</strong>을 선택하여 열어주세요.<br>• <strong>아이폰(iOS)</strong>: 지금 이 화면(파일명과 X만 있는 미리보기)에서는 절대 재생되지 않습니다. 화면 우측 하단의 <strong>사각형+위쪽 화살표 모양 공유 아이콘</strong>을 누른 뒤 <strong>[Safari로 열기]</strong>를 선택해야 합니다. 비밀번호 입력이나 버튼 클릭은 이 화면에서 작동하지 않습니다.</div><div class="panel"><strong>'+safeName+'</strong><p class="sub">열람 가능 기간: '+safeExpiry+'까지 (D-'+expectedDays+')</p><div class="hint">암호를 입력한 후 「영상 열기」를 누르세요.</div><div class="pwBox"><input id="pw" type="password" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="열람 암호"><button type="button" id="togglePw" onclick="return window.cctvTogglePassword?window.cctvTogglePassword():false">보기</button></div><button type="button" id="open" class="openBtn" disabled onclick="return window.cctvOpenVideo?window.cctvOpenVideo():false">영상 열기</button><div id="msg" class="sub" style="margin-top:12px">준비 중...</div><div class="progress"><div id="bar"></div></div><div id="player"></div></div></div><div id="cctvVideoStore">'+partMarkup+'</div><noscript><div class="wrap"><div class="panel dangerText">이 파일을 여는 환경에서는 JavaScript를 실행할 수 없습니다. Chrome, 삼성 인터넷 또는 Safari에서 HTML 파일을 열어 주세요.</div></div></noscript>'+openScriptTag+scriptSafe+closeScriptTag+'</body></html>';
+  }
 
   // ---------------- Save as encrypted + expiring package (PC download) ----------------
+  if(savePkgBtn){
   savePkgBtn.addEventListener('click', async () => {
     const blob = window.__lastExportBlob;
     if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
@@ -1816,6 +2712,7 @@ render();`;
       savePkgBtn.disabled = false;
     }
   });
+  }
 
   saveHtmlPkgBtn.addEventListener('click', async () => {
     const blob = window.__lastExportBlob;
@@ -1825,7 +2722,7 @@ render();`;
     try{
       const { name, pw, expiresAt } = getPackageFormValues();
       const pkg = await buildPrivacyPackage(blob, name, pw, expiresAt);
-      const html = buildDistributionHtml(pkg);
+      const html = await buildMobileDistributionHtml(pkg);
       const outBlob = new Blob([html], {type:'text/html;charset=utf-8'});
       const url = URL.createObjectURL(outBlob);
       const a = document.createElement('a');
@@ -1844,10 +2741,243 @@ render();`;
     }
   });
 
+  if(saveMobileHtmlBtn){
+    saveMobileHtmlBtn.addEventListener('click', async () => {
+      saveMobileDistributionHtml(saveMobileHtmlBtn);
+    });
+  }
+
+  // 두 저장 버튼(HTML/ZIP)이 공통으로 쓰는 "H.264 MP4로 변환/확보" 로직을 하나로 모음
+  async function getMobileCompatibleMp4Blob(blob, name, addProgress){
+    let mobileVideoBlob = window.__lastMobileMp4Blob;
+    let mimeType = 'video/mp4';
+
+    if(!mobileVideoBlob){
+      const directMime = getSupportedMp4RecorderMime();
+      if(directMime){
+        addProgress('하드웨어 가속 초고속 H.264 MP4 직접 렌더링을 시작합니다.', 15);
+        try{
+          mobileVideoBlob = await renderSegmentsWithRecorder(directMime, addProgress, { fps: 24, videoBitsPerSecond: 2500000 });
+          window.__lastMobileMp4Blob = mobileVideoBlob;
+          mimeType = 'video/mp4';
+          addProgress('H.264 MP4 초고속 렌더링 완료!', 76);
+        } catch(err){
+          console.warn('direct mp4 render failed, fallback to ffmpeg or direct webm', err);
+        }
+      }
+    }
+
+    if(!mobileVideoBlob){
+      addProgress('H.264 변환 엔진 접속 중 (10초 대기)...', 15);
+      try{
+        mobileVideoBlob = await withTimeout(
+          transcodeBlobToMobileMp4(blob, `${name}_mobile.mp4`, addProgress),
+          10000,
+          '변환 엔진 접속 시간이 초과되었습니다. 초고속 비상 모드로 진행합니다.'
+        );
+        mimeType = 'video/mp4';
+      } catch(err){
+        console.error('H.264 MP4 conversion failed', err);
+        throw new Error('H.264 MP4 변환에 실패했습니다.');
+      }
+    }
+    return { mobileVideoBlob, mimeType };
+  }
+
+  async function saveMobileDistributionHtml(activeBtn){
+    const blob = window.__lastExportBlob;
+    if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
+    const progressWrap = $('mobileHtmlProgressWrap');
+    const progressBar = $('mobileHtmlProgressBar');
+    const progressText = $('mobileHtmlProgressText');
+    let currentProgress = 0;
+    const setProgress = (percent, label) => {
+      currentProgress = Math.max(currentProgress, Math.max(0, Math.min(100, percent)));
+      if(progressWrap) progressWrap.style.display = 'block';
+      if(progressBar) progressBar.style.width = `${currentProgress}%`;
+      if(progressText) progressText.textContent = `${currentProgress}% ${label || ''}`.trim();
+    };
+    const addProgress = (line, percent) => {
+      if(Number.isFinite(percent)) setProgress(percent, line);
+      else if(progressText) progressText.textContent = `${currentProgress}% ${line}`;
+    };
+    if(activeBtn) activeBtn.disabled = true;
+    if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = true;
+    if(progressBar) progressBar.style.width = '0%';
+    if(progressText) progressText.textContent = '0%';
+    if(progressWrap) progressWrap.style.display = 'block';
+    currentProgress = 0;
+    if(progressText) progressText.style.color = '';
+    addProgress('휴대폰 재생용 HTML 저장을 시작합니다.', 5);
+    try{
+      addProgress('파일명, 암호, 만료일 설정을 확인합니다.', 10);
+      const { name, pw, expiresAt } = getPackageFormValues();
+      const { mobileVideoBlob, mimeType } = await getMobileCompatibleMp4Blob(blob, name, addProgress);
+
+      addProgress('휴대폰용 HTML을 생성합니다. (영상은 암호화 없이 저장 — 암호/기한으로만 접근 제한)', 88);
+      const html = await buildSimpleMobileDistributionHtml(mobileVideoBlob, name, pw, expiresAt, mimeType);
+      const outBlob = new Blob([html], {type:'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(outBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}_열람용.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      const mb = (outBlob.size/1024/1024).toFixed(1);
+      let sizeNote = '';
+      if(outBlob.size > 50*1024*1024){
+        sizeNote = ` ⚠ 생성된 파일이 ${mb}MB로 큽니다. 저사양 휴대폰에서는 영상을 준비하는 중 멈추거나 오래 걸릴 수 있습니다. 가능하면 구간을 더 짧게 잘라서 저장해 주세요.`;
+      }
+      addProgress(`완료: 휴대폰용 HTML 저장 완료! (암호/열람기한으로 접근 제한, 영상 자체는 비암호화, ${mb}MB) 만료일: ${new Date(expiresAt).toLocaleString()}${sizeNote}`, 100);
+    } catch(err){
+      console.error(err);
+      if(progressText){
+        progressText.textContent = `${currentProgress}% 실패: ${err.message || '휴대폰 재생용 HTML 저장에 실패했습니다.'}`;
+        progressText.style.color = 'var(--danger)';
+      }
+    } finally {
+      if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = false;
+      if(activeBtn) activeBtn.disabled = false;
+    }
+  }
+
+  if(saveWebarchiveBtn){
+    saveWebarchiveBtn.addEventListener('click', async () => {
+      const blob = window.__lastExportBlob;
+      if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
+      const progressWrap = $('webarchiveProgressWrap');
+      const progressBar = $('webarchiveProgressBar');
+      const progressText = $('webarchiveProgressText');
+      let currentProgress = 0;
+      const setProgress = (percent, label) => {
+        currentProgress = Math.max(currentProgress, Math.max(0, Math.min(100, percent)));
+        if(progressWrap) progressWrap.style.display = 'block';
+        if(progressBar) progressBar.style.width = `${currentProgress}%`;
+        if(progressText) progressText.textContent = `${currentProgress}% ${label || ''}`.trim();
+      };
+      const addProgress = (line, percent) => {
+        if(Number.isFinite(percent)) setProgress(percent, line);
+        else if(progressText) progressText.textContent = `${currentProgress}% ${line}`;
+      };
+      saveWebarchiveBtn.disabled = true;
+      if(progressBar) progressBar.style.width = '0%';
+      if(progressText){ progressText.textContent = '0%'; progressText.style.color = ''; }
+      if(progressWrap) progressWrap.style.display = 'block';
+      currentProgress = 0;
+      addProgress('아이폰용 webarchive 저장을 시작합니다.', 5);
+      try{
+        const { name, pw, expiresAt } = getPackageFormValues();
+        const { mobileVideoBlob, mimeType } = await getMobileCompatibleMp4Blob(blob, name, addProgress);
+        addProgress('암호/열람기한이 적용된 페이지를 생성합니다...', 85);
+        const html = await buildSimpleMobileDistributionHtml(mobileVideoBlob, name, pw, expiresAt, mimeType);
+        addProgress('Safari 자동실행 파일(.webarchive)로 감쌉니다...', 93);
+        const archiveBlob = buildWebArchiveFromHtml(html);
+        const url = URL.createObjectURL(archiveBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name}_아이폰용.webarchive`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        const mb = (archiveBlob.size/1024/1024).toFixed(1);
+        addProgress(`완료: webarchive 저장 완료! (${mb}MB, 암호+열람기한 그대로 적용됨) 아이폰에서 탭하면 Safari가 바로 열립니다. 실제 기기에서 꼭 확인해 보세요. 만료일: ${new Date(expiresAt).toLocaleString()}`, 100);
+      } catch(err){
+        console.error(err);
+        if(progressText){
+          progressText.textContent = `${currentProgress}% 실패: ${err.message || 'webarchive 저장에 실패했습니다.'}`;
+          progressText.style.color = 'var(--danger)';
+        }
+      } finally {
+        saveWebarchiveBtn.disabled = false;
+      }
+    });
+  }
+
+  if(saveZipBtn){
+    saveZipBtn.addEventListener('click', async () => {
+      const blob = window.__lastExportBlob;
+      if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
+      const { name, pw, expiresAt } = getPackageFormValues();
+      if(!pw){ alert('암호를 입력해 주세요.'); return; }
+      const expiryStr = new Date(expiresAt).toLocaleString();
+      const confirmed = confirm(
+        `⚠ 중요 안내\n\n` +
+        `이 ZIP 파일은 압축 암호로만 접근을 제한하며, "열람기한(만료일)"이 지나도 자동으로 잠기지 않습니다.\n` +
+        `(파일 자체에 코드가 실행되지 않는 방식이라 기술적으로 기한 강제가 불가능합니다.)\n\n` +
+        `설정된 열람기한: ${expiryStr}\n\n` +
+        `개인정보 보호를 위해, 이 기한이 지나면 민원인에게 별도로 파일 삭제를 요청하셔야 합니다.\n` +
+        `이 내용을 확인했고, 그래도 ZIP으로 저장하시겠습니까?`
+      );
+      if(!confirmed) return;
+
+      const progressWrap = $('zipProgressWrap');
+      const progressBar = $('zipProgressBar');
+      const progressText = $('zipProgressText');
+      let currentProgress = 0;
+      const setProgress = (percent, label) => {
+        currentProgress = Math.max(currentProgress, Math.max(0, Math.min(100, percent)));
+        if(progressWrap) progressWrap.style.display = 'block';
+        if(progressBar) progressBar.style.width = `${currentProgress}%`;
+        if(progressText) progressText.textContent = `${currentProgress}% ${label || ''}`.trim();
+      };
+      const addProgress = (line, percent) => {
+        if(Number.isFinite(percent)) setProgress(percent, line);
+        else if(progressText) progressText.textContent = `${currentProgress}% ${line}`;
+      };
+      saveZipBtn.disabled = true;
+      if(progressBar) progressBar.style.width = '0%';
+      if(progressText){ progressText.textContent = '0%'; progressText.style.color = ''; }
+      if(progressWrap) progressWrap.style.display = 'block';
+      currentProgress = 0;
+      addProgress('암호 압축 ZIP 저장을 시작합니다.', 5);
+      try{
+        const { mobileVideoBlob } = await getMobileCompatibleMp4Blob(blob, name, addProgress);
+        addProgress('열람기한 안내문을 포함해 암호가 걸린 ZIP 파일을 생성합니다...', 90);
+        const noticeText =
+          `[열람기한 안내 / Notice of Viewing Deadline]\n\n` +
+          `이 영상(${name})은 ${expiryStr} 까지만 열람하도록 안내된 자료입니다.\n` +
+          `이 압축파일에는 자동 만료 기능이 적용되지 않으니, 위 날짜가 지나면\n` +
+          `반드시 이 압축파일과 압축을 푼 영상 파일을 직접 삭제해 주시기 바랍니다.\n\n` +
+          `본 안내문은 개인정보(CCTV 영상) 보호를 위해 함께 제공됩니다.\n`;
+        const noticeBytes = new TextEncoder().encode(noticeText);
+        const videoBytes = new Uint8Array(await mobileVideoBlob.arrayBuffer());
+        const zipBlob = await buildPasswordZipMulti(
+          [
+            { name: `${name}.mp4`, bytes: videoBytes },
+            { name: '열람기한_안내.txt', bytes: noticeBytes },
+          ],
+          pw
+        );
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        const mb = (zipBlob.size/1024/1024).toFixed(1);
+        addProgress(`완료: ZIP 저장 완료! (${mb}MB, 압축 암호로만 접근 제한 — 자동 열람기한 만료는 적용되지 않음, 안내문 동봉) 아이폰: 파일 앱에서 열면 암호 입력 후 압축 해제 / 안드로이드: 파일관리자에서 압축 해제 후 재생`, 100);
+      } catch(err){
+        console.error(err);
+        if(progressText){
+          progressText.textContent = `${currentProgress}% 실패: ${err.message || 'ZIP 저장에 실패했습니다.'}`;
+          progressText.style.color = 'var(--danger)';
+        }
+      } finally {
+        saveZipBtn.disabled = false;
+      }
+    });
+  }
+
   // ---------------- Open a received package ----------------
   const openPkgInput = $('openPkgInput');
   const openPkgStatus = $('openPkgStatus');
 
+  if(openPkgInput && openPkgStatus){
   openPkgInput.addEventListener('change', async (e) => {
     const f = e.target.files[0];
     if(!f) return;
@@ -1861,6 +2991,7 @@ render();`;
       openPkgStatus.innerHTML = '<div class="notice danger">올바른 패키지 파일(.cctvpkg)이 아닙니다.</div>';
     }
   });
+  }
 
   function renderPkgInfo(pkg){
     const now = Date.now();
