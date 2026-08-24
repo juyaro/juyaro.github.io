@@ -2299,7 +2299,7 @@ async function openVideo(){
   busy=true;
   var open=el('open');if(open)open.disabled=true;
   var CRYPTO_TIMEOUT_MS=15000;
-  var inAppHint=isLikelyInAppBrowser()?' 현재 카카오톡·문자·SNS 앱 내장 브라우저로 열려 있는 것 같습니다. 화면의 메뉴(⋮) 또는 공유 아이콘에서 "다른 브라우저로 열기 / Safari로 열기"를 선택한 뒤 다시 시도해 주세요.':' 화면 상단 메뉴 또는 공유 아이콘에서 Chrome이나 Safari로 열어서 다시 시도해 주세요.';
+  var inAppHint=' Chrome이나 Safari에서 다시 시도해 주세요.';
   try{
     if(!window.crypto||!window.crypto.subtle)throw new Error('이 브라우저에서는 보안 영상 복호화를 지원하지 않습니다.'+inAppHint);
     setMsg('암호화 영상 데이터를 준비하는 중...');
@@ -2408,8 +2408,6 @@ function init(){
   }else if(!window.crypto||!window.crypto.subtle){
     setMsg('⚠ 이 화면에서는 보안 기능(암호 해제)을 사용할 수 없습니다. 파일을 다운로드한 뒤, 폴더(파일 앱/다운로드)에서 직접 눌러 Chrome이나 Safari로 열어 주세요. 메시지 앱 안에서 바로 "열기"를 누르면 이 문제가 흔히 발생합니다.',true);
     var opB=el('open');if(opB)opB.disabled=true;
-  }else if(isLikelyInAppBrowser()){
-    setMsg('⚠ 카카오톡·문자·SNS 등 앱 내장 브라우저에서 열려 있는 것으로 보입니다. 이 화면에서는 암호 해제가 멈추거나 실패할 수 있으니, 화면의 메뉴(⋮) 또는 공유 아이콘에서 "다른 브라우저로 열기 / Safari로 열기"를 선택한 뒤 암호를 입력해 주세요.',true);
   }else{
     setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
   }
@@ -2667,8 +2665,6 @@ function init(){
   if(Date.now()>Number(META.expiresAt)){
     setMsg('⛔ 열람 가능 기간이 만료되었습니다 ('+new Date(META.expiresAt).toLocaleString()+').',true);
     var op=el('open');if(op)op.disabled=true;
-  }else if(isLikelyInAppBrowser()){
-    setMsg('⚠ 카카오톡·문자·SNS 등 앱 내장 브라우저에서 열려 있는 것으로 보입니다. 이 화면에서는 재생이 실패할 수 있으니, 화면의 메뉴(⋮) 또는 공유 아이콘에서 "다른 브라우저로 열기 / Safari로 열기"를 선택한 뒤 암호를 입력해 주세요.',true);
   }else{
     setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
   }
@@ -3045,3 +3041,4 @@ if(document.readyState==='loading'){
 </script>
 </body>
 </html>
+
