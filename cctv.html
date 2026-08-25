@@ -261,56 +261,38 @@
     </div>
 
     <div class="panel">
-      <h2>휴대폰 재생용 HTML 저장</h2>
-      <div class="row">
-        <button id="saveMobileHtmlBtn" class="public-html" disabled>H.264 MP4 변환 후 HTML 저장</button>
-      </div>
-      <div class="hint" style="margin-top:8px;">
-        민원인이 아이폰/안드로이드 휴대폰에서 열어볼 수 있도록 저용량 H.264 MP4로 만든 뒤 암호+열람기한으로 잠긴 배부용 HTML 한 파일로 저장합니다. (영상 자체는 호환성을 위해 암호화하지 않고, 암호와 열람기한으로만 접근을 제한합니다.)
-      </div>
-      <div id="mobileHtmlProgressWrap" class="progress" style="margin-top:8px;"><div id="mobileHtmlProgressBar"></div></div>
-      <div id="mobileHtmlProgressText" class="hint" style="margin-top:4px;"></div>
+      <h2>CCTV 영상 배부 방법</h2>
       <div class="workflow-guide" aria-label="Netlify 배포 업무 절차">
         <div class="workflow-step">
           <div class="workflow-num">1</div>
           <div>
-            <strong>휴대폰 재생용 HTML 파일 저장</strong>
-            <span>위 버튼으로 H.264 MP4 변환 후 배부용 HTML 파일을 PC에 저장합니다.</span>
+            <strong>민원인 배부용 HTML 파일 PC 저장</strong>
+            <span>- PC 재생 민원인: 저장파일 메일 송부로 종료<br>- 휴대폰 재생 민원인: 2~4번 순서대로 진행</span>
           </div>
         </div>
         <div class="workflow-step">
           <div class="workflow-num">2</div>
           <div>
-            <strong>Netlify Drop에 파일 업로드</strong>
-            <span><a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer">app.netlify.com/drop</a> 사이트를 열고, 저장된 HTML 파일을 직접 드래그 앤 드롭합니다.</span>
+            <strong>VERCEL / Netlify 사이트에서 영상 배포</strong>
+            <span><a href="https://vercel.com/drop" target="_blank" rel="noopener noreferrer">https://vercel.com/drop</a> 또는 <a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer">app.netlify.com/drop</a> 사이트를 열고, 저장된 HTML 파일을 직접 드래그 앤 드롭합니다.</span>
           </div>
         </div>
         <div class="workflow-step">
           <div class="workflow-num">3</div>
           <div>
-            <strong>임시 HTTPS 주소에서 확인</strong>
-            <span>무료 HTTPS 호스팅과 자동 배포가 완료되면 임시 URL이 생성됩니다. 해당 웹사이트에서 영상 재생, 암호 입력, 열람기한 작동을 확인합니다.</span>
+            <strong>HTTPS 주소 확인</strong>
+            <span>무료 HTTPS 호스팅과 자동 배포가 완료되면 URL이 생성됩니다. 해당 웹사이트에서 영상 재생, 암호 입력, 열람기한 작동을 확인합니다.</span>
           </div>
         </div>
         <div class="workflow-step">
           <div class="workflow-num">4</div>
           <div>
             <strong>CCTV 요청인에게 URL 송부</strong>
-            <span>확인된 임시 URL 주소를 메일로 보내고, 열람 암호는 전화나 문자 등 별도 경로로 전달합니다.</span>
+            <span>확인된 URL 주소를 메일로 보내고, 열람 암호는 전화나 문자 등 별도 경로로 전달합니다.</span>
           </div>
         </div>
         <div class="workflow-note">송부 전에는 반드시 본인이 먼저 URL에 접속해 재생 및 보안 확인을 완료하세요.</div>
       </div>
-    </div>
-
-    <div class="panel">
-      <h2>사용 안내</h2>
-      <ul class="hint" style="padding-left:16px; margin:0;">
-        <li>모든 처리(모자이크, 변환, 암호화)는 서버 전송 없이 브라우저 안에서만 이루어집니다.</li>
-        <li>모자이크는 픽셀 블록화 + 반투명 유리 효과로 구성되어, 사람의 실루엣은 보이되 얼굴/신체 디테일은 가려집니다.</li>
-        <li>여러 명은 "모자이크 영역 추가"를 반복해 각각 추적하세요.</li>
-        <li>저장 파일은 PC(로컬)에만 다운로드되며, 만료일이 지나면 이 도구에서 열람이 차단됩니다. 다만 파일 자체가 기기에서 강제로 지워지지는 않으니(브라우저 보안정책상 임의 파일 삭제 불가), 완전 삭제가 필요하면 수동으로 파일을 지워주세요.</li>
-      </ul>
     </div>
   </div>
 </div>
@@ -567,7 +549,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       a.href = url; a.download = outName;
       document.body.appendChild(a); a.click(); a.remove();
 
-      $('aviResult').innerHTML = `✔ 변환 완료! <strong>${outName}</strong> 이름으로 PC에 자동 저장되었습니다.<br>
+      $('aviResult').innerHTML = `변환 완료! <strong>${outName}</strong> 이름으로 PC에 자동 저장되었습니다.<br>
         <a class="dl" href="${url}" download="${outName}">⬇ 다시 다운로드</a> &nbsp; <button id="loadConvertedBtn">편집기로 바로 불러오기</button>`;
       $('loadConvertedBtn').addEventListener('click', () => {
         if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
@@ -610,7 +592,6 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   const regionList = $('regionList');
   const savePkgBtn = null;
   const saveHtmlPkgBtn = $('saveHtmlPkgBtn');
-  const saveMobileHtmlBtn = $('saveMobileHtmlBtn');
   const saveWebarchiveBtn = null;
   const saveZipBtn = null;
   const mosaicOpacity = $('mosaicOpacity');
@@ -1629,7 +1610,6 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     window.__lastMobileMp4Blob = null;
     $('saveMp4Btn').addEventListener('click', saveLastExportAsMp4);
     saveHtmlPkgBtn.disabled = false;
-    if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = false;
     progressWrap.style.display = 'none';
     exportBtn.disabled = false;
     if(wasPlaying){ srcVideo.play(); playing = true; playBtn.textContent = '⏸ 일시정지'; requestAnimationFrame(loop); }
@@ -2362,7 +2342,7 @@ async function openVideo(){
     if(pl){ pl.innerHTML=''; pl.appendChild(v); }
     v.load();
     setBar(100);
-    setMsg('✔ 영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
   }catch(e){
     console.error(e);
     setBar(0);
@@ -2409,7 +2389,7 @@ function init(){
     setMsg('⚠ 이 화면에서는 보안 기능(암호 해제)을 사용할 수 없습니다. 파일을 다운로드한 뒤, 폴더(파일 앱/다운로드)에서 직접 눌러 Chrome이나 Safari로 열어 주세요. 메시지 앱 안에서 바로 "열기"를 누르면 이 문제가 흔히 발생합니다.',true);
     var opB=el('open');if(opB)opB.disabled=true;
   }else{
-    setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
+    setMsg('준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
   }
 }
 if(document.readyState==='loading'){
@@ -2621,7 +2601,7 @@ async function openVideo(){
     if(pl){ pl.innerHTML=''; pl.appendChild(v); }
     v.load();
     setBar(100);
-    setMsg('✔ 영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
   }catch(e){
     console.error(e);
     setBar(0);
@@ -2666,7 +2646,7 @@ function init(){
     setMsg('⛔ 열람 가능 기간이 만료되었습니다 ('+new Date(META.expiresAt).toLocaleString()+').',true);
     var op=el('open');if(op)op.disabled=true;
   }else{
-    setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
+    setMsg('준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
   }
 }
 if(document.readyState==='loading'){
@@ -2700,7 +2680,7 @@ if(document.readyState==='loading'){
       a.href = url; a.download = `${name}.cctvpkg`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">✔ PC에 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
+      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">PC에 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
     } catch(err){
       console.error(err);
       $('savePkgMsg').innerHTML = `<span style="color:var(--danger)">${err.message || '암호화 저장에 실패했습니다.'}</span>`;
@@ -2728,7 +2708,7 @@ if(document.readyState==='loading'){
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">✔ 민원인 배부용 HTML이 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
+      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">민원인 배부용 HTML이 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
     } catch(err){
       console.error(err);
       $('savePkgMsg').innerHTML = `<span style="color:var(--danger)">${err.message || '배부용 HTML 저장에 실패했습니다.'}</span>`;
@@ -2736,12 +2716,6 @@ if(document.readyState==='loading'){
       saveHtmlPkgBtn.disabled = false;
     }
   });
-
-  if(saveMobileHtmlBtn){
-    saveMobileHtmlBtn.addEventListener('click', async () => {
-      saveMobileDistributionHtml(saveMobileHtmlBtn);
-    });
-  }
 
   // 두 저장 버튼(HTML/ZIP)이 공통으로 쓰는 "H.264 MP4로 변환/확보" 로직을 하나로 모음
   async function getMobileCompatibleMp4Blob(blob, name, addProgress){
@@ -2778,65 +2752,6 @@ if(document.readyState==='loading'){
       }
     }
     return { mobileVideoBlob, mimeType };
-  }
-
-  async function saveMobileDistributionHtml(activeBtn){
-    const blob = window.__lastExportBlob;
-    if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
-    const progressWrap = $('mobileHtmlProgressWrap');
-    const progressBar = $('mobileHtmlProgressBar');
-    const progressText = $('mobileHtmlProgressText');
-    let currentProgress = 0;
-    const setProgress = (percent, label) => {
-      currentProgress = Math.max(currentProgress, Math.max(0, Math.min(100, percent)));
-      if(progressWrap) progressWrap.style.display = 'block';
-      if(progressBar) progressBar.style.width = `${currentProgress}%`;
-      if(progressText) progressText.textContent = `${currentProgress}% ${label || ''}`.trim();
-    };
-    const addProgress = (line, percent) => {
-      if(Number.isFinite(percent)) setProgress(percent, line);
-      else if(progressText) progressText.textContent = `${currentProgress}% ${line}`;
-    };
-    if(activeBtn) activeBtn.disabled = true;
-    if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = true;
-    if(progressBar) progressBar.style.width = '0%';
-    if(progressText) progressText.textContent = '0%';
-    if(progressWrap) progressWrap.style.display = 'block';
-    currentProgress = 0;
-    if(progressText) progressText.style.color = '';
-    addProgress('휴대폰 재생용 HTML 저장을 시작합니다.', 5);
-    try{
-      addProgress('파일명, 암호, 만료일 설정을 확인합니다.', 10);
-      const { name, pw, expiresAt } = getPackageFormValues();
-      const { mobileVideoBlob, mimeType } = await getMobileCompatibleMp4Blob(blob, name, addProgress);
-
-      addProgress('휴대폰용 HTML을 생성합니다. (영상은 암호화 없이 저장 — 암호/기한으로만 접근 제한)', 88);
-      const html = await buildSimpleMobileDistributionHtml(mobileVideoBlob, name, pw, expiresAt, mimeType);
-      const outBlob = new Blob([html], {type:'text/html;charset=utf-8'});
-      const url = URL.createObjectURL(outBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${name}_열람용.html`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      const mb = (outBlob.size/1024/1024).toFixed(1);
-      let sizeNote = '';
-      if(outBlob.size > 50*1024*1024){
-        sizeNote = ` ⚠ 생성된 파일이 ${mb}MB로 큽니다. 저사양 휴대폰에서는 영상을 준비하는 중 멈추거나 오래 걸릴 수 있습니다. 가능하면 구간을 더 짧게 잘라서 저장해 주세요.`;
-      }
-      addProgress(`완료: 휴대폰용 HTML 저장 완료! (암호/열람기한으로 접근 제한, 영상 자체는 비암호화, ${mb}MB) 만료일: ${new Date(expiresAt).toLocaleString()}${sizeNote}`, 100);
-    } catch(err){
-      console.error(err);
-      if(progressText){
-        progressText.textContent = `${currentProgress}% 실패: ${err.message || '휴대폰 재생용 HTML 저장에 실패했습니다.'}`;
-        progressText.style.color = 'var(--danger)';
-      }
-    } finally {
-      if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = false;
-      if(activeBtn) activeBtn.disabled = false;
-    }
   }
 
   if(saveWebarchiveBtn){
