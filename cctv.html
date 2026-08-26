@@ -3,24 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0f1115" id="themeColorMeta">
 <title>CCTV 개인정보 보호 편집기</title>
 <style>
   :root{
     --bg:#0f1115; --panel:#171a21; --panel2:#1e2229; --line:#2a2f3a;
-    --text:#e7e9ee; --sub:#9aa3b2; --accent:#4fd1c5; --accent2:#f2a154;
+    --text:#f4f6fa; --sub:#c4cbd7; --accent:#4fd1c5; --accent2:#f2a154;
     --danger:#e2555a; --radius:10px; --header:#0f1115;
     --focus-ring:rgba(242,161,84,0.28);
+    color-scheme: dark only;
   }
   body.light-mode{
     --bg:#f4f6f8; --panel:#ffffff; --panel2:#eef2f6; --line:#cfd7e3;
     --text:#17202c; --sub:#526173; --accent:#078f88; --accent2:#d97706;
     --danger:#c9363f; --header:#ffffff; --focus-ring:rgba(217,119,6,0.26);
+    color-scheme: light only;
   }
   *{box-sizing:border-box;}
+  html{background:#0f1115;color-scheme:dark only;forced-color-adjust:none;}
+  html body{forced-color-adjust:none;}
   body{
     margin:0; background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;
-    font-size:14px;
+    font-size:15px; line-height:1.55;
+    -webkit-text-size-adjust:100%; text-size-adjust:100%;
+    forced-color-adjust:none;
   }
   header{
     background:var(--header); border-bottom:1px solid var(--line);
@@ -29,8 +37,8 @@
     max-width:1440px; margin:0 auto; padding:14px 16px;
     display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:12px;
   }
-  header h1{font-size:16px; margin:0; letter-spacing:.02em;}
-  header .badge{color:var(--sub); font-size:12px;}
+  header h1{font-size:18px; margin:0; letter-spacing:.02em;}
+  header .badge{color:var(--sub); font-size:13px; font-weight:600;}
   .theme-toggle{
     width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
     border-color:var(--line); color:var(--text); white-space:nowrap;
@@ -45,7 +53,7 @@
   @media (max-width:900px){ .layout{grid-template-columns:1fr;} }
   .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px;}
   .panel + .panel{margin-top:14px;}
-  .panel h2{font-size:13px; margin:0 0 10px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em;}
+  .panel h2{font-size:14px; margin:0 0 10px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em;}
   .stage-wrap{position:relative; background:#000; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line);}
   #stage{display:block; width:100%; height:auto; cursor:crosshair;}
   .empty-hint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--sub); text-align:center; padding:20px;}
@@ -53,7 +61,7 @@
   .row + .row{margin-top:8px;}
   button{
     background:var(--panel2); color:var(--text); border:1px solid var(--line);
-    border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px;
+    border-radius:8px; padding:9px 13px; cursor:pointer; font-size:14px; line-height:1.35;
   }
   button:hover{border-color:var(--accent);}
   button.primary{background:var(--accent); color:#08191a; border-color:var(--accent); font-weight:600;}
@@ -99,17 +107,17 @@
   .region-item.selected{border-color:var(--accent);}
   .region-item .title{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
   .swatch{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px;}
-  .sub{color:var(--sub); font-size:12px;}
+  .sub{color:var(--sub); font-size:13px; line-height:1.55;}
   .kf-list{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
   .kf-chip{font-size:10px; padding:2px 6px; border-radius:10px; background:#10151c; border:1px solid var(--line); color:var(--sub);}
   .progress{height:6px; background:var(--panel2); border-radius:4px; overflow:hidden; margin-top:8px; display:none;}
   .progress > div{height:100%; width:0%; background:var(--accent); transition:width .15s;}
-  .hint{color:var(--sub); font-size:12px; line-height:1.5;}
+  .hint{color:var(--sub); font-size:13px; line-height:1.6;}
   .divider{height:1px; background:var(--line); margin:14px 0;}
   a.dl{color:var(--accent); text-decoration:none;}
   .field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:120px;}
-  .field label{font-size:11px; color:var(--sub);}
-  .notice{border-radius:8px; padding:10px; font-size:12px; line-height:1.6;}
+  .field label{font-size:12px; color:var(--sub); font-weight:700;}
+  .notice{border-radius:8px; padding:11px; font-size:13px; line-height:1.65;}
   .notice.danger{background:rgba(226,85,90,0.12); border:1px solid var(--danger); color:#ffb2b4;}
   .notice.ok{background:rgba(79,209,197,0.1); border:1px solid var(--accent); color:var(--accent);}
   .workflow-guide{margin-top:12px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); overflow:hidden;}
@@ -167,6 +175,7 @@
         <div class="row">
           <button id="playBtn" disabled>▶ 재생</button>
           <button id="splitBtn" disabled>✂ 현재 위치에서 자르기</button>
+          <span class="sub">Space = 재생/정지 · Home/End/PageUp/PageDown = 페이지 이동 차단</span>
           <span class="sub" id="timeLabel">00:00 / 00:00</span>
         </div>
         <div class="time-track" id="timeTrack">
@@ -188,9 +197,9 @@
       <div class="row" style="margin-top:8px;">
         <div class="field">
           <label>모자이크 투명도</label>
-          <input type="range" id="mosaicOpacity" min="50" max="100" value="75">
+          <input type="range" id="mosaicOpacity" min="50" max="100" value="90">
         </div>
-        <span class="sub" id="mosaicOpacityLabel">75%</span>
+        <span class="sub" id="mosaicOpacityLabel">90%</span>
         <label class="sub"><input type="checkbox" id="autoMotionMosaic"> 움직임 자동 모자이크</label>
       </div>
       <div class="row">
@@ -261,56 +270,38 @@
     </div>
 
     <div class="panel">
-      <h2>휴대폰 재생용 HTML 저장</h2>
-      <div class="row">
-        <button id="saveMobileHtmlBtn" class="public-html" disabled>H.264 MP4 변환 후 HTML 저장</button>
-      </div>
-      <div class="hint" style="margin-top:8px;">
-        민원인이 아이폰/안드로이드 휴대폰에서 열어볼 수 있도록 저용량 H.264 MP4로 만든 뒤 암호+열람기한으로 잠긴 배부용 HTML 한 파일로 저장합니다. (영상 자체는 호환성을 위해 암호화하지 않고, 암호와 열람기한으로만 접근을 제한합니다.)
-      </div>
-      <div id="mobileHtmlProgressWrap" class="progress" style="margin-top:8px;"><div id="mobileHtmlProgressBar"></div></div>
-      <div id="mobileHtmlProgressText" class="hint" style="margin-top:4px;"></div>
+      <h2>CCTV 영상 배부 방법</h2>
       <div class="workflow-guide" aria-label="Netlify 배포 업무 절차">
         <div class="workflow-step">
           <div class="workflow-num">1</div>
           <div>
-            <strong>휴대폰 재생용 HTML 파일 저장</strong>
-            <span>위 버튼으로 H.264 MP4 변환 후 배부용 HTML 파일을 PC에 저장합니다.</span>
+            <strong>민원인 배부용 HTML 파일 PC 저장</strong>
+            <span>- PC 재생 민원인: 저장파일 메일 송부로 종료<br>- 휴대폰 재생 민원인: 2~4번 순서대로 진행</span>
           </div>
         </div>
         <div class="workflow-step">
           <div class="workflow-num">2</div>
           <div>
-            <strong>Netlify Drop에 파일 업로드</strong>
-            <span><a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer">app.netlify.com/drop</a> 사이트를 열고, 저장된 HTML 파일을 직접 드래그 앤 드롭합니다.</span>
+            <strong>VERCEL / Netlify 사이트에서 영상 배포</strong>
+            <span><a href="https://vercel.com/drop" target="_blank" rel="noopener noreferrer">https://vercel.com/drop</a> 또는 <a href="https://app.netlify.com/drop" target="_blank" rel="noopener noreferrer">app.netlify.com/drop</a> 사이트를 열고, 저장된 HTML 파일을 직접 드래그 앤 드롭합니다.</span>
           </div>
         </div>
         <div class="workflow-step">
           <div class="workflow-num">3</div>
           <div>
-            <strong>임시 HTTPS 주소에서 확인</strong>
-            <span>무료 HTTPS 호스팅과 자동 배포가 완료되면 임시 URL이 생성됩니다. 해당 웹사이트에서 영상 재생, 암호 입력, 열람기한 작동을 확인합니다.</span>
+            <strong>HTTPS 주소 확인</strong>
+            <span>무료 HTTPS 호스팅과 자동 배포가 완료되면 URL이 생성됩니다. 해당 웹사이트에서 영상 재생, 암호 입력, 열람기한 작동을 확인합니다.</span>
           </div>
         </div>
         <div class="workflow-step">
           <div class="workflow-num">4</div>
           <div>
             <strong>CCTV 요청인에게 URL 송부</strong>
-            <span>확인된 임시 URL 주소를 메일로 보내고, 열람 암호는 전화나 문자 등 별도 경로로 전달합니다.</span>
+            <span>확인된 URL 주소를 메일로 보내고, 열람 암호는 전화나 문자 등 별도 경로로 전달합니다.</span>
           </div>
         </div>
         <div class="workflow-note">송부 전에는 반드시 본인이 먼저 URL에 접속해 재생 및 보안 확인을 완료하세요.</div>
       </div>
-    </div>
-
-    <div class="panel">
-      <h2>사용 안내</h2>
-      <ul class="hint" style="padding-left:16px; margin:0;">
-        <li>모든 처리(모자이크, 변환, 암호화)는 서버 전송 없이 브라우저 안에서만 이루어집니다.</li>
-        <li>모자이크는 픽셀 블록화 + 반투명 유리 효과로 구성되어, 사람의 실루엣은 보이되 얼굴/신체 디테일은 가려집니다.</li>
-        <li>여러 명은 "모자이크 영역 추가"를 반복해 각각 추적하세요.</li>
-        <li>저장 파일은 PC(로컬)에만 다운로드되며, 만료일이 지나면 이 도구에서 열람이 차단됩니다. 다만 파일 자체가 기기에서 강제로 지워지지는 않으니(브라우저 보안정책상 임의 파일 삭제 불가), 완전 삭제가 필요하면 수동으로 파일을 지워주세요.</li>
-      </ul>
     </div>
   </div>
 </div>
@@ -335,6 +326,9 @@
   function applyTheme(mode){
     const light = mode === 'light';
     document.body.classList.toggle('light-mode', light);
+    document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+    const themeColorMeta = $('themeColorMeta');
+    if(themeColorMeta) themeColorMeta.setAttribute('content', light ? '#f4f6f8' : '#0f1115');
     if(themeToggle){
       themeToggle.innerHTML = light ? moonIcon : sunIcon;
       themeToggle.title = light ? '다크모드로 전환' : '라이트모드로 전환';
@@ -362,6 +356,38 @@
     });
     document.addEventListener('keydown', (e) => {
       const key = e.key.toUpperCase();
+      const target = e.target;
+      const tag = target && target.tagName ? target.tagName : '';
+      const isTextEditing = /^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (target && target.isContentEditable);
+
+      // 영상 편집 프로그램 우선: 스페이스바는 브라우저 스크롤보다
+      // 영상 재생/정지가 먼저 동작하도록 가로챕니다.
+      if(e.code === 'Space' && !isTextEditing){
+        e.preventDefault();
+        e.stopPropagation();
+        if(!srcVideo || !duration) return;
+        if(!playing){
+          srcVideo.play().then(() => {
+            playing = true;
+            playBtn.textContent = '⏸ 일시정지';
+            requestAnimationFrame(loop);
+          }).catch(() => {});
+        }else{
+          srcVideo.pause();
+          playing = false;
+          playBtn.textContent = '▶ 재생';
+        }
+        return;
+      }
+
+      // Edge/Chrome의 페이지 하단/상단 이동으로 편집 화면이 튀는 것을 차단합니다.
+      // 영상 편집에 별도 의미가 없는 브라우저 스크롤 키만 차단합니다.
+      if(['PageDown','PageUp','End','Home'].includes(e.key) && !isTextEditing){
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
       if(
         e.key === 'F12' ||
         (e.ctrlKey && e.shiftKey && ['I','J','C','K'].includes(key)) ||
@@ -567,7 +593,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       a.href = url; a.download = outName;
       document.body.appendChild(a); a.click(); a.remove();
 
-      $('aviResult').innerHTML = `✔ 변환 완료! <strong>${outName}</strong> 이름으로 PC에 자동 저장되었습니다.<br>
+      $('aviResult').innerHTML = `변환 완료! <strong>${outName}</strong> 이름으로 PC에 자동 저장되었습니다.<br>
         <a class="dl" href="${url}" download="${outName}">⬇ 다시 다운로드</a> &nbsp; <button id="loadConvertedBtn">편집기로 바로 불러오기</button>`;
       $('loadConvertedBtn').addEventListener('click', () => {
         if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
@@ -610,7 +636,6 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   const regionList = $('regionList');
   const savePkgBtn = null;
   const saveHtmlPkgBtn = $('saveHtmlPkgBtn');
-  const saveMobileHtmlBtn = $('saveMobileHtmlBtn');
   const saveWebarchiveBtn = null;
   const saveZipBtn = null;
   const mosaicOpacity = $('mosaicOpacity');
@@ -1629,7 +1654,6 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     window.__lastMobileMp4Blob = null;
     $('saveMp4Btn').addEventListener('click', saveLastExportAsMp4);
     saveHtmlPkgBtn.disabled = false;
-    if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = false;
     progressWrap.style.display = 'none';
     exportBtn.disabled = false;
     if(wasPlaying){ srcVideo.play(); playing = true; playBtn.textContent = '⏸ 일시정지'; requestAnimationFrame(loop); }
@@ -1716,7 +1740,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       status.innerHTML = `<span style="color:var(--accent)">MP4 저장이 완료되었습니다. Windows 기본 영상 앱에서 열 수 있습니다.</span> <a class="dl" href="${url}" download="${outName}">다시 다운로드</a>`;
     } catch(err){
       console.error(err);
-      status.innerHTML = '<span style="color:var(--danger)">MP4 변환에 실패했습니다. WebM 파일로 저장되었습니다.</span>';
+      status.innerHTML = '<span style="color:var(--danger)">MP4 변환에 실패했습니다. WebM 파일은 브라우저/Chrome/Edge에서 열 수 있습니다.</span>';
     } finally {
       btn.disabled = false;
     }
@@ -2131,9 +2155,11 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark only">
+<meta name="theme-color" content="#101217">
 <title>${escapeHtml(pkg.name)} 열람</title>
 <style>
-  body{margin:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  html,body{margin:0;background:#101217;color:#f3f6fb;color-scheme:dark only;forced-color-adjust:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
   .wrap{max-width:920px;margin:0 auto;padding:28px 18px;}
   h1{font-size:20px;margin:0 0 16px;}
   .panel{background:#181c24;border:1px solid #303746;border-radius:10px;padding:18px;margin-top:14px;}
@@ -2143,7 +2169,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   button{background:#4fd1c5;border:1px solid #4fd1c5;color:#071717;font-weight:700;cursor:pointer;}
   button.danger{background:#e2555a;border-color:#e2555a;color:#fff;}
   button:disabled{opacity:.45;cursor:not-allowed;}
-  .sub{color:#aeb7c7;font-size:13px;line-height:1.6;}
+  .sub{color:#d0d7e3;font-size:14px;line-height:1.7;}
   .dangerText{color:#ffb2b4;}
   video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:14px;}
   video::-internal-media-controls-download-button,
@@ -2219,10 +2245,10 @@ function setBar(n){var e=el('bar');if(e)e.style.width=Math.max(0,Math.min(100,n)
 // 전역 에러 핸들러를 등록합니다. 이게 없으면 특정 휴대폰/인앱 브라우저에서
 // 아무 메시지 없이 "그냥 멈춘 것처럼" 보이는 문제를 진단할 방법이 없습니다.
 window.addEventListener('error',function(ev){
-  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류'),true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 window.addEventListener('unhandledrejection',function(ev){
-  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r)),true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 function b64(s){var bin=atob(String(s||'').trim()),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
 function togglePassword(){
@@ -2355,14 +2381,14 @@ async function openVideo(){
     v.preload='metadata';
     v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';
     v.onerror=function(){
-      setMsg('영상 파일 형식을 재생할 수 없습니다.',true);
+      setMsg('영상 파일 형식을 재생할 수 없습니다. ',true);
     };
     v.src=URL.createObjectURL(new Blob([plain],{type:META.mimeType||'video/mp4'}));
     var pl=el('player');
     if(pl){ pl.innerHTML=''; pl.appendChild(v); }
     v.load();
     setBar(100);
-    setMsg('✔ 영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
   }catch(e){
     console.error(e);
     setBar(0);
@@ -2384,8 +2410,6 @@ function init(){
       e.preventDefault(); e.stopPropagation();
     }
   },true);
-  var warn=el('jsViewerWarning');
-  if(warn) warn.style.display='none';
   var toggleBtn=el('togglePw');
   if(toggleBtn) toggleBtn.onclick=togglePassword;
   var openBtn=el('open');
@@ -2406,10 +2430,10 @@ function init(){
     setMsg('⛔ 열람 가능 기간이 만료되었습니다 ('+new Date(META.expiresAt).toLocaleString()+').',true);
     var op=el('open');if(op)op.disabled=true;
   }else if(!window.crypto||!window.crypto.subtle){
-    setMsg('',false);
-    var opB=el('open');if(opB)opB.disabled=false;
+    setMsg('⚠ 이 화면에서는 보안 기능(암호 해제)을 사용할 수 없습니다. ',true);
+    var opB=el('open');if(opB)opB.disabled=true;
   }else{
-    setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
+    setMsg('준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
   }
 }
 if(document.readyState==='loading'){
@@ -2421,9 +2445,9 @@ if(document.readyState==='loading'){
     const scriptSafe = mobileScript.replace(/<\/script/gi, '<\\/script');
     const openScriptTag = '<scr' + 'ipt>';
     const closeScriptTag = '</scr' + 'ipt>';
-    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>'+safeName+' 열람</title><style>'+
-      '*{box-sizing:border-box}html,body{margin:0;padding:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#aeb7c7;font-size:14px;line-height:1.6}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:12px;border-radius:9px;background:#202633;color:#cbd4e3;font-size:13px}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvCipherPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
-      '</style></head><body><div class="wrap"><h1>📹 CCTV 개인정보 보호 영상</h1><div class="panel"><strong>'+safeName+'</strong><p class="sub">열람 가능 기간: '+safeExpiry+'까지 (D-'+expectedDays+')</p><div class="hint">암호를 입력한 후 「영상 열기」를 누르세요.</div><div class="pwBox"><input id="pw" type="password" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="열람 암호"><button type="button" id="togglePw" onclick="return window.cctvTogglePassword?window.cctvTogglePassword():false">보기</button></div><button type="button" id="open" class="openBtn" onclick="return window.cctvOpenVideo?window.cctvOpenVideo():false">영상 열기</button><div id="msg" class="sub" style="margin-top:12px">준비 중...</div><div class="progress"><div id="bar"></div></div><div id="player"></div></div></div><div id="cctvCipherStore">'+partMarkup+'</div>'+openScriptTag+scriptSafe+closeScriptTag+'</body></html>';
+    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark only"><meta name="theme-color" content="#101217"><title>'+safeName+' 열람</title><style>'+
+      '*{box-sizing:border-box}html{background:#101217;color-scheme:dark only;forced-color-adjust:none}html,body{margin:0;padding:0;background:#101217;color:#f3f6fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark only;forced-color-adjust:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#d0d7e3;font-size:15px;line-height:1.7}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:13px;border-radius:9px;background:#202633;color:#dce2ec;font-size:14px;line-height:1.6}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvCipherPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
+      '</style></head><body><div class="wrap"><h1>📹 CCTV 개인정보 보호 영상</h1><div class="panel"><strong>'+safeName+'</strong><p class="sub">열람 가능 기간: '+safeExpiry+'까지 (D-'+expectedDays+')</p><div class="hint">암호를 입력한 후 「영상 열기」를 누르세요.</div><div class="pwBox"><input id="pw" type="password" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="열람 암호"><button type="button" id="togglePw" onclick="return window.cctvTogglePassword?window.cctvTogglePassword():false">보기</button></div><button type="button" id="open" class="openBtn" onclick="return window.cctvOpenVideo?window.cctvOpenVideo():false">영상 열기</button><div id="msg" class="sub" style="margin-top:12px">준비 중...</div><div class="progress"><div id="bar"></div></div><div id="player"></div></div></div><div id="cctvCipherStore">'+partMarkup+'</div><noscript><div class="wrap"><div class="panel dangerText">이 파일을 여는 환경에서는 JavaScript를 실행할 수 없습니다.</div></div></noscript>'+openScriptTag+scriptSafe+closeScriptTag+'</body></html>';
   }
 
   // ---------------- 휴대폰용: 영상은 암호화하지 않고 암호+열람기한으로만 접근을 제한 ----------------
@@ -2478,10 +2502,10 @@ function el(id){return document.getElementById(id);}
 function setMsg(text,error){var e=el('msg');if(e){e.textContent=text;e.className=error?'sub dangerText':'sub';}}
 function setBar(n){var e=el('bar');if(e)e.style.width=Math.max(0,Math.min(100,n))+'%';}
 window.addEventListener('error',function(ev){
-  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류'),true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 window.addEventListener('unhandledrejection',function(ev){
-  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r)),true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 function b64(s){var bin=atob(String(s||'').trim()),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
 function bytesToB64(bytes){var binary='';var chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk){binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));}return btoa(binary);}
@@ -2608,7 +2632,7 @@ async function openVideo(){
     v.preload='metadata';
     v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';
     v.onerror=function(){
-      setMsg('영상 파일 형식을 재생할 수 없습니다.',true);
+      setMsg('영상 파일 형식을 재생할 수 없습니다. ',true);
     };
     var videoBlob;
     try{
@@ -2621,7 +2645,7 @@ async function openVideo(){
     if(pl){ pl.innerHTML=''; pl.appendChild(v); }
     v.load();
     setBar(100);
-    setMsg('✔ 영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
   }catch(e){
     console.error(e);
     setBar(0);
@@ -2643,8 +2667,6 @@ function init(){
       e.preventDefault(); e.stopPropagation();
     }
   },true);
-  var warn=el('jsViewerWarning');
-  if(warn) warn.style.display='none';
   var openBtn=el('open');
   if(openBtn){
     openBtn.disabled=false; // 스크립트가 실제로 실행됐다는 뜻이므로 여기서 활성화
@@ -2666,7 +2688,7 @@ function init(){
     setMsg('⛔ 열람 가능 기간이 만료되었습니다 ('+new Date(META.expiresAt).toLocaleString()+').',true);
     var op=el('open');if(op)op.disabled=true;
   }else{
-    setMsg('✔ 준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
+    setMsg('준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
   }
 }
 if(document.readyState==='loading'){
@@ -2678,9 +2700,9 @@ if(document.readyState==='loading'){
     const scriptSafe = mobileScript.replace(/<\/script/gi, '<\\/script');
     const openScriptTag = '<scr' + 'ipt>';
     const closeScriptTag = '</scr' + 'ipt>';
-    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>'+safeName+' 열람</title><style>'+
-      '*{box-sizing:border-box}html,body{margin:0;padding:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#aeb7c7;font-size:14px;line-height:1.6}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:12px;border-radius:9px;background:#202633;color:#cbd4e3;font-size:13px}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.openBtn:disabled{background:#3a4150;color:#8a93a3;filter:grayscale(1)}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvVideoPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
-      '</style></head><body><div class="wrap"><h1>📹 CCTV 개인정보 보호 영상</h1><div class="panel"><strong>'+safeName+'</strong><p class="sub">열람 가능 기간: '+safeExpiry+'까지 (D-'+expectedDays+')</p><div class="hint">암호를 입력한 후 「영상 열기」를 누르세요.</div><div class="pwBox"><input id="pw" type="password" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="열람 암호"><button type="button" id="togglePw" onclick="return window.cctvTogglePassword?window.cctvTogglePassword():false">보기</button></div><button type="button" id="open" class="openBtn" disabled onclick="return window.cctvOpenVideo?window.cctvOpenVideo():false">영상 열기</button><div id="msg" class="sub" style="margin-top:12px">준비 중...</div><div class="progress"><div id="bar"></div></div><div id="player"></div></div></div><div id="cctvVideoStore">'+partMarkup+'</div>'+openScriptTag+scriptSafe+closeScriptTag+'</body></html>';
+    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#101217"><title>'+safeName+' 열람</title><style>'+
+      '*{box-sizing:border-box}html,body{margin:0;padding:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#aeb7c7;font-size:14px;line-height:1.6}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:12px;border-radius:9px;background:#202633;color:#cbd4e3;font-size:13px}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.openBtn:disabled{background:#3a4150;color:#8a93a3;filter:grayscale(1)}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvVideoPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
+      '</style></head><body><div class="wrap"><h1>📹 CCTV 개인정보 보호 영상</h1><div class="panel"><strong>'+safeName+'</strong><p class="sub">열람 가능 기간: '+safeExpiry+'까지 (D-'+expectedDays+')</p><div class="hint">암호를 입력한 후 「영상 열기」를 누르세요.</div><div class="pwBox"><input id="pw" type="password" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="열람 암호"><button type="button" id="togglePw" onclick="return window.cctvTogglePassword?window.cctvTogglePassword():false">보기</button></div><button type="button" id="open" class="openBtn" disabled onclick="return window.cctvOpenVideo?window.cctvOpenVideo():false">영상 열기</button><div id="msg" class="sub" style="margin-top:12px">준비 중...</div><div class="progress"><div id="bar"></div></div><div id="player"></div></div></div><div id="cctvVideoStore">'+partMarkup+'</div><noscript><div class="wrap"><div class="panel dangerText">이 파일을 여는 환경에서는 JavaScript를 실행할 수 없습니다.</div></div></noscript>'+openScriptTag+scriptSafe+closeScriptTag+'</body></html>';
   }
 
   // ---------------- Save as encrypted + expiring package (PC download) ----------------
@@ -2700,7 +2722,7 @@ if(document.readyState==='loading'){
       a.href = url; a.download = `${name}.cctvpkg`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">✔ PC에 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
+      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">PC에 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
     } catch(err){
       console.error(err);
       $('savePkgMsg').innerHTML = `<span style="color:var(--danger)">${err.message || '암호화 저장에 실패했습니다.'}</span>`;
@@ -2728,7 +2750,7 @@ if(document.readyState==='loading'){
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">✔ 민원인 배부용 HTML이 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
+      $('savePkgMsg').innerHTML = `<span style="color:var(--accent)">민원인 배부용 HTML이 저장되었습니다. 만료일: ${new Date(pkg.expiresAt).toLocaleString()}</span>`;
     } catch(err){
       console.error(err);
       $('savePkgMsg').innerHTML = `<span style="color:var(--danger)">${err.message || '배부용 HTML 저장에 실패했습니다.'}</span>`;
@@ -2736,12 +2758,6 @@ if(document.readyState==='loading'){
       saveHtmlPkgBtn.disabled = false;
     }
   });
-
-  if(saveMobileHtmlBtn){
-    saveMobileHtmlBtn.addEventListener('click', async () => {
-      saveMobileDistributionHtml(saveMobileHtmlBtn);
-    });
-  }
 
   // 두 저장 버튼(HTML/ZIP)이 공통으로 쓰는 "H.264 MP4로 변환/확보" 로직을 하나로 모음
   async function getMobileCompatibleMp4Blob(blob, name, addProgress){
@@ -2780,65 +2796,6 @@ if(document.readyState==='loading'){
     return { mobileVideoBlob, mimeType };
   }
 
-  async function saveMobileDistributionHtml(activeBtn){
-    const blob = window.__lastExportBlob;
-    if(!blob){ alert('먼저 "선택 구간 렌더링 시작"으로 영상을 렌더링하세요.'); return; }
-    const progressWrap = $('mobileHtmlProgressWrap');
-    const progressBar = $('mobileHtmlProgressBar');
-    const progressText = $('mobileHtmlProgressText');
-    let currentProgress = 0;
-    const setProgress = (percent, label) => {
-      currentProgress = Math.max(currentProgress, Math.max(0, Math.min(100, percent)));
-      if(progressWrap) progressWrap.style.display = 'block';
-      if(progressBar) progressBar.style.width = `${currentProgress}%`;
-      if(progressText) progressText.textContent = `${currentProgress}% ${label || ''}`.trim();
-    };
-    const addProgress = (line, percent) => {
-      if(Number.isFinite(percent)) setProgress(percent, line);
-      else if(progressText) progressText.textContent = `${currentProgress}% ${line}`;
-    };
-    if(activeBtn) activeBtn.disabled = true;
-    if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = true;
-    if(progressBar) progressBar.style.width = '0%';
-    if(progressText) progressText.textContent = '0%';
-    if(progressWrap) progressWrap.style.display = 'block';
-    currentProgress = 0;
-    if(progressText) progressText.style.color = '';
-    addProgress('휴대폰 재생용 HTML 저장을 시작합니다.', 5);
-    try{
-      addProgress('파일명, 암호, 만료일 설정을 확인합니다.', 10);
-      const { name, pw, expiresAt } = getPackageFormValues();
-      const { mobileVideoBlob, mimeType } = await getMobileCompatibleMp4Blob(blob, name, addProgress);
-
-      addProgress('휴대폰용 HTML을 생성합니다. (영상은 암호화 없이 저장 — 암호/기한으로만 접근 제한)', 88);
-      const html = await buildSimpleMobileDistributionHtml(mobileVideoBlob, name, pw, expiresAt, mimeType);
-      const outBlob = new Blob([html], {type:'text/html;charset=utf-8'});
-      const url = URL.createObjectURL(outBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${name}_열람용.html`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      const mb = (outBlob.size/1024/1024).toFixed(1);
-      let sizeNote = '';
-      if(outBlob.size > 50*1024*1024){
-        sizeNote = ` ⚠ 생성된 파일이 ${mb}MB로 큽니다. 저사양 휴대폰에서는 영상을 준비하는 중 멈추거나 오래 걸릴 수 있습니다. 가능하면 구간을 더 짧게 잘라서 저장해 주세요.`;
-      }
-      addProgress(`완료: 휴대폰용 HTML 저장 완료! (암호/열람기한으로 접근 제한, 영상 자체는 비암호화, ${mb}MB) 만료일: ${new Date(expiresAt).toLocaleString()}${sizeNote}`, 100);
-    } catch(err){
-      console.error(err);
-      if(progressText){
-        progressText.textContent = `${currentProgress}% 실패: ${err.message || '휴대폰 재생용 HTML 저장에 실패했습니다.'}`;
-        progressText.style.color = 'var(--danger)';
-      }
-    } finally {
-      if(saveMobileHtmlBtn) saveMobileHtmlBtn.disabled = false;
-      if(activeBtn) activeBtn.disabled = false;
-    }
-  }
-
   if(saveWebarchiveBtn){
     saveWebarchiveBtn.addEventListener('click', async () => {
       const blob = window.__lastExportBlob;
@@ -2868,7 +2825,7 @@ if(document.readyState==='loading'){
         const { mobileVideoBlob, mimeType } = await getMobileCompatibleMp4Blob(blob, name, addProgress);
         addProgress('암호/열람기한이 적용된 페이지를 생성합니다...', 85);
         const html = await buildSimpleMobileDistributionHtml(mobileVideoBlob, name, pw, expiresAt, mimeType);
-        addProgress('webarchive 파일로 감쌉니다...', 93);
+        addProgress('Safari 자동실행 파일(.webarchive)로 감쌉니다...', 93);
         const archiveBlob = buildWebArchiveFromHtml(html);
         const url = URL.createObjectURL(archiveBlob);
         const a = document.createElement('a');
@@ -2879,7 +2836,7 @@ if(document.readyState==='loading'){
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
         const mb = (archiveBlob.size/1024/1024).toFixed(1);
-        addProgress(`완료: webarchive 저장 완료! (${mb}MB, 암호+열람기한 그대로 적용됨) 만료일: ${new Date(expiresAt).toLocaleString()}`, 100);
+        addProgress(`완료: webarchive 저장 완료! (${mb}MB, 암호+열람기한 그대로 적용됨) 아이폰에서 탭하면 Safari가 바로 열립니다. 실제 기기에서 꼭 확인해 보세요. 만료일: ${new Date(expiresAt).toLocaleString()}`, 100);
       } catch(err){
         console.error(err);
         if(progressText){
