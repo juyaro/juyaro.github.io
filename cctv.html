@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark only">
 <meta name="theme-color" content="#0f1115" id="themeColorMeta">
 <title>CCTV 개인정보 보호 편집기</title>
 <style>
   :root{
     --bg:#0f1115; --panel:#171a21; --panel2:#1e2229; --line:#2a2f3a;
-    --text:#f4f6fa; --sub:#c4cbd7; --accent:#4fd1c5; --accent2:#f2a154;
+    --text:#e7e9ee; --sub:#9aa3b2; --accent:#4fd1c5; --accent2:#f2a154;
     --danger:#e2555a; --radius:10px; --header:#0f1115;
     --focus-ring:rgba(242,161,84,0.28);
     color-scheme: dark only;
@@ -21,8 +21,7 @@
     color-scheme: light only;
   }
   *{box-sizing:border-box;}
-  html{background:#0f1115;color-scheme:dark only;forced-color-adjust:none;}
-  html body{forced-color-adjust:none;}
+  html{forced-color-adjust:none;color-scheme:dark only;}
   body{
     margin:0; background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;
@@ -37,8 +36,8 @@
     max-width:1440px; margin:0 auto; padding:14px 16px;
     display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:12px;
   }
-  header h1{font-size:18px; margin:0; letter-spacing:.02em;}
-  header .badge{color:var(--sub); font-size:13px; font-weight:600;}
+  header h1{font-size:16px; margin:0; letter-spacing:.02em;}
+  header .badge{color:var(--sub); font-size:12px;}
   .theme-toggle{
     width:34px; height:34px; padding:0; display:inline-flex; align-items:center; justify-content:center;
     border-color:var(--line); color:var(--text); white-space:nowrap;
@@ -53,7 +52,7 @@
   @media (max-width:900px){ .layout{grid-template-columns:1fr;} }
   .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px;}
   .panel + .panel{margin-top:14px;}
-  .panel h2{font-size:14px; margin:0 0 10px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em;}
+  .panel h2{font-size:13px; margin:0 0 10px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em;}
   .stage-wrap{position:relative; background:#000; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line);}
   #stage{display:block; width:100%; height:auto; cursor:crosshair;}
   .empty-hint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--sub); text-align:center; padding:20px;}
@@ -61,7 +60,7 @@
   .row + .row{margin-top:8px;}
   button{
     background:var(--panel2); color:var(--text); border:1px solid var(--line);
-    border-radius:8px; padding:9px 13px; cursor:pointer; font-size:14px; line-height:1.35;
+    border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px;
   }
   button:hover{border-color:var(--accent);}
   button.primary{background:var(--accent); color:#08191a; border-color:var(--accent); font-weight:600;}
@@ -95,29 +94,36 @@
   }
   .seg-block.selected{outline:2px solid var(--accent2);}
   .vis-block{
-    position:absolute; left:0; bottom:3px; height:8px; border-radius:4px;
-    background:var(--accent2); opacity:.8; pointer-events:none;
+    position:absolute; top:31px; bottom:3px; height:8px; border-radius:4px;
+    background:var(--accent2); opacity:.9; pointer-events:none; z-index:3;
   }
+  .vis-block.hidden-gap{background:transparent; opacity:1;}
   .playhead{
     position:absolute; top:0; bottom:0; width:2px; background:var(--accent2); pointer-events:none;
   }
   .seg-list{max-height:160px; overflow:auto; margin-top:8px;}
   .seg-row{display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 8px; border-radius:6px; background:var(--panel2); margin-bottom:6px; font-size:12px;}
   .region-item{padding:8px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; background:var(--panel2);}
+  .region-no-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;margin-right:6px;border-radius:50%;color:#111;font-size:12px;font-weight:900;vertical-align:middle;}
+  .complete-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:#214c3c;color:#8ff0bd;font-size:11px;font-weight:700;}
+  .region-item button:disabled{opacity:.45;cursor:not-allowed;}
   .region-item.selected{border-color:var(--accent);}
+  .mosaic-context-menu{position:fixed;z-index:99999;display:none;min-width:170px;padding:5px;background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+  .mosaic-context-menu button{display:block;width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:10px 12px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;}
+  .mosaic-context-menu button:hover{background:var(--panel2);color:var(--accent);}
   .region-item .title{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
   .swatch{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:6px;}
-  .sub{color:var(--sub); font-size:13px; line-height:1.55;}
+  .sub{color:var(--sub); font-size:12px;}
   .kf-list{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
   .kf-chip{font-size:10px; padding:2px 6px; border-radius:10px; background:#10151c; border:1px solid var(--line); color:var(--sub);}
   .progress{height:6px; background:var(--panel2); border-radius:4px; overflow:hidden; margin-top:8px; display:none;}
   .progress > div{height:100%; width:0%; background:var(--accent); transition:width .15s;}
-  .hint{color:var(--sub); font-size:13px; line-height:1.6;}
+  .hint{color:var(--sub); font-size:12px; line-height:1.5;}
   .divider{height:1px; background:var(--line); margin:14px 0;}
   a.dl{color:var(--accent); text-decoration:none;}
   .field{display:flex; flex-direction:column; gap:4px; flex:1; min-width:120px;}
-  .field label{font-size:12px; color:var(--sub); font-weight:700;}
-  .notice{border-radius:8px; padding:11px; font-size:13px; line-height:1.65;}
+  .field label{font-size:11px; color:var(--sub);}
+  .notice{border-radius:8px; padding:10px; font-size:12px; line-height:1.6;}
   .notice.danger{background:rgba(226,85,90,0.12); border:1px solid var(--danger); color:#ffb2b4;}
   .notice.ok{background:rgba(79,209,197,0.1); border:1px solid var(--accent); color:var(--accent);}
   .workflow-guide{margin-top:12px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); overflow:hidden;}
@@ -175,7 +181,6 @@
         <div class="row">
           <button id="playBtn" disabled>▶ 재생</button>
           <button id="splitBtn" disabled>✂ 현재 위치에서 자르기</button>
-          <span class="sub">Space = 재생/정지 · Home/End/PageUp/PageDown = 페이지 이동 차단</span>
           <span class="sub" id="timeLabel">00:00 / 00:00</span>
         </div>
         <div class="time-track" id="timeTrack">
@@ -346,7 +351,11 @@
   }
 
   function blockPageInspection(){
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('contextmenu', (e) => {
+      // 영상 편집 캔버스에서는 선택된 모자이크의 사용자 메뉴를 허용합니다.
+      if(e.target === stage) return;
+      e.preventDefault();
+    });
     document.addEventListener('selectstart', (e) => {
       if(!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) e.preventDefault();
     });
@@ -358,31 +367,33 @@
       const key = e.key.toUpperCase();
       const target = e.target;
       const tag = target && target.tagName ? target.tagName : '';
-      const isTextEditing = /^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (target && target.isContentEditable);
+      const isTextEditing = /^(INPUT|TEXTAREA|SELECT)$/.test(tag) || !!(target && target.isContentEditable);
 
-      // 영상 편집 프로그램 우선: 스페이스바는 브라우저 스크롤보다
-      // 영상 재생/정지가 먼저 동작하도록 가로챕니다.
+      // 영상 편집 프로그램의 키보드 조작을 브라우저 기본 동작보다 우선합니다.
+      // Space는 페이지 스크롤이 아니라 영상 재생/정지로만 사용합니다.
       if(e.code === 'Space' && !isTextEditing){
         e.preventDefault();
         e.stopPropagation();
-        if(!srcVideo || !duration) return;
-        if(!playing){
-          srcVideo.play().then(() => {
-            playing = true;
-            playBtn.textContent = '⏸ 일시정지';
-            requestAnimationFrame(loop);
-          }).catch(() => {});
-        }else{
-          srcVideo.pause();
-          playing = false;
-          playBtn.textContent = '▶ 재생';
+        if(srcVideo && duration > 0 && !srcVideo.disabled){
+          if(srcVideo.paused){
+            srcVideo.play().then(() => {
+              playing = true;
+              playBtn.textContent = '⏸ 일시정지';
+              requestAnimationFrame(loop);
+            }).catch(() => {});
+          }else{
+            srcVideo.pause();
+            playing = false;
+            playBtn.textContent = '▶ 재생';
+          }
         }
         return;
       }
 
-      // Edge/Chrome의 페이지 하단/상단 이동으로 편집 화면이 튀는 것을 차단합니다.
-      // 영상 편집에 별도 의미가 없는 브라우저 스크롤 키만 차단합니다.
-      if(['PageDown','PageUp','End','Home'].includes(e.key) && !isTextEditing){
+      // Edge/Chrome의 페이지 하단/상단 이동을 막습니다.
+      // 특히 Space, PageDown, End 때문에 편집 화면이 스크롤되는 것을 방지합니다.
+      const pageScrollKeys = ['PageDown','PageUp','End','Home','ArrowDown','ArrowUp'];
+      if(pageScrollKeys.includes(e.key) && !isTextEditing){
         e.preventDefault();
         e.stopPropagation();
         return;
@@ -634,6 +645,103 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   const playhead = $('playhead');
   const segList = $('segList');
   const regionList = $('regionList');
+
+  // 선택된 모자이크 전용 우클릭 메뉴
+  const mosaicContextMenu = document.createElement('div');
+  mosaicContextMenu.className = 'mosaic-context-menu';
+  mosaicContextMenu.innerHTML = `
+    <button type="button" data-context-action="select">선택</button>
+    <div class="mosaic-context-sep"></div>
+    <button type="button" data-context-action="editComplete">조정/완료</button>
+    <button type="button" data-context-action="tracking">고정(추적)</button>
+    <button type="button" data-context-action="visibility">현시/비현시</button>
+    <div class="mosaic-context-sep"></div>
+    <button type="button" data-context-action="delete" class="danger-menu">삭제</button>
+  `;
+  document.body.appendChild(mosaicContextMenu);
+  let contextRegionId = null;
+
+  function hideMosaicContextMenu(){
+    mosaicContextMenu.style.display = 'none';
+    contextRegionId = null;
+  }
+
+  function showMosaicContextMenu(regionId, x, y){
+    const r = allRegions().find(v => v.id === regionId);
+    if(!r || !isRegionSelected(regionId)) return;
+    contextRegionId = regionId;
+    const editBtn = mosaicContextMenu.querySelector('[data-context-action="editComplete"]');
+    const visibleBtn = mosaicContextMenu.querySelector('[data-context-action="visibility"]');
+    const trackingBtn = mosaicContextMenu.querySelector('[data-context-action="tracking"]');
+    editBtn.textContent = isRegionCompleted(regionId) ? '조정' : '완료';
+    trackingBtn.textContent = r.tracking && r.tracking.active ? '추적 해제' : '고정(추적)';
+    visibleBtn.textContent = regionVisibleAtTime(r, srcVideo.currentTime) ? '비현시' : '현시';
+    mosaicContextMenu.style.display = 'block';
+    const w = 190, h = 235;
+    mosaicContextMenu.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
+    mosaicContextMenu.style.top = Math.min(y, window.innerHeight - h - 8) + 'px';
+  }
+
+  mosaicContextMenu.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-context-action]');
+    if(!btn || !contextRegionId) return;
+    const id = contextRegionId;
+    const r = allRegions().find(v => v.id === id);
+    if(!r) { hideMosaicContextMenu(); return; }
+    const action = btn.dataset.contextAction;
+    if(action === 'select'){
+      setSingleSelectedRegion(id);
+      renderRegionList();
+      renderSegments();
+      drawFrame(undefined,{editing:true});
+    }else if(action === 'delete'){
+      completedRegionIds.delete(id);
+      regions = regions.filter(x => x.id !== id);
+      revealRegions = revealRegions.filter(x => x.id !== id);
+      selectedRegionIds.delete(id);
+      if(selectedRegionId === id) syncPrimarySelection();
+      renderRegionList();
+      renderSegments();
+      drawFrame(undefined,{editing:true});
+    }else if(action === 'editComplete'){
+      if(isRegionCompleted(id)) reopenRegion(id);
+      else completeRegion(id);
+    }else if(action === 'tracking'){
+      if(r.tracking && r.tracking.active){
+        stopRegionTracking(r);
+      }else{
+        if(isRegionCompleted(id)) reopenRegion(id);
+        startRegionTracking(r, srcVideo.currentTime);
+      }
+      renderRegionList();
+      renderSegments();
+      drawFrame(undefined,{editing:true});
+    }else if(action === 'visibility'){
+      // 현시/비현시는 '선택되어 있던 세그먼트'가 아니라
+      // 현재 재생헤드가 실제로 위치한 구간을 기준으로 적용합니다.
+      // 이 때문에 다른 세그먼트를 선택해 놓은 상태에서도 우클릭한
+      // 현재 영상 위치에서 정확하게 현시/비현시가 바뀝니다.
+      const now = Math.max(0, Math.min(duration || 0, srcVideo.currentTime));
+      const visible = regionVisibleAtTime(r, now);
+      const seg = getSegmentAtTime(now);
+      if(seg){
+        setVisibleRange(r, seg.start, seg.end, !visible);
+      }else{
+        setVisibleFromTime(r, now, !visible);
+      }
+      // 현재 프레임을 즉시 다시 그려 클릭 결과가 바로 보이게 합니다.
+      renderRegionList();
+      renderSegments();
+      drawFrame(undefined,{editing:true});
+    }
+    hideMosaicContextMenu();
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if(!mosaicContextMenu.contains(e.target)) hideMosaicContextMenu();
+  });
+  window.addEventListener('resize', hideMosaicContextMenu);
+  window.addEventListener('scroll', hideMosaicContextMenu, true);
   const savePkgBtn = null;
   const saveHtmlPkgBtn = $('saveHtmlPkgBtn');
   const saveWebarchiveBtn = null;
@@ -654,12 +762,16 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   const tempCtx = tempCanvas.getContext('2d');
   const motionCanvas = document.createElement('canvas');
   const motionCtx = motionCanvas.getContext('2d', {willReadFrequently:true});
+  const trackCanvas = document.createElement('canvas');
+  const trackCtx = trackCanvas.getContext('2d', {willReadFrequently:true});
 
   let duration = 0;
   let regions = [];
   let revealRegions = [];
   let selectedRegionId = null;
   let selectedRegionIds = new Set();
+  // 완료된 영역은 실수로 다시 선택/이동/크기조정하지 못하도록 잠급니다.
+  let completedRegionIds = new Set();
   let segments = [];
   let selectedSegmentId = null;
   let drag = null;
@@ -742,6 +854,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     seek.max = Math.floor(duration*1000);
     regions = [];
     revealRegions = [];
+    completedRegionIds = new Set();
     setSingleSelectedRegion(null);
     previousMotionData = null;
     segments = [{id:uid(), start:0, end:duration}];
@@ -776,6 +889,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
 
   function loop(){
     if(playing){
+      updateActiveTrackers(srcVideo.currentTime);
       drawFrame(undefined, {editing:true});
       updateTimeUI();
       requestAnimationFrame(loop);
@@ -813,6 +927,21 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     return selectedRegionIds.has(id) || selectedRegionId === id;
   }
 
+  function isRegionCompleted(id){ return completedRegionIds.has(id); }
+
+  function completeRegion(id){
+    completedRegionIds.add(id);
+    selectedRegionIds.delete(id);
+    if(selectedRegionId === id) syncPrimarySelection();
+    renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+  }
+
+  function reopenRegion(id){
+    completedRegionIds.delete(id);
+    setSingleSelectedRegion(id);
+    renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+  }
+
   function toggleRegionSelection(id){
     if(selectedRegionIds.has(id)) selectedRegionIds.delete(id);
     else selectedRegionIds.add(id);
@@ -827,6 +956,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         .map(s => ({start:s.start, end:s.end}));
       region.visibilityKeys = rangesToVisibilityKeys(mergeTimeRanges(ranges));
     } else {
+      // 구버전 영역도 기본값은 '현시'로 처리합니다.
       region.visibilityKeys = [{t:0, visible:true}];
     }
   }
@@ -995,7 +1125,12 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       const rect = getRectAtTime(r, t);
       if(rect) revealOriginal(rect, r.shape);
     });
-    if(editing) drawHandles(t);
+    // 편집 화면에서는 미완료 영역만 표시하고, 완료된 영역은 표시하지 않습니다.
+    // 실제 렌더링(editing:false)에는 이 함수가 호출되지 않아 표시선이 영상에 들어가지 않습니다.
+    if(editing){
+      drawEditingRegionOutlines(t);
+      drawHandles(t);
+    }
   }
 
   function getMotionRects(){
@@ -1172,13 +1307,82 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     ctx.restore();
   }
 
-  function drawHandles(t){
+  // 편집 중인 미완료 영역만 캔버스에 테두리로 표시합니다.
+  // 완료된 영역은 영상 위에서 완전히 숨겨 편집이 끝난 영역이 화면을 방해하지 않도록 합니다.
+  function drawEditingRegionOutlines(t){
     ctx.save();
-    selectedRegions().forEach((r) => {
+    regions.forEach((r, index) => {
+      if(isRegionCompleted(r.id)) return;
       if(!regionVisibleAtTime(r, t)) return;
       const rect = getRectAtTime(r, t);
       if(!rect) return;
-      ctx.strokeStyle = r.reveal ? 'rgba(255,255,255,0.95)' : r.color;
+      const selected = isRegionSelected(r.id);
+      ctx.save();
+      ctx.strokeStyle = r.color || COLORS[index % COLORS.length];
+      ctx.lineWidth = selected ? 3.5 : 2.5;
+      ctx.setLineDash(selected ? [8,4] : [6,4]);
+      ctx.globalAlpha = selected ? 1 : 0.92;
+      ctx.beginPath();
+      if(r.shape === 'ellipse'){
+        ctx.ellipse(rect.x+rect.w/2, rect.y+rect.h/2, rect.w/2, rect.h/2, 0, 0, Math.PI*2);
+      } else {
+        ctx.rect(rect.x, rect.y, rect.w, rect.h);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 영역 번호를 표시하여 여러 모자이크를 색상과 함께 쉽게 구분합니다.
+      const label = String(index + 1);
+      const lx = Math.max(4, rect.x + 4);
+      const ly = Math.max(18, rect.y + 18);
+      ctx.font = 'bold 13px sans-serif';
+      const tw = ctx.measureText(label).width + 12;
+      ctx.fillStyle = r.color || COLORS[index % COLORS.length];
+      ctx.fillRect(lx, ly - 15, tw, 18);
+      ctx.fillStyle = '#111';
+      ctx.fillText(label, lx + 6, ly - 2);
+      ctx.restore();
+    });
+    // 제외영역은 항상 모자이크보다 위에 있는 편집 레이어로 표시합니다.
+    // 모자이크 내부에 들어가 있어도 제외영역의 테두리/번호가 가장 마지막에 그려집니다.
+    revealRegions.forEach((r, index) => {
+      if(isRegionCompleted(r.id)) return;
+      if(!regionVisibleAtTime(r, t)) return;
+      const rect = getRectAtTime(r, t);
+      if(!rect) return;
+      ctx.save();
+      const revealColor = r.color || '#00e5ff';
+      ctx.strokeStyle = revealColor;
+      ctx.lineWidth = isRegionSelected(r.id) ? 4.5 : 3.5;
+      ctx.setLineDash(isRegionSelected(r.id) ? [10,4] : [7,4]);
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      if(r.shape === 'ellipse') ctx.ellipse(rect.x+rect.w/2, rect.y+rect.h/2, rect.w/2, rect.h/2, 0, 0, Math.PI*2);
+      else ctx.rect(rect.x, rect.y, rect.w, rect.h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 除外領域も固有番号を常時表示하여 영상 위와 하단 목록을 쉽게 대응시킵니다.
+      const label = '제외 ' + String(index + 1);
+      const lx = Math.max(4, rect.x + 4);
+      const ly = Math.max(18, rect.y + 18);
+      ctx.font = 'bold 13px sans-serif';
+      const tw = ctx.measureText(label).width + 14;
+      ctx.fillStyle = revealColor;
+      ctx.fillRect(lx, ly - 16, tw, 19);
+      ctx.fillStyle = '#111';
+      ctx.fillText(label, lx + 7, ly - 2);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  function drawHandles(t){
+    ctx.save();
+    selectedRegions().forEach((r) => {
+      // 선택 표시 자체는 현시/비현시 상태와 관계없이 유지합니다.
+      // 단, 현재 프레임에 위치 정보가 없는 경우에는 표시할 수 없습니다.
+      const rect = getRectAtTime(r, t);
+      if(!rect) return;
+      ctx.strokeStyle = r.reveal ? 'rgba(255,235,80,0.98)' : r.color;
       ctx.setLineDash([7,4]);
       ctx.lineWidth = 2;
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
@@ -1206,13 +1410,158 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     ctx.restore();
   }
 
+  // ---------------- Motion / robust target tracking ----------------
+  // 고정(추적)은 단일 평균색이 아니라 여러 지점의 영상 특징을 함께 비교합니다.
+  // 사람의 신체 전체를 모자이크할 때는 모자이크 크기는 기본적으로 고정하고,
+  // 머리/상체 등 비교적 안정적인 특징점을 여러 개 추적하여 중심 이동을 계산합니다.
+  function clampNum(v, min, max){ return Math.max(min, Math.min(max, v)); }
+  function luma(r,g,b){ return 0.299*r + 0.587*g + 0.114*b; }
+
+  function samplePatch(frame, fw, fh, cx, cy, pw, ph){
+    const size=9, vals=new Float32Array(size*size);
+    const halfX=pw/2, halfY=ph/2;
+    let mean=0;
+    for(let j=0;j<size;j++) for(let i=0;i<size;i++){
+      const x=clampNum(Math.round(cx-halfX+(i+0.5)*pw/size),0,fw-1);
+      const y=clampNum(Math.round(cy-halfY+(j+0.5)*ph/size),0,fh-1);
+      const q=(y*fw+x)*4;
+      const v=luma(frame[q],frame[q+1],frame[q+2]);
+      vals[j*size+i]=v; mean+=v;
+    }
+    mean/=vals.length;
+    let norm=0;
+    for(let i=0;i<vals.length;i++){ vals[i]-=mean; norm+=vals[i]*vals[i]; }
+    norm=Math.sqrt(norm)||1;
+    for(let i=0;i<vals.length;i++) vals[i]/=norm;
+    return {vals,size,mean,norm,cx,cy,pw,ph};
+  }
+
+  function makeTrackingTemplate(region,t){
+    const rect=getRectAtTime(region,t);
+    if(!rect || rect.w<12 || rect.h<12) return null;
+    trackCanvas.width=stage.width; trackCanvas.height=stage.height;
+    trackCtx.drawImage(srcVideo,0,0,stage.width,stage.height);
+    const frame=trackCtx.getImageData(0,0,stage.width,stage.height).data;
+    // 중앙 + 상/하/좌/우. 중심부에 과도하게 의존하지 않아 사람의 팔/다리 움직임에도 강함.
+    const points=[
+      [0.50,0.50,0.30,0.30],[0.50,0.24,0.28,0.20],[0.50,0.76,0.28,0.20],
+      [0.24,0.50,0.20,0.28],[0.76,0.50,0.20,0.28]
+    ];
+    const patches=points.map(([rx,ry,rw,rh])=>samplePatch(frame,stage.width,stage.height,
+      rect.x+rect.w*rx,rect.y+rect.h*ry,rect.w*rw,rect.h*rh));
+    return {patches,w:rect.w,h:rect.h,rect:{...rect},lastT:t};
+  }
+
+  function patchScore(frame,cx,cy,patch){
+    const p=samplePatch(frame,stage.width,stage.height,cx,cy,patch.pw,patch.ph);
+    let dot=0;
+    for(let i=0;i<p.vals.length;i++) dot+=p.vals[i]*patch.vals[i];
+    // normalized correlation: 1 is almost identical, -1 is opposite.
+    return dot;
+  }
+
+  function trackRegionAtTime(region,t){
+    const tr=region.tracking;
+    if(!tr || !tr.active || !duration) return;
+    if(t<=tr.lastT+0.035) return; // 최대 약 28fps로 추적
+    const prev=tr.lastRect || getRectAtTime(region,tr.lastT);
+    if(!prev) return;
+    try{
+      trackCanvas.width=stage.width; trackCanvas.height=stage.height;
+      trackCtx.drawImage(srcVideo,0,0,stage.width,stage.height);
+      const frame=trackCtx.getImageData(0,0,stage.width,stage.height).data;
+      const maxDim=Math.max(prev.w,prev.h);
+      // 움직임이 빠르면 검색창을 조금 넓히되, 무작정 화면 전체를 검색하지 않음.
+      const speed=Math.min(1.8,Math.max(0.7,(t-tr.lastT)/0.06));
+      const radius=Math.max(35,Math.min(220,maxDim*0.95*speed));
+      const step=Math.max(3,Math.round(Math.min(stage.width,stage.height)/300));
+      const cx0=prev.x+prev.w/2, cy0=prev.y+prev.h/2;
+      let best=null;
+      for(let dy=-radius;dy<=radius;dy+=step){
+        for(let dx=-radius;dx<=radius;dx+=step){
+          const cx=cx0+dx, cy=cy0+dy;
+          if(cx<0||cy<0||cx>=stage.width||cy>=stage.height) continue;
+          let score=0, weight=0;
+          tr.template.patches.forEach((patch,idx)=>{
+            const rx=[0.50,0.50,0.50,0.24,0.76][idx];
+            const ry=[0.50,0.24,0.76,0.50,0.50][idx];
+            const pcx=cx+(rx-0.5)*prev.w, pcy=cy+(ry-0.5)*prev.h;
+            const sc=patchScore(frame,pcx,pcy,patch);
+            const w=idx===0?1.25:1.0;
+            score+=sc*w; weight+=w;
+          });
+          score/=weight;
+          const dist=Math.hypot(dx,dy);
+          score-=Math.min(0.18,dist/(radius||1)*0.06);
+          if(!best||score>best.score) best={cx,cy,score};
+        }
+      }
+      if(!best || best.score<0.38){
+        // 신뢰도가 낮으면 잘못된 사람을 따라가지 않고 현재 위치를 유지
+        tr.lastT=t;
+        tr.confidence=best?best.score:0;
+        return;
+      }
+      const jump=Math.hypot(best.cx-cx0,best.cy-cy0);
+      if(jump>Math.max(80,maxDim*1.35)) { tr.lastT=t; tr.confidence=best.score; return; }
+
+      // 위치는 부드럽게, 크기는 거의 고정. 크기 변화는 추적에서 하지 않습니다.
+      const smooth=0.68;
+      const next={
+        x:clampNum((best.cx-prev.w/2)*smooth+prev.x*(1-smooth),0,stage.width-prev.w),
+        y:clampNum((best.cy-prev.h/2)*smooth+prev.y*(1-smooth),0,stage.height-prev.h),
+        w:prev.w,h:prev.h
+      };
+      const block=currentBlockOf(region,t);
+      upsertKeyframe(region,t,next,block);
+      tr.lastRect={...next}; tr.lastT=t; tr.confidence=best.score;
+
+      // 추적 대상이 크게 변하지 않는 동안만 템플릿을 아주 천천히 갱신하여
+      // 조명/자세 변화에 적응합니다. 한 번에 갱신하지 않아 배경으로 드리프트하는 것을 방지.
+      if(best.score>0.62 && tr.template.patches){
+        const alpha=0.035;
+        tr.template.patches.forEach((patch,idx)=>{
+          const rx=[0.50,0.50,0.50,0.24,0.76][idx];
+          const ry=[0.50,0.24,0.76,0.50,0.50][idx];
+          const np=samplePatch(frame,stage.width,stage.height,
+            best.cx+(rx-0.5)*prev.w,best.cy+(ry-0.5)*prev.h,patch.pw,patch.ph);
+          for(let i=0;i<patch.vals.length;i++) patch.vals[i]=patch.vals[i]*(1-alpha)+np.vals[i]*alpha;
+        });
+      }
+    }catch(err){ console.warn('tracking frame failed',err); }
+  }
+
+  function startRegionTracking(region,t){
+    if(!region || region.reveal) return;
+    if(!getRectAtTime(region,t)){
+      alert('먼저 추적할 사람의 몸/머리 부분에 모자이크 영역을 지정해 주세요.'); return;
+    }
+    drawFrame(t,{editing:true});
+    const template=makeTrackingTemplate(region,t);
+    if(!template){ alert('현재 위치에서 추적 기준을 만들 수 없습니다.'); return; }
+    region.tracking={active:true,template,lastRect:template.rect,lastT:t,lastScore:0,confidence:1};
+    region.trackingMessage='다중 특징점 추적 중 — 위치를 부드럽게 따라가며 크기는 고정합니다.';
+  }
+  function stopRegionTracking(region){ if(region&&region.tracking) region.tracking.active=false; }
+  function updateActiveTrackers(t){
+    regions.forEach(r=>{ if(r.tracking&&r.tracking.active&&!isRegionCompleted(r.id)) trackRegionAtTime(r,t); });
+  }
+
   // ---------------- Region management ----------------
   function allRegions(){
     return regions.concat(revealRegions);
   }
 
+  // 영상 위 번호와 하단 목록 번호가 항상 같은 영역을 가리키도록 합니다.
+  function regionDisplayNumber(r){
+    const arr = r && r.reveal ? revealRegions : regions;
+    const i = arr.findIndex(x => x.id === r.id);
+    return i >= 0 ? i + 1 : 0;
+  }
+
   function createMosaicRegion(pendingPlace){
-    const seg = getCurrentSegment();
+    const now = Math.max(0, Math.min(duration || 0, srcVideo.currentTime));
+    const seg = getSegmentAtTime(now);
     const visibleRange = seg ? [{start:seg.start, end:seg.end}] : [{start:0, end:duration}];
     const r = { id: uid(), color: COLORS[regions.length % COLORS.length], shape: 'rect', keyframes: [], pendingPlace, visibilityKeys: rangesToVisibilityKeys(visibleRange) };
     regions.push(r);
@@ -1227,7 +1576,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   });
 
   addRevealBtn.addEventListener('click', () => {
-    const seg = getCurrentSegment();
+    const now = Math.max(0, Math.min(duration || 0, srcVideo.currentTime));
+    const seg = getSegmentAtTime(now);
     const visibleRange = seg ? [{start:seg.start, end:seg.end}] : [{start:0, end:duration}];
     const r = { id: uid(), color: '#ffffff', shape: 'rect', keyframes: [], pendingPlace: true, reveal: true, visibilityKeys: rangesToVisibilityKeys(visibleRange) };
     revealRegions.push(r);
@@ -1285,12 +1635,13 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     if(pending){ stage.style.cursor = 'crosshair'; return; }
     const p = canvasCoords(e);
     const t = srcVideo.currentTime;
-    if(selectedRegionId){
+    if(selectedRegionId && !isRegionCompleted(selectedRegionId)){
       const region = allRegions().find(r => r.id === selectedRegionId);
       const hit = hitTest(region, t, p);
       if(hit){ stage.style.cursor = cursorForHit(hit); return; }
     }
     for(const region of allRegions()){
+      if(isRegionCompleted(region.id)) continue;
       const hit = hitTest(region, t, p);
       if(hit){ stage.style.cursor = cursorForHit(hit); return; }
     }
@@ -1300,59 +1651,90 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   stage.addEventListener('mousemove', updateStageCursor);
   stage.addEventListener('mouseleave', () => { stage.style.cursor = 'crosshair'; });
 
+  stage.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const p = canvasCoords(e);
+    const t = srcVideo.currentTime;
+    // 선택된 영역이 우선이고, 선택되지 않은 영역을 우클릭하면
+    // "선택" 메뉴를 통해 해당 영역을 바로 선택할 수 있도록 합니다.
+    let target = null;
+    if(selectedRegionId && isRegionSelected(selectedRegionId)){
+      const r = allRegions().find(v => v.id === selectedRegionId);
+      if(r && hitTest(r,t,p)) target = r;
+    }
+    if(!target){
+      const hitRegions = allRegions().filter(r => hitTest(r,t,p));
+      // 화면에서 위에 있는 영역부터 찾되, 완료된 영역보다 미완료 영역을 우선합니다.
+      hitRegions.sort((a,b) => {
+        const ca = isRegionCompleted(a.id) ? 1 : 0;
+        const cb = isRegionCompleted(b.id) ? 1 : 0;
+        return ca - cb;
+      });
+      target = hitRegions[0] || null;
+    }
+    if(target) showMosaicContextMenu(target.id, e.clientX, e.clientY);
+    else hideMosaicContextMenu();
+  });
+
   stage.addEventListener('mousedown', (e) => {
     if(e.button !== 0) return;
+    e.preventDefault();
     const p = canvasCoords(e);
     const t = srcVideo.currentTime;
     const pending = allRegions().find(r => r.pendingPlace);
     if(pending){ drag = { type:'new', region: pending, startX:p.x, startY:p.y }; return; }
 
-    const selectableRegions = allRegions();
-    for(let i=selectableRegions.length-1; i>=0; i--){
-      const hit = hitTest(selectableRegions[i], t, p);
-      if(hit){
-        const region = selectableRegions[i];
-        if(e.ctrlKey){
-          toggleRegionSelection(region.id);
-          renderRegionList();
-          renderSegments();
-          drawFrame(t, {editing:true});
-          if(selectedRegionIds.has(region.id)){
-            const moving = selectedRegions().filter(r => regionVisibleAtTime(r, t)).map(r => ({region:r, rect:getRectAtTime(r, t)})).filter(item => item.rect);
-            drag = { type:'multi-move', items:moving, startX:p.x, startY:p.y };
-          }
-          return;
-        }
+    // 왼쪽 버튼은 영상 편집 대상(모자이크/제외영역) 선택을 최우선으로 합니다.
+    // 우선순위: 현재 선택 영역 → 제외영역(최상위) → 미완료 모자이크 → 완료 영역.
+    let candidates = [];
+    const primary = selectedRegionId ? allRegions().find(r => r.id === selectedRegionId) : null;
+    if(primary && hitTest(primary, t, p)) candidates.push(primary);
 
-        // Keep multi-selection group bound together continuously until user unselects
-        if(selectedRegionIds.has(region.id) && selectedRegionIds.size > 1){
-          renderRegionList();
-          renderSegments();
-          if(hit.mode === 'move'){
-            const moving = selectedRegions().filter(r => regionVisibleAtTime(r, t)).map(r => ({region:r, rect:getRectAtTime(r, t)})).filter(item => item.rect);
-            drag = { type:'multi-move', items:moving, startX:p.x, startY:p.y };
-          } else {
-            drag = { type: hit.mode, region, corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
-          }
-          return;
-        }
+    const revealHits = revealRegions.slice().reverse().filter(r => r.id !== (primary && primary.id) && hitTest(r,t,p));
+    const mosaicHits = regions.slice().reverse().filter(r => r.id !== (primary && primary.id) && hitTest(r,t,p));
+    candidates.push(
+      ...revealHits.filter(r => !isRegionCompleted(r.id)),
+      ...mosaicHits.filter(r => !isRegionCompleted(r.id)),
+      ...revealHits.filter(r => isRegionCompleted(r.id)),
+      ...mosaicHits.filter(r => isRegionCompleted(r.id))
+    );
 
-        setSingleSelectedRegion(region.id);
-        renderRegionList();
-        renderSegments();
-        drag = { type: hit.mode, region, corner: hit.corner, startRect:{...hit.rect}, startX:p.x, startY:p.y };
-        return;
-      }
+    const region = candidates[0];
+    if(!region){
+      // 빈 영상에서 왼쪽 버튼을 충분히 드래그하면 새 모자이크를 만듭니다.
+      // 약 1cm(96dpi 기준 37.8 CSS px) 미만의 드래그는 단순 클릭으로 취급합니다.
+      const autoRegion = createMosaicRegion(false);
+      autoRegion.autoCreated = true;
+      drag = { type:'new', region:autoRegion, startX:p.x, startY:p.y, rect:null, autoCreated:true };
+      e.preventDefault();
+      stage.style.cursor = 'crosshair';
+      return;
     }
 
-    // Clicked empty canvas space -> Unselect / separate group
-    setSingleSelectedRegion(null);
-    const r = createMosaicRegion(false);
-    renderRegionList();
-    renderSegments();
-    drag = { type:'new', region: r, startX:p.x, startY:p.y, autoCreated:true };
-  });
+    const hit = hitTest(region, t, p);
+    if(!hit) return;
 
+    if(e.ctrlKey){
+      toggleRegionSelection(region.id);
+      renderRegionList(); renderSegments(); drawFrame(t,{editing:true});
+      if(selectedRegionIds.has(region.id) && !isRegionCompleted(region.id)){
+        const moving = selectedRegions().filter(r => regionVisibleAtTime(r,t))
+          .map(r => ({region:r,rect:getRectAtTime(r,t)})).filter(v => v.rect);
+        if(moving.length) drag={type:'multi-move',items:moving,startX:p.x,startY:p.y};
+      }
+      return;
+    }
+
+    // 일반 왼쪽 클릭: 해당 영역을 즉시 단일 선택합니다.
+    setSingleSelectedRegion(region.id);
+    renderRegionList(); renderSegments(); drawFrame(t,{editing:true});
+
+    // 완료된 영역은 선택만 가능하고 이동/크기조절은 하지 않습니다.
+    if(isRegionCompleted(region.id)) return;
+
+    drag={type:hit.mode,region,corner:hit.corner,startRect:{...hit.rect},startX:p.x,startY:p.y};
+  });
   window.addEventListener('mousemove', (e) => {
     if(!drag) return;
     const p = canvasCoords(e);
@@ -1419,20 +1801,28 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   });
 
   window.addEventListener('mouseup', () => {
-    if(drag && drag.type === 'new' && drag.rect && drag.rect.w > 5 && drag.rect.h > 5){
-      const t = srcVideo.currentTime;
-      upsertKeyframe(drag.region, t, drag.rect, 18);
-      drag.region.pendingPlace = false;
-      renderRegionList();
-      renderSegments();
-      drawFrame(t, {editing:true});
-    } else if(drag && drag.type === 'new' && drag.autoCreated){
-      regions = regions.filter(x => x.id !== drag.region.id);
-      selectedRegionIds.delete(drag.region.id);
-      if(selectedRegionId === drag.region.id) syncPrimarySelection();
-      renderRegionList();
-      renderSegments();
-      drawFrame(undefined, {editing:true});
+    if(drag && drag.type === 'new'){
+      const MIN_DRAG_CM_PX = 37.8; // 약 1cm (CSS px, 96dpi 기준)
+      const rect = drag.rect;
+      const qualifies = !!rect && rect.w >= MIN_DRAG_CM_PX && rect.h >= MIN_DRAG_CM_PX;
+      if(qualifies){
+        const t = srcVideo.currentTime;
+        upsertKeyframe(drag.region, t, rect, 18);
+        drag.region.pendingPlace = false;
+        drag.region.autoCreated = false;
+        renderRegionList();
+        renderSegments();
+        drawFrame(t, {editing:true});
+      } else {
+        // 1cm 미만은 클릭으로 취급하고 새로 만든 임시 영역은 폐기합니다.
+        regions = regions.filter(x => x.id !== drag.region.id);
+        revealRegions = revealRegions.filter(x => x.id !== drag.region.id);
+        selectedRegionIds.delete(drag.region.id);
+        if(selectedRegionId === drag.region.id) syncPrimarySelection();
+        renderRegionList();
+        renderSegments();
+        drawFrame(undefined, {editing:true});
+      }
     }
     drag = null;
     stage.style.cursor = 'crosshair';
@@ -1476,9 +1866,10 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       const visibleSummary = visibilitySummary(r);
       div.innerHTML = `
         <div class="title">
-          <span><span class="swatch" style="background:${r.color}"></span>${r.reveal ? '제외 영역' : '모자이크 영역'}</span>
+          <span><span class="region-no-badge" style="background:${r.color}">${regionDisplayNumber(r)}</span><span class="swatch" style="background:${r.color}"></span>${r.reveal ? '제외 영역' : '모자이크 영역'} ${isRegionCompleted(r.id) ? '<span class="complete-badge">✓ 완료</span>' : ''}</span>
           <div class="row" style="gap:4px;">
             <button data-act="select">선택</button>
+            <button data-act="complete" class="primary">${isRegionCompleted(r.id) ? '다시 편집' : '완료'}</button>
             <button data-act="delete" class="warn">삭제</button>
           </div>
         </div>
@@ -1495,6 +1886,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
           <button data-act="showAll">전체 표시</button>
           <button data-act="hideAll">전체 숨김</button>
         </div>
+        ${r.tracking && r.tracking.active ? '<div class="sub" style="margin-top:6px;color:#ffd166;font-weight:700;">🎯 고정(추적) 중 — 현재 영역의 색상/패턴을 따라 이동합니다.</div>' : ''}
         <div class="row" style="margin-top:6px;">
           <button data-act="showFromHere">현재부터 현시</button>
           <button data-act="hideFromHere">현재부터 비현시</button>
@@ -1507,15 +1899,23 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         else setSingleSelectedRegion(r.id);
         renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
       });
+      div.querySelector('[data-act="complete"]').addEventListener('click', () => {
+        if(isRegionCompleted(r.id)) reopenRegion(r.id);
+        else completeRegion(r.id);
+      });
       div.querySelector('[data-act="delete"]').addEventListener('click', () => {
+        completedRegionIds.delete(r.id);
         regions = regions.filter(x => x.id !== r.id);
         revealRegions = revealRegions.filter(x => x.id !== r.id);
         selectedRegionIds.delete(r.id);
         if(selectedRegionId === r.id) syncPrimarySelection();
         renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
       });
-      div.querySelector('[data-act="shape"]').addEventListener('change', (e) => { r.shape = e.target.value; drawFrame(undefined,{editing:true}); });
-      div.querySelector('[data-act="segmentVisible"]').addEventListener('change', (e) => {
+      if(isRegionCompleted(r.id)){
+        div.querySelectorAll('[data-act="block"],[data-act="shape"],[data-act="segmentVisible"],[data-act="showAll"],[data-act="hideAll"],[data-act="showFromHere"],[data-act="hideFromHere"]').forEach(el => el.disabled = true);
+      }
+            div.querySelector('[data-act="shape"]').addEventListener('change', (e) => { if(isRegionCompleted(r.id)) return; r.shape = e.target.value; drawFrame(undefined,{editing:true}); });
+      div.querySelector('[data-act="segmentVisible"]').addEventListener('change', (e) => { if(isRegionCompleted(r.id)) return;
         const seg = getCurrentSegment();
         if(!seg) return;
         setVisibleRange(r, seg.start, seg.end, e.target.checked);
@@ -1535,9 +1935,9 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       });
       div.querySelector('[data-act="hideFromHere"]').addEventListener('click', () => {
         setVisibleFromTime(r, srcVideo.currentTime, false);
-        renderRegionList(); drawFrame(undefined,{editing:true});
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
       });
-      div.querySelector('[data-act="block"]').addEventListener('input', (e) => {
+      div.querySelector('[data-act="block"]').addEventListener('input', (e) => { if(isRegionCompleted(r.id)) return;
         const t = srcVideo.currentTime;
         const rect = getRectAtTime(r, t);
         if(rect) upsertKeyframe(r, t, rect, Number(e.target.value));
@@ -1574,13 +1974,21 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       el.addEventListener('click', () => { selectedSegmentId = s.id; renderSegments(); renderRegionList(); drawFrame(undefined,{editing:true}); });
       timeTrack.insertBefore(el, playhead);
     });
+    // 선택된 영역의 실제 현시 구간만 하단 보조 트랙에 표시합니다.
+    // 세그먼트 선택 범위(.seg-block)와 현시 범위를 절대로 혼용하지 않습니다.
     const selectedRegion = allRegions().find(r => r.id === selectedRegionId);
-    if(selectedRegion){
-      visibilityKeysToRanges(selectedRegion).forEach((range) => {
+    if(selectedRegion && duration > 0){
+      ensureRegionTimeline(selectedRegion);
+      const ranges = visibilityKeysToRanges(selectedRegion);
+      ranges.forEach((range) => {
+        const start = Math.max(0, Math.min(duration, range.start));
+        const end = Math.max(start, Math.min(duration, range.end));
+        if(end <= start + 0.001) return;
         const el = document.createElement('div');
         el.className = 'vis-block';
-        el.style.left = (range.start/duration*100) + '%';
-        el.style.width = Math.max(((range.end-range.start)/duration*100),0.4) + '%';
+        el.title = `${selectedRegion.reveal ? '제외영역' : '모자이크'} 현시 ${fmt(start)}-${fmt(end)}`;
+        el.style.left = (start/duration*100) + '%';
+        el.style.width = Math.max(((end-start)/duration*100),0.35) + '%';
         timeTrack.insertBefore(el, playhead);
       });
     }
@@ -1630,10 +2038,18 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     const totalDur = segments.reduce((a,s) => a + (s.end-s.start), 0) || 1;
     let elapsed = 0;
     const done = new Promise((resolve) => { recorder.onstop = resolve; });
+
+    // 렌더링 시작 직전에는 반드시 편집용 테두리/번호가 없는 깨끗한 프레임을
+    // 캔버스에 먼저 그립니다. captureStream은 recorder.start() 순간의 캔버스
+    // 프레임을 첫 프레임으로 잡을 수 있기 때문입니다.
+    await seekTo(segments[0].start);
+    drawFrame(segments[0].start, {editing:false});
     recorder.start();
 
     for(const seg of segments){
       await seekTo(seg.start);
+      drawFrame(seg.start, {editing:false});
+      await new Promise(requestAnimationFrame);
       await playSegment(seg, (t) => {
         progressBar.style.width = Math.min(100, ((elapsed + (t-seg.start))/totalDur*100)) + '%';
       });
@@ -1696,9 +2112,17 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         recorder.onstop = resolve;
         recorder.onerror = (e) => reject(e.error || new Error('recording failed'));
       });
+      // 첫 프레임부터 편집용 모자이크 테두리/숫자가 녹화되지 않도록
+      // 렌더링 시작 전에 깨끗한 프레임을 강제로 그립니다.
+      if(segments.length){
+        await seekTo(segments[0].start);
+        drawFrame(segments[0].start, {editing:false});
+      }
       recorder.start(1000);
       for(const seg of segments){
         await seekTo(seg.start);
+        drawFrame(seg.start, {editing:false});
+        await new Promise(requestAnimationFrame);
         await playSegment(seg, (t) => {
           const percent = Math.min(100, Math.round(((elapsed + (t-seg.start))/totalDur) * 100));
           if(onProgress) onProgress(`휴대폰용 MP4 직접 렌더링 ${percent}%`, 20 + Math.round(percent * 0.55));
@@ -1800,6 +2224,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     return new Promise((resolve) => {
       srcVideo.play();
       function step(){
+        updateActiveTrackers(srcVideo.currentTime);
         drawFrame(srcVideo.currentTime, {editing:false}); // no handles baked into export
         onProgress(srcVideo.currentTime);
         if(srcVideo.currentTime >= seg.end - 0.02 || srcVideo.paused){ srcVideo.pause(); resolve(); return; }
@@ -2155,11 +2580,9 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark only">
-<meta name="theme-color" content="#101217">
 <title>${escapeHtml(pkg.name)} 열람</title>
 <style>
-  html,body{margin:0;background:#101217;color:#f3f6fb;color-scheme:dark only;forced-color-adjust:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  body{margin:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
   .wrap{max-width:920px;margin:0 auto;padding:28px 18px;}
   h1{font-size:20px;margin:0 0 16px;}
   .panel{background:#181c24;border:1px solid #303746;border-radius:10px;padding:18px;margin-top:14px;}
@@ -2169,7 +2592,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   button{background:#4fd1c5;border:1px solid #4fd1c5;color:#071717;font-weight:700;cursor:pointer;}
   button.danger{background:#e2555a;border-color:#e2555a;color:#fff;}
   button:disabled{opacity:.45;cursor:not-allowed;}
-  .sub{color:#d0d7e3;font-size:14px;line-height:1.7;}
+  .sub{color:#aeb7c7;font-size:13px;line-height:1.6;}
   .dangerText{color:#ffb2b4;}
   video{width:100%;max-height:70vh;background:#000;border-radius:8px;margin-top:14px;}
   video::-internal-media-controls-download-button,
@@ -2202,7 +2625,7 @@ function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.leng
 async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
 async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:pkg.mimeType||'video/mp4'});}
 function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+pkg.name+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
-async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;" autoplay playsinline></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
+async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';const pl=document.getElementById('player');pl.innerHTML='';const v=document.createElement('video');v.src=url;v.controls=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('controlsList','nodownload');v.setAttribute('disablePictureInPicture','');v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';v.oncontextmenu=function(e){e.preventDefault();return false;};v.onerror=function(){msg.innerHTML='<span class="dangerText">영상 파일 형식을 재생할 수 없습니다.</span>';};pl.appendChild(v);const b=document.createElement('button');b.type='button';b.textContent='▶ 영상 재생';b.style.cssText='display:block;width:100%;margin-top:8px;padding:12px;border:0;border-radius:9px;background:#4fd1c5;color:#071717;font-size:16px;font-weight:700';b.onclick=function(){const r=v.play();if(r&&r.catch)r.catch(function(){msg.textContent='영상 재생이 차단되었습니다. 영상 화면의 ▶ 재생 버튼을 눌러 주세요.';});};pl.appendChild(b);v.addEventListener('play',function(){b.textContent='⏸ 영상 일시정지';});v.addEventListener('pause',function(){b.textContent='▶ 영상 재생';});v.load();}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
 function renderExpired(){const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다.</h1><p class="sub">표준 개인정보 보호 지침에 따라 파기 바랍니다.</p><p class="sub">파기 버튼을 누른 뒤 배부받은 HTML 파일을 선택하세요. 선택한 파일 이름이 <strong>'+expected+'</strong>와 다르면 이름 상이 오류가 표시되고 파기하지 않습니다.</p><button id="destroy" class="danger">파기</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
 async function destroyFile(){const msg=document.getElementById('destroyMsg');const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 파일 직접 파기를 지원하지 않습니다. 파일 이름이 <strong>'+expected+'</strong>인지 확인한 뒤 해당 배부용 HTML 파일을 직접 삭제하고 휴지통을 비워주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.name!==expected){msg.innerHTML='<span class="dangerText">이름 상이 오류: 파기 대상 파일 이름이 저장된 배부용 파일 이름과 다릅니다.</span><br>선택한 파일: <strong>'+handle.name+'</strong><br>파기 대상 파일: <strong>'+expected+'</strong>';return;}if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일을 파기했습니다.</span>';}else{msg.innerHTML='파일 이름은 일치하지만 이 브라우저는 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워주세요.';}}catch(e){msg.textContent='파기가 취소되었거나 실패했습니다.';}}
 render();
@@ -2245,10 +2668,10 @@ function setBar(n){var e=el('bar');if(e)e.style.width=Math.max(0,Math.min(100,n)
 // 전역 에러 핸들러를 등록합니다. 이게 없으면 특정 휴대폰/인앱 브라우저에서
 // 아무 메시지 없이 "그냥 멈춘 것처럼" 보이는 문제를 진단할 방법이 없습니다.
 window.addEventListener('error',function(ev){
-  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+' ',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 window.addEventListener('unhandledrejection',function(ev){
-  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+' ',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 function b64(s){var bin=atob(String(s||'').trim()),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
 function togglePassword(){
@@ -2381,14 +2804,18 @@ async function openVideo(){
     v.preload='metadata';
     v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';
     v.onerror=function(){
-      setMsg('영상 파일 형식을 재생할 수 없습니다. ',true);
+      setMsg('영상 파일 형식을 재생할 수 없습니다.',true);
     };
-    v.src=URL.createObjectURL(new Blob([plain],{type:META.mimeType||'video/mp4'}));
+    v.src=URL.createObjectURL(new Blob([plain],{type:(META.mimeType||'video/webm').split(';')[0]}));
     var pl=el('player');
-    if(pl){ pl.innerHTML=''; pl.appendChild(v); }
+    if(pl){
+      pl.innerHTML='';
+      pl.appendChild(v);
+      v.addEventListener('loadedmetadata',function(){ setMsg(''); });
+    }
     v.load();
     setBar(100);
-    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+    setMsg('');
   }catch(e){
     console.error(e);
     setBar(0);
@@ -2430,7 +2857,7 @@ function init(){
     setMsg('⛔ 열람 가능 기간이 만료되었습니다 ('+new Date(META.expiresAt).toLocaleString()+').',true);
     var op=el('open');if(op)op.disabled=true;
   }else if(!window.crypto||!window.crypto.subtle){
-    setMsg('⚠ 이 화면에서는 보안 기능(암호 해제)을 사용할 수 없습니다. ',true);
+    setMsg('이 화면에서는 보안 기능(암호 해제)을 사용할 수 없습니다.',true);
     var opB=el('open');if(opB)opB.disabled=true;
   }else{
     setMsg('준비 완료 — 암호를 입력하고 「영상 열기」를 눌러 주세요.');
@@ -2445,8 +2872,8 @@ if(document.readyState==='loading'){
     const scriptSafe = mobileScript.replace(/<\/script/gi, '<\\/script');
     const openScriptTag = '<scr' + 'ipt>';
     const closeScriptTag = '</scr' + 'ipt>';
-    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark only"><meta name="theme-color" content="#101217"><title>'+safeName+' 열람</title><style>'+
-      '*{box-sizing:border-box}html{background:#101217;color-scheme:dark only;forced-color-adjust:none}html,body{margin:0;padding:0;background:#101217;color:#f3f6fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark only;forced-color-adjust:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#d0d7e3;font-size:15px;line-height:1.7}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:13px;border-radius:9px;background:#202633;color:#dce2ec;font-size:14px;line-height:1.6}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvCipherPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
+    return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#101217"><title>'+safeName+' 열람</title><style>'+
+      '*{box-sizing:border-box}html,body{margin:0;padding:0;background:#101217;color:#e8ecf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark}body{min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 14px 30px}.panel{background:#181c24;border:1px solid #303746;border-radius:12px;padding:16px}h1{font-size:20px;margin:0 0 14px}.sub{color:#aeb7c7;font-size:14px;line-height:1.6}.dangerText{color:#ffb2b4}.hint{margin:14px 0;padding:12px;border-radius:9px;background:#202633;color:#cbd4e3;font-size:13px}.pwBox{display:flex;gap:7px;margin-top:12px}.pwBox input{min-width:0;flex:1;background:#222833;border:1px solid #3a4352;color:#fff;border-radius:9px;padding:13px 12px;font-size:16px}.pwBox button,.openBtn{border:0;border-radius:9px;padding:12px 14px;font-size:16px;font-weight:700;touch-action:manipulation}.pwBox button{background:#303847;color:#fff;min-width:64px}.openBtn{display:block;width:100%;margin-top:9px;background:#4fd1c5;color:#071717}.progress{height:5px;background:#2a303c;border-radius:5px;overflow:hidden;margin-top:12px}.progress #bar{height:100%;width:0%;background:#4fd1c5}.cctvCipherPart{display:none}video::-internal-media-controls-download-button,video::-webkit-media-controls-download-button{display:none!important}video::-webkit-media-controls-enclosure{overflow:hidden}' +
       '</style></head><body><div class="wrap"><h1>📹 CCTV 개인정보 보호 영상</h1><div class="panel"><strong>'+safeName+'</strong><p class="sub">열람 가능 기간: '+safeExpiry+'까지 (D-'+expectedDays+')</p><div class="hint">암호를 입력한 후 「영상 열기」를 누르세요.</div><div class="pwBox"><input id="pw" type="password" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="열람 암호"><button type="button" id="togglePw" onclick="return window.cctvTogglePassword?window.cctvTogglePassword():false">보기</button></div><button type="button" id="open" class="openBtn" onclick="return window.cctvOpenVideo?window.cctvOpenVideo():false">영상 열기</button><div id="msg" class="sub" style="margin-top:12px">준비 중...</div><div class="progress"><div id="bar"></div></div><div id="player"></div></div></div><div id="cctvCipherStore">'+partMarkup+'</div><noscript><div class="wrap"><div class="panel dangerText">이 파일을 여는 환경에서는 JavaScript를 실행할 수 없습니다.</div></div></noscript>'+openScriptTag+scriptSafe+closeScriptTag+'</body></html>';
   }
 
@@ -2502,10 +2929,10 @@ function el(id){return document.getElementById(id);}
 function setMsg(text,error){var e=el('msg');if(e){e.textContent=text;e.className=error?'sub dangerText':'sub';}}
 function setBar(n){var e=el('bar');if(e)e.style.width=Math.max(0,Math.min(100,n))+'%';}
 window.addEventListener('error',function(ev){
-  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ setMsg('예상치 못한 오류: '+(ev&&ev.message?ev.message:'알 수 없는 오류')+' ',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 window.addEventListener('unhandledrejection',function(ev){
-  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+'',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
+  try{ var r=ev&&ev.reason; setMsg('예상치 못한 오류: '+(r&&r.message?r.message:String(r))+' ',true); setBar(0); busy=false; var op=el('open'); if(op)op.disabled=false; }catch(e){}
 });
 function b64(s){var bin=atob(String(s||'').trim()),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a;}
 function bytesToB64(bytes){var binary='';var chunk=0x8000;for(var i=0;i<bytes.length;i+=chunk){binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));}return btoa(binary);}
@@ -2632,20 +3059,24 @@ async function openVideo(){
     v.preload='metadata';
     v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';
     v.onerror=function(){
-      setMsg('영상 파일 형식을 재생할 수 없습니다. ',true);
+      setMsg('영상 파일 형식을 재생할 수 없습니다.',true);
     };
     var videoBlob;
     try{
-      videoBlob=new Blob(videoChunks,{type:META.mimeType||'video/mp4'});
+      videoBlob=new Blob(videoChunks,{type:(META.mimeType||'video/webm').split(';')[0]});
     }catch(e){
       throw new Error('영상 용량이 너무 커서 이 기기의 메모리로 처리할 수 없습니다. 영상 구간을 더 짧게 나눠서 다시 만들어 주세요.');
     }
     v.src=URL.createObjectURL(videoBlob);
     var pl=el('player');
-    if(pl){ pl.innerHTML=''; pl.appendChild(v); }
+    if(pl){
+      pl.innerHTML='';
+      pl.appendChild(v);
+      v.addEventListener('loadedmetadata',function(){ setMsg(''); });
+    }
     v.load();
     setBar(100);
-    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
+    setMsg('');
   }catch(e){
     console.error(e);
     setBar(0);
