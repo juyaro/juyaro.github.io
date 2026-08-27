@@ -1,3 +1,4 @@
+<!-- CCTV 영상편집기 기능복원 기준본: Space 재생/정지, 모자이크 번호, 우클릭 메뉴, 완료 잠금, 1cm 드래그 판정, 민원배부 경고문 미생성 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -55,7 +56,7 @@
   .panel h2{font-size:13px; margin:0 0 10px; color:var(--sub); text-transform:uppercase; letter-spacing:.06em;}
   .stage-wrap{position:relative; background:#000; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line);}
   #stage{display:block; width:100%; height:auto; cursor:crosshair;}
-  .empty-hint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--sub); text-align:center; padding:20px;}
+  .empty-hint{pointer-events:none; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--sub); text-align:center; padding:20px;}
   .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .row + .row{margin-top:8px;}
   button{
@@ -653,7 +654,6 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     <button type="button" data-context-action="select">선택</button>
     <div class="mosaic-context-sep"></div>
     <button type="button" data-context-action="editComplete">조정/완료</button>
-    <button type="button" data-context-action="tracking">고정(추적)</button>
     <button type="button" data-context-action="visibility">현시/비현시</button>
     <div class="mosaic-context-sep"></div>
     <button type="button" data-context-action="delete" class="danger-menu">삭제</button>
@@ -672,12 +672,10 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     contextRegionId = regionId;
     const editBtn = mosaicContextMenu.querySelector('[data-context-action="editComplete"]');
     const visibleBtn = mosaicContextMenu.querySelector('[data-context-action="visibility"]');
-    const trackingBtn = mosaicContextMenu.querySelector('[data-context-action="tracking"]');
     editBtn.textContent = isRegionCompleted(regionId) ? '조정' : '완료';
-    trackingBtn.textContent = r.tracking && r.tracking.active ? '추적 해제' : '고정(추적)';
     visibleBtn.textContent = regionVisibleAtTime(r, srcVideo.currentTime) ? '비현시' : '현시';
     mosaicContextMenu.style.display = 'block';
-    const w = 190, h = 235;
+    const w = 190, h = 205;
     mosaicContextMenu.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
     mosaicContextMenu.style.top = Math.min(y, window.innerHeight - h - 8) + 'px';
   }
@@ -706,16 +704,6 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     }else if(action === 'editComplete'){
       if(isRegionCompleted(id)) reopenRegion(id);
       else completeRegion(id);
-    }else if(action === 'tracking'){
-      if(r.tracking && r.tracking.active){
-        stopRegionTracking(r);
-      }else{
-        if(isRegionCompleted(id)) reopenRegion(id);
-        startRegionTracking(r, srcVideo.currentTime);
-      }
-      renderRegionList();
-      renderSegments();
-      drawFrame(undefined,{editing:true});
     }else if(action === 'visibility'){
       // 현시/비현시는 '선택되어 있던 세그먼트'가 아니라
       // 현재 재생헤드가 실제로 위치한 구간을 기준으로 적용합니다.
@@ -770,6 +758,20 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   let revealRegions = [];
   let selectedRegionId = null;
   let selectedRegionIds = new Set();
+  // Ctrl/Command 키를 마우스 이벤트와 별도로 추적합니다.
+  // 일부 브라우저/트랙패드 환경에서 Ctrl+클릭의 mouse event modifier가
+  // 누락되는 경우에도 묶음 선택이 확실히 동작하도록 합니다.
+  let ctrlKeyDown = false;
+  let metaKeyDown = false;
+  window.addEventListener('keydown', (e) => {
+    if(e.key === 'Control') ctrlKeyDown = true;
+    if(e.key === 'Meta') metaKeyDown = true;
+  }, true);
+  window.addEventListener('keyup', (e) => {
+    if(e.key === 'Control') ctrlKeyDown = false;
+    if(e.key === 'Meta') metaKeyDown = false;
+  }, true);
+  window.addEventListener('blur', () => { ctrlKeyDown = false; metaKeyDown = false; });
   // 완료된 영역은 실수로 다시 선택/이동/크기조정하지 못하도록 잠급니다.
   let completedRegionIds = new Set();
   let segments = [];
@@ -930,6 +932,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   function isRegionCompleted(id){ return completedRegionIds.has(id); }
 
   function completeRegion(id){
+    if(!id) return;
+    if(drag && drag.region && drag.region.id === id) drag = null;
     completedRegionIds.add(id);
     selectedRegionIds.delete(id);
     if(selectedRegionId === id) syncPrimarySelection();
@@ -937,12 +941,16 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   }
 
   function reopenRegion(id){
+    if(!id) return;
     completedRegionIds.delete(id);
     setSingleSelectedRegion(id);
     renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
   }
 
   function toggleRegionSelection(id){
+    if(!id) return;
+    const r = allRegions().find(x => x.id === id);
+    if(!r || isRegionCompleted(id)) return;
     if(selectedRegionIds.has(id)) selectedRegionIds.delete(id);
     else selectedRegionIds.add(id);
     syncPrimarySelection();
@@ -1650,6 +1658,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
 
   stage.addEventListener('mousemove', updateStageCursor);
   stage.addEventListener('mouseleave', () => { stage.style.cursor = 'crosshair'; });
+  stage.addEventListener('dragstart', (e) => e.preventDefault());
 
   stage.addEventListener('contextmenu', (e) => {
     e.preventDefault();
@@ -1664,7 +1673,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       if(r && hitTest(r,t,p)) target = r;
     }
     if(!target){
-      const hitRegions = allRegions().filter(r => hitTest(r,t,p));
+      const hitRegions = allRegions().filter(r => !isRegionCompleted(r.id) && hitTest(r,t,p));
       // 화면에서 위에 있는 영역부터 찾되, 완료된 영역보다 미완료 영역을 우선합니다.
       hitRegions.sort((a,b) => {
         const ca = isRegionCompleted(a.id) ? 1 : 0;
@@ -1682,17 +1691,18 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     e.preventDefault();
     const p = canvasCoords(e);
     const t = srcVideo.currentTime;
+    // 캔버스가 CSS로 확대/축소되어도 실제 마우스 드래그 거리는 client 좌표로 판정합니다.
     const pending = allRegions().find(r => r.pendingPlace);
-    if(pending){ drag = { type:'new', region: pending, startX:p.x, startY:p.y }; return; }
+    if(pending){ drag = { type:'new', region: pending, startX:p.x, startY:p.y, startClientX:e.clientX, startClientY:e.clientY, autoCreated:false }; try{ stage.setPointerCapture?.(e.pointerId); }catch(_){} return; }
 
     // 왼쪽 버튼은 영상 편집 대상(모자이크/제외영역) 선택을 최우선으로 합니다.
     // 우선순위: 현재 선택 영역 → 제외영역(최상위) → 미완료 모자이크 → 완료 영역.
     let candidates = [];
     const primary = selectedRegionId ? allRegions().find(r => r.id === selectedRegionId) : null;
-    if(primary && hitTest(primary, t, p)) candidates.push(primary);
+    if(primary && !isRegionCompleted(primary.id) && hitTest(primary, t, p)) candidates.push(primary);
 
-    const revealHits = revealRegions.slice().reverse().filter(r => r.id !== (primary && primary.id) && hitTest(r,t,p));
-    const mosaicHits = regions.slice().reverse().filter(r => r.id !== (primary && primary.id) && hitTest(r,t,p));
+    const revealHits = revealRegions.slice().reverse().filter(r => !isRegionCompleted(r.id) && r.id !== (primary && primary.id) && hitTest(r,t,p));
+    const mosaicHits = regions.slice().reverse().filter(r => !isRegionCompleted(r.id) && r.id !== (primary && primary.id) && hitTest(r,t,p));
     candidates.push(
       ...revealHits.filter(r => !isRegionCompleted(r.id)),
       ...mosaicHits.filter(r => !isRegionCompleted(r.id)),
@@ -1701,30 +1711,71 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     );
 
     const region = candidates[0];
+
+    // Ctrl(또는 macOS의 Command) + 왼쪽 클릭은 '묶음 선택'입니다.
+    // 클릭과 드래그를 정확히 구분하기 위해 mousedown에서는 선택만 하고,
+    // 실제 이동은 mousemove에서 일정 거리 이상 움직였을 때 시작합니다.
+    // 이렇게 해야 Ctrl+클릭 자체가 브라우저의 기본 click 이벤트/드래그와 충돌하지 않습니다.
+    // mouse event의 ctrlKey/metaKey와 별도 키 상태를 함께 확인합니다.
+    const multiKey = !!(e.ctrlKey || e.metaKey || ctrlKeyDown || metaKeyDown);
+    if(region && multiKey){
+      if(isRegionCompleted(region.id)) return;
+      toggleRegionSelection(region.id);
+      renderRegionList();
+      renderSegments();
+      drawFrame(t,{editing:true});
+
+      // Ctrl/Command+클릭은 선택만 변경합니다.
+      // 실제 묶음 이동은 Ctrl/Command를 놓은 뒤 선택된 영역을 드래그할 때 시작합니다.
+      drag = null;
+      return;
+    }
+
+    if(region && isRegionCompleted(region.id)) return;
+
+    // 이미 2개 이상 묶음 선택된 상태에서 선택된 영역을 일반 왼쪽 드래그하면
+    // 단일 영역이 아니라 현재 선택된 모든 영역을 함께 이동합니다.
+    // 기존 코드의 문제는 Ctrl+클릭으로 묶음 선택을 끝낸 뒤 Ctrl을 놓고 드래그하면
+    // 여기서 setSingleSelectedRegion()이 호출되어 묶음이 풀렸다는 점입니다.
+    if(region && selectedRegionIds.size > 1 && selectedRegionIds.has(region.id)){
+      const moving = selectedRegions()
+        .filter(r => !isRegionCompleted(r.id) && regionVisibleAtTime(r,t))
+        .map(r => ({region:r,rect:getRectAtTime(r,t)}))
+        .filter(v => v.rect);
+      if(moving.length > 1){
+        drag={type:'multi-pending',items:moving,startX:p.x,startY:p.y,startClientX:e.clientX,startClientY:e.clientY};
+        try{ stage.setPointerCapture?.(e.pointerId); }catch(_){}
+        return;
+      }
+    }
+
     if(!region){
-      // 빈 영상에서 왼쪽 버튼을 충분히 드래그하면 새 모자이크를 만듭니다.
-      // 약 1cm(96dpi 기준 37.8 CSS px) 미만의 드래그는 단순 클릭으로 취급합니다.
-      const autoRegion = createMosaicRegion(false);
-      autoRegion.autoCreated = true;
-      drag = { type:'new', region:autoRegion, startX:p.x, startY:p.y, rect:null, autoCreated:true };
+      // 빈 영상에서 왼쪽 버튼을 누른 뒤 드래그하면 즉시 새 모자이크 영역을 만듭니다.
+      // 별도의 '+ 모자이크 영역 추가' 버튼을 먼저 누르지 않아도 영상 편집을 시작할 수 있습니다.
+      const seg = getCurrentSegment();
+      const visibleRange = seg ? [{start:seg.start, end:seg.end}] : [{start:0, end:duration}];
+      const newRegion = {
+        id: uid(),
+        color: COLORS[regions.length % COLORS.length],
+        shape: 'rect',
+        keyframes: [],
+        pendingPlace: false,
+        visibilityKeys: rangesToVisibilityKeys(visibleRange)
+      };
+      regions.push(newRegion);
+      setSingleSelectedRegion(newRegion.id);
+      renderRegionList();
+      renderSegments();
+      drag = { type:'new', region:newRegion, startX:p.x, startY:p.y, startClientX:e.clientX, startClientY:e.clientY, autoCreated:true }; try{ stage.setPointerCapture?.(e.pointerId); }catch(_){}
       e.preventDefault();
-      stage.style.cursor = 'crosshair';
       return;
     }
 
     const hit = hitTest(region, t, p);
     if(!hit) return;
 
-    if(e.ctrlKey){
-      toggleRegionSelection(region.id);
-      renderRegionList(); renderSegments(); drawFrame(t,{editing:true});
-      if(selectedRegionIds.has(region.id) && !isRegionCompleted(region.id)){
-        const moving = selectedRegions().filter(r => regionVisibleAtTime(r,t))
-          .map(r => ({region:r,rect:getRectAtTime(r,t)})).filter(v => v.rect);
-        if(moving.length) drag={type:'multi-move',items:moving,startX:p.x,startY:p.y};
-      }
-      return;
-    }
+    // Ctrl + 클릭 처리는 위에서 최우선 처리합니다.
+    // (여기까지 내려오는 경우는 없습니다.)
 
     // 일반 왼쪽 클릭: 해당 영역을 즉시 단일 선택합니다.
     setSingleSelectedRegion(region.id);
@@ -1758,6 +1809,12 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       upsertKeyframe(drag.region, t, rect, currentBlockOf(drag.region, t));
       drawFrame(t, {editing:true});
       return;
+    }
+    if(drag.type === 'multi-pending'){
+      const moved = Math.hypot((e.clientX||drag.startClientX)-drag.startClientX, (e.clientY||drag.startClientY)-drag.startClientY);
+      if(moved < 4) return;
+      drag.type = 'multi-move';
+      drawFrame(t,{editing:true});
     }
     if(drag.type === 'multi-move'){
       const dx = p.x - drag.startX, dy = p.y - drag.startY;
@@ -1800,30 +1857,44 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     }
   });
 
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', (e) => {
+    if(drag && drag.type === 'multi-pending'){
+      // Ctrl+왼쪽 클릭만 한 경우: 이미 선택만 완료된 상태이므로 이동하지 않습니다.
+      drag = null;
+      stage.style.cursor = 'crosshair';
+      return;
+    }
     if(drag && drag.type === 'new'){
-      const MIN_DRAG_CM_PX = 37.8; // 약 1cm (CSS px, 96dpi 기준)
-      const rect = drag.rect;
-      const qualifies = !!rect && rect.w >= MIN_DRAG_CM_PX && rect.h >= MIN_DRAG_CM_PX;
-      if(qualifies){
+      // 빈 영상에서 단순 클릭/미세 드래그와 '새 모자이크 생성'을 구분합니다.
+      // 가로와 세로 모두 약 1cm(96dpi 기준 약 37.8 CSS px) 이상 드래그해야
+      // 실제 모자이크 영역으로 인정합니다. 그보다 작으면 클릭으로 취급합니다.
+      const CM_PX = 96 / 2.54;
+      const dxClient = Math.abs((e.clientX ?? drag.startClientX) - drag.startClientX);
+      const dyClient = Math.abs((e.clientY ?? drag.startClientY) - drag.startClientY);
+      const isMosaicDrag = dxClient >= CM_PX && dyClient >= CM_PX;
+
+      if(isMosaicDrag && drag.rect && drag.rect.w >= CM_PX && drag.rect.h >= CM_PX){
         const t = srcVideo.currentTime;
-        upsertKeyframe(drag.region, t, rect, 18);
+        upsertKeyframe(drag.region, t, drag.rect, 18);
         drag.region.pendingPlace = false;
-        drag.region.autoCreated = false;
         renderRegionList();
         renderSegments();
         drawFrame(t, {editing:true});
-      } else {
-        // 1cm 미만은 클릭으로 취급하고 새로 만든 임시 영역은 폐기합니다.
-        regions = regions.filter(x => x.id !== drag.region.id);
-        revealRegions = revealRegions.filter(x => x.id !== drag.region.id);
-        selectedRegionIds.delete(drag.region.id);
-        if(selectedRegionId === drag.region.id) syncPrimarySelection();
+      } else if(drag.region){
+        // 1cm 미만의 클릭/미세 드래그는 새 모자이크를 만들지 않습니다.
+        // 자동 생성된 영역은 제거하고, 버튼으로 준비된 pending 영역도 원상복구합니다.
+        if(drag.autoCreated){
+          regions = regions.filter(x => x.id !== drag.region.id);
+          selectedRegionIds.delete(drag.region.id);
+          if(selectedRegionId === drag.region.id) syncPrimarySelection();
+        }
+        drag.region.pendingPlace = false;
         renderRegionList();
         renderSegments();
-        drawFrame(undefined, {editing:true});
+        drawFrame(srcVideo.currentTime, {editing:true});
       }
     }
+    try{ if(e.pointerId !== undefined) stage.releasePointerCapture?.(e.pointerId); }catch(_){}
     drag = null;
     stage.style.cursor = 'crosshair';
   });
@@ -1839,7 +1910,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     if(clearGroupBtn){
       if(selectedRegionIds.size > 1){
         clearGroupBtn.style.display = 'inline-block';
-        clearGroupBtn.textContent = '✂ 묶음 분리 (' + selectedRegionIds.size + '개 선택됨)';
+        clearGroupBtn.textContent = '✂ 묶음 선택 해제 (' + selectedRegionIds.size + '개 선택됨)';
       } else {
         clearGroupBtn.style.display = 'none';
       }
@@ -1866,7 +1937,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       const visibleSummary = visibilitySummary(r);
       div.innerHTML = `
         <div class="title">
-          <span><span class="region-no-badge" style="background:${r.color}">${regionDisplayNumber(r)}</span><span class="swatch" style="background:${r.color}"></span>${r.reveal ? '제외 영역' : '모자이크 영역'} ${isRegionCompleted(r.id) ? '<span class="complete-badge">✓ 완료</span>' : ''}</span>
+          <span><span class="region-no-badge" style="background:${r.color}">${regionDisplayNumber(r)}</span><span class="swatch" style="background:${r.color}"></span>${r.reveal ? '제외 영역' : '모자이크 영역'} ${isRegionCompleted(r.id) ? '<span class="complete-badge">✓ 완료 · 편집 잠금</span>' : ''}</span>
           <div class="row" style="gap:4px;">
             <button data-act="select">선택</button>
             <button data-act="complete" class="primary">${isRegionCompleted(r.id) ? '다시 편집' : '완료'}</button>
@@ -1894,8 +1965,16 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         </div>
         <div class="kf-list">${kfLabel}</div>
       `;
+      // 하단 모자이크/제외영역 카드 자체를 왼쪽 클릭해도 '선택' 버튼과 동일하게 동작합니다.
+      // 단, 버튼/입력/선택상자 등의 실제 컨트롤을 클릭한 경우에는 해당 컨트롤만 실행합니다.
+      div.addEventListener('click', (e) => {
+        if(e.target.closest('button, input, select, option, label')) return;
+        if(e.ctrlKey || e.metaKey) toggleRegionSelection(r.id);
+        else setSingleSelectedRegion(r.id);
+        renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
+      });
       div.querySelector('[data-act="select"]').addEventListener('click', (e) => {
-        if(e.ctrlKey) toggleRegionSelection(r.id);
+        if(e.ctrlKey || e.metaKey) toggleRegionSelection(r.id);
         else setSingleSelectedRegion(r.id);
         renderRegionList(); renderSegments(); drawFrame(undefined,{editing:true});
       });
@@ -2625,7 +2704,7 @@ function b64ToBytes(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.leng
 async function deriveKey(password,salt){const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);}
 async function decrypt(password){const salt=b64ToBytes(pkg.salt);const iv=b64ToBytes(pkg.iv);const key=await deriveKey(password,salt);const cipher=b64ToBytes(pkg.cipher);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,cipher.buffer);return new Blob([plain],{type:pkg.mimeType||'video/mp4'});}
 function render(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const d=Math.ceil((pkg.expiresAt-Date.now())/86400000);app.innerHTML='<strong>'+pkg.name+'</strong><p class="sub">열람 가능 기간: '+new Date(pkg.expiresAt).toLocaleString()+'까지 (D-'+d+')</p><div class="row"><input id="pw" type="password" placeholder="열람 암호"><button id="open">영상 열기</button></div><div id="msg" class="sub" style="margin-top:10px;"></div><div id="player"></div>';document.getElementById('open').onclick=openVideo;document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')openVideo();});}
-async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';const pl=document.getElementById('player');pl.innerHTML='';const v=document.createElement('video');v.src=url;v.controls=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('controlsList','nodownload');v.setAttribute('disablePictureInPicture','');v.style.cssText='width:100%;max-height:72vh;background:#000;border-radius:10px;margin-top:14px;display:block';v.oncontextmenu=function(e){e.preventDefault();return false;};v.onerror=function(){msg.innerHTML='<span class="dangerText">영상 파일 형식을 재생할 수 없습니다.</span>';};pl.appendChild(v);const b=document.createElement('button');b.type='button';b.textContent='▶ 영상 재생';b.style.cssText='display:block;width:100%;margin-top:8px;padding:12px;border:0;border-radius:9px;background:#4fd1c5;color:#071717;font-size:16px;font-weight:700';b.onclick=function(){const r=v.play();if(r&&r.catch)r.catch(function(){msg.textContent='영상 재생이 차단되었습니다. 영상 화면의 ▶ 재생 버튼을 눌러 주세요.';});};pl.appendChild(b);v.addEventListener('play',function(){b.textContent='⏸ 영상 일시정지';});v.addEventListener('pause',function(){b.textContent='▶ 영상 재생';});v.load();}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
+async function openVideo(){if(Date.now()>pkg.expiresAt){renderExpired();return;}const msg=document.getElementById('msg');msg.textContent='암호 확인 중...';try{const blob=await decrypt(document.getElementById('pw').value);const url=URL.createObjectURL(blob);msg.textContent='';document.getElementById('player').innerHTML='<video src="'+url+'" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;" autoplay playsinline></video>';}catch(e){msg.innerHTML='<span class="dangerText">암호가 올바르지 않습니다.</span>';}}
 function renderExpired(){const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';app.innerHTML='<h1 class="dangerText">열람 기간이 만료되었습니다.</h1><p class="sub">표준 개인정보 보호 지침에 따라 파기 바랍니다.</p><p class="sub">파기 버튼을 누른 뒤 배부받은 HTML 파일을 선택하세요. 선택한 파일 이름이 <strong>'+expected+'</strong>와 다르면 이름 상이 오류가 표시되고 파기하지 않습니다.</p><button id="destroy" class="danger">파기</button><div id="destroyMsg" class="sub" style="margin-top:10px;"></div>';document.getElementById('destroy').onclick=destroyFile;}
 async function destroyFile(){const msg=document.getElementById('destroyMsg');const expected=pkg.expectedDestroyFileName||pkg.name+'_열람용.html';if(!window.showOpenFilePicker){msg.innerHTML='이 브라우저는 파일 직접 파기를 지원하지 않습니다. 파일 이름이 <strong>'+expected+'</strong>인지 확인한 뒤 해당 배부용 HTML 파일을 직접 삭제하고 휴지통을 비워주세요.';return;}try{const [handle]=await showOpenFilePicker({types:[{description:'배부용 HTML 파일',accept:{'text/html':['.html','.htm']}}]});if(handle.name!==expected){msg.innerHTML='<span class="dangerText">이름 상이 오류: 파기 대상 파일 이름이 저장된 배부용 파일 이름과 다릅니다.</span><br>선택한 파일: <strong>'+handle.name+'</strong><br>파기 대상 파일: <strong>'+expected+'</strong>';return;}if(handle.remove){await handle.remove();msg.innerHTML='<span class="dangerText">선택한 파일을 파기했습니다.</span>';}else{msg.innerHTML='파일 이름은 일치하지만 이 브라우저는 삭제 API를 지원하지 않습니다. 선택한 파일을 직접 삭제하고 휴지통을 비워주세요.';}}catch(e){msg.textContent='파기가 취소되었거나 실패했습니다.';}}
 render();
@@ -2806,16 +2885,12 @@ async function openVideo(){
     v.onerror=function(){
       setMsg('영상 파일 형식을 재생할 수 없습니다.',true);
     };
-    v.src=URL.createObjectURL(new Blob([plain],{type:(META.mimeType||'video/webm').split(';')[0]}));
+    v.src=URL.createObjectURL(new Blob([plain],{type:META.mimeType||'video/mp4'}));
     var pl=el('player');
-    if(pl){
-      pl.innerHTML='';
-      pl.appendChild(v);
-      v.addEventListener('loadedmetadata',function(){ setMsg(''); });
-    }
+    if(pl){ pl.innerHTML=''; pl.appendChild(v); }
     v.load();
     setBar(100);
-    setMsg('');
+    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
   }catch(e){
     console.error(e);
     setBar(0);
@@ -3063,20 +3138,16 @@ async function openVideo(){
     };
     var videoBlob;
     try{
-      videoBlob=new Blob(videoChunks,{type:(META.mimeType||'video/webm').split(';')[0]});
+      videoBlob=new Blob(videoChunks,{type:META.mimeType||'video/mp4'});
     }catch(e){
       throw new Error('영상 용량이 너무 커서 이 기기의 메모리로 처리할 수 없습니다. 영상 구간을 더 짧게 나눠서 다시 만들어 주세요.');
     }
     v.src=URL.createObjectURL(videoBlob);
     var pl=el('player');
-    if(pl){
-      pl.innerHTML='';
-      pl.appendChild(v);
-      v.addEventListener('loadedmetadata',function(){ setMsg(''); });
-    }
+    if(pl){ pl.innerHTML=''; pl.appendChild(v); }
     v.load();
     setBar(100);
-    setMsg('');
+    setMsg('영상 잠금 해제 완료! 아래 재생 버튼을 누르면 재생됩니다.');
   }catch(e){
     console.error(e);
     setBar(0);
