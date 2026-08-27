@@ -136,6 +136,14 @@
   .workflow-step a{color:var(--accent); font-weight:700; text-decoration:none;}
   .workflow-note{padding:10px; border-top:1px solid var(--line); color:#ffb2b4; font-size:12px; line-height:1.5; background:rgba(226,85,90,0.08);}
   code{background:#10151c; border:1px solid var(--line); border-radius:4px; padding:1px 4px; color:var(--text);}
+  .project-panel{margin-top:14px;}
+  .project-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .project-actions button{width:100%;font-weight:700;}
+  .project-save{border-color:var(--accent);}
+  .project-load{border-color:var(--accent2);}
+  .project-status{margin-top:8px;padding:8px 10px;border-radius:7px;background:var(--panel2);color:var(--sub);font-size:11px;line-height:1.5;min-height:34px;}
+  .project-status.ok{color:var(--accent);}
+  .project-status.warn{color:#ffd08c;}
 </style>
 </head>
 <body>
@@ -308,6 +316,17 @@
         </div>
         <div class="workflow-note">송부 전에는 반드시 본인이 먼저 URL에 접속해 재생 및 보안 확인을 완료하세요.</div>
       </div>
+    </div>
+
+    <div class="panel project-panel">
+      <h2>5. 편집 작업 저장 / 불러오기</h2>
+      <div class="hint">장시간 편집할 때 현재 작업 상태를 <strong>JSON 프로젝트 파일</strong>로 저장해 두었다가 나중에 다시 불러올 수 있습니다.</div>
+      <div class="project-actions" style="margin-top:10px;">
+        <button type="button" id="saveProjectBtn" class="project-save">💾 편집저장</button>
+        <button type="button" id="loadProjectBtn" class="project-load">📂 불러오기</button>
+      </div>
+      <input type="file" id="projectInput" accept=".json,application/json" style="display:none;">
+      <div id="projectStatus" class="project-status">원본 영상과 모자이크·제외영역·키프레임·현시/비현시·완료잠금·타임라인·추적 상태를 하나의 JSON 프로젝트로 저장합니다.</div>
     </div>
   </div>
 </div>
@@ -714,6 +733,9 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       $('loadConvertedBtn').addEventListener('click', () => {
         if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
         lastLoadedURL = url;
+        currentSourceFile = blob;
+        srcVideo.dataset.sourceName = outName;
+        currentSourceMeta = {name:outName,size:blob.size,lastModified:Date.now(),type:'video/mp4'};
         srcVideo.src = url;
         srcVideo.load();
       });
@@ -730,6 +752,229 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     } finally {
       $('aviProgressWrap').style.display = 'none';
       convertBtn.disabled = false;
+    }
+  });
+
+  // ---------------- JSON 편집저장 / 불러오기 ----------------
+  const saveProjectBtn = $('saveProjectBtn');
+  const loadProjectBtn = $('loadProjectBtn');
+  const projectInput = $('projectInput');
+  const projectStatus = $('projectStatus');
+
+  function projectStatusMsg(msg, type=''){
+    if(!projectStatus) return;
+    projectStatus.className = 'project-status' + (type ? ' ' + type : '');
+    projectStatus.textContent = msg;
+  }
+
+  function cloneProjectRegion(r){
+    // 추적 템플릿도 함께 저장해 불러온 직후 추적 작업을 계속할 수 있게 합니다.
+    const tracking = r.tracking && r.tracking.template ? {
+      active:!!r.tracking.active,
+      lastRect:r.tracking.lastRect ? {...r.tracking.lastRect} : null,
+      lastT:Number(r.tracking.lastT)||0,
+      lastScore:Number(r.tracking.lastScore)||0,
+      confidence:Number(r.tracking.confidence)||0,
+      template:{
+        w:Number(r.tracking.template.w)||0,
+        h:Number(r.tracking.template.h)||0,
+        rect:r.tracking.template.rect ? {...r.tracking.template.rect} : null,
+        lastT:Number(r.tracking.template.lastT)||0,
+        patches:Array.isArray(r.tracking.template.patches) ? r.tracking.template.patches.map(p => ({
+          ...p,
+          vals:Array.from(p.vals || [])
+        })) : []
+      }
+    } : null;
+    return {
+      id:r.id,
+      color:r.color,
+      shape:r.shape || 'rect',
+      reveal:!!r.reveal,
+      keyframes:Array.isArray(r.keyframes) ? r.keyframes.map(k => ({...k})) : [],
+      visibilityKeys:Array.isArray(r.visibilityKeys) ? r.visibilityKeys.map(k => ({t:Number(k.t)||0, visible:!!k.visible})) : [],
+      pendingPlace:!!r.pendingPlace,
+      tracking,
+      trackingMessage:r.trackingMessage || ''
+    };
+  }
+
+  function buildProjectState(){
+    const videoName = currentSourceMeta?.name || (srcVideo.dataset.sourceName || '');
+    return {
+      format:'cctv-editor-project',
+      version:2,
+      savedAt:new Date().toISOString(),
+      sourceVideo:{
+        name:videoName,
+        size:Number(currentSourceMeta?.size || 0),
+        lastModified:Number(currentSourceMeta?.lastModified || 0),
+        duration:Number(duration || srcVideo.duration || 0),
+        width:Number(srcVideo.videoWidth || renderWidth || 0),
+        height:Number(srcVideo.videoHeight || renderHeight || 0)
+      },
+      settings:{
+        mosaicOpacity:Number(mosaicOpacity?.value || 90),
+        motionSensitivity:Number(motionSensitivity?.value || 24),
+        autoMotionMosaic:!!autoMotionMosaic?.checked
+      },
+      regions:regions.map(cloneProjectRegion),
+      revealRegions:revealRegions.map(cloneProjectRegion),
+      completedRegionIds:Array.from(completedRegionIds),
+      segments:segments.map(s => ({id:s.id,start:Number(s.start)||0,end:Number(s.end)||0})),
+      selectedRegionId:selectedRegionId || null,
+      selectedRegionIds:Array.from(selectedRegionIds),
+      selectedSegmentId:selectedSegmentId || null,
+      currentTime:Number(srcVideo.currentTime || 0),
+      packageInfo:{
+        name:$('pkgName')?.value || '',
+        days:$('pkgDays')?.value || '30',
+        expireDate:$('pkgExpireDate')?.value || '',
+        expireTime:$('pkgExpireTime')?.value || '23:59'
+      }
+    };
+  }
+
+  function blobToDataUrl(blob){
+    return new Promise((resolve,reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error('원본 영상 읽기에 실패했습니다.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function normalizeProjectRegion(r, isReveal){
+    const copy = cloneProjectRegion({...r, reveal:isReveal});
+    copy.reveal = !!isReveal;
+    copy.keyframes = Array.isArray(copy.keyframes) ? copy.keyframes : [];
+    copy.visibilityKeys = Array.isArray(copy.visibilityKeys) ? copy.visibilityKeys : [{t:0,visible:false}];
+    if(copy.tracking?.template){
+      const tr=copy.tracking;
+      const template=tr.template;
+      template.patches=Array.isArray(template.patches) ? template.patches.map(p => ({
+        ...p,
+        vals:Array.isArray(p.vals) ? new Float32Array(p.vals) : new Float32Array()
+      })) : [];
+      copy.tracking={...tr, template};
+    }
+    return copy;
+  }
+
+  function applyProjectState(state){
+    if(!state || state.format !== 'cctv-editor-project') throw new Error('올바른 CCTV 편집 프로젝트 JSON이 아닙니다.');
+    if(!Array.isArray(state.regions) || !Array.isArray(state.revealRegions) || !Array.isArray(state.segments)) throw new Error('프로젝트 데이터가 손상되었거나 형식이 맞지 않습니다.');
+
+    const saved = state.sourceVideo || {};
+    const actual = {
+      name:currentSourceMeta?.name || srcVideo.dataset.sourceName || '',
+      size:Number(currentSourceMeta?.size || 0),
+      duration:Number(duration || srcVideo.duration || 0),
+      width:Number(srcVideo.videoWidth || 0),
+      height:Number(srcVideo.videoHeight || 0)
+    };
+    const mismatches=[];
+    if(saved.name && actual.name && saved.name !== actual.name) mismatches.push('파일명');
+    if(saved.size && actual.size && saved.size !== actual.size) mismatches.push('파일크기');
+    if(saved.width && actual.width && saved.width !== actual.width) mismatches.push('해상도');
+    if(saved.duration && actual.duration && Math.abs(saved.duration-actual.duration)>0.1) mismatches.push('영상길이');
+    if(mismatches.length){
+      const ok=confirm(`현재 영상과 프로젝트를 저장할 때의 원본 영상이 다릅니다.\\n\\n차이: ${mismatches.join(', ')}\\n\\n그래도 편집 상태를 불러오시겠습니까?`);
+      if(!ok) return false;
+    }
+
+    regions = state.regions.map(r => normalizeProjectRegion(r,false));
+    revealRegions = state.revealRegions.map(r => normalizeProjectRegion(r,true));
+    completedRegionIds = new Set(Array.isArray(state.completedRegionIds) ? state.completedRegionIds : []);
+    segments = state.segments.map(s => ({id:s.id || uid(), start:Math.max(0,Number(s.start)||0), end:Math.max(0,Number(s.end)||0)}))
+      .filter(s => s.end > s.start + 0.001);
+    if(!segments.length && duration>0) segments=[{id:uid(),start:0,end:duration}];
+    selectedSegmentId = state.selectedSegmentId && segments.some(s=>s.id===state.selectedSegmentId) ? state.selectedSegmentId : (segments[0]?.id || null);
+
+    selectedRegionIds = new Set(Array.isArray(state.selectedRegionIds) ? state.selectedRegionIds.filter(id=>allRegions().some(r=>r.id===id)) : []);
+    selectedRegionId = state.selectedRegionId && allRegions().some(r=>r.id===state.selectedRegionId) ? state.selectedRegionId : null;
+    if(selectedRegionId) selectedRegionIds.add(selectedRegionId);
+    else if(selectedRegionIds.size) syncPrimarySelection();
+
+    const settings=state.settings || {};
+    if(mosaicOpacity && Number.isFinite(Number(settings.mosaicOpacity))){ mosaicOpacity.value=Math.max(50,Math.min(100,Number(settings.mosaicOpacity))); mosaicOpacity.dispatchEvent(new Event('input')); }
+    if(motionSensitivity && Number.isFinite(Number(settings.motionSensitivity))){ motionSensitivity.value=Math.max(8,Math.min(60,Number(settings.motionSensitivity))); motionSensitivity.dispatchEvent(new Event('input')); }
+    if(autoMotionMosaic) autoMotionMosaic.checked=!!settings.autoMotionMosaic;
+
+    const pi=state.packageInfo || {};
+    if($('pkgName') && pi.name != null) $('pkgName').value=pi.name;
+    if($('pkgDays') && pi.days != null) $('pkgDays').value=pi.days;
+    if($('pkgExpireDate') && pi.expireDate != null) $('pkgExpireDate').value=pi.expireDate;
+    if($('pkgExpireTime') && pi.expireTime != null) $('pkgExpireTime').value=pi.expireTime;
+
+    previousMotionData=null;
+    const targetTime=Math.max(0,Math.min(duration||0,Number(state.currentTime)||0));
+    if(srcVideo && duration>0) srcVideo.currentTime=targetTime;
+    renderRegionList();
+    renderSegments();
+    drawFrame(targetTime,{editing:true});
+    projectStatusMsg(`불러오기 완료 — ${regions.length}개 모자이크 / ${revealRegions.length}개 제외영역 / ${segments.length}개 구간`, 'ok');
+    return true;
+  }
+
+  saveProjectBtn?.addEventListener('click', async () => {
+    if(!srcVideo || !duration){ alert('먼저 편집할 CCTV 영상을 불러와 주세요.'); return; }
+    try{
+      const state=buildProjectState();
+      const sourceBlob=currentSourceFile || (lastLoadedURL ? await fetch(lastLoadedURL).then(r => r.blob()) : null);
+      if(!sourceBlob) throw new Error('원본 영상 데이터를 찾을 수 없습니다. 영상을 다시 선택해 주세요.');
+      projectStatusMsg('원본 영상과 편집 상태를 함께 저장하는 중입니다...');
+      state.sourceVideoData={mimeType:sourceBlob.type || 'video/mp4', dataUrl:await blobToDataUrl(sourceBlob)};
+      const json=JSON.stringify(state,null,2);
+      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+      const base=((currentSourceMeta?.name || $('pkgName')?.value || 'CCTV_편집프로젝트').replace(/\.[^.]+$/,'') || 'CCTV_편집프로젝트');
+      const now=new Date();
+      const stamp=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`${base}_편집프로젝트_${stamp}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+      projectStatusMsg(`저장 완료 — 원본 영상과 모든 편집 상태를 포함했습니다: ${a.download}`, 'ok');
+    }catch(err){
+      console.error(err); projectStatusMsg(`저장 실패: ${err.message || err}`, 'warn');
+    }
+  });
+
+  loadProjectBtn?.addEventListener('click', () => projectInput?.click());
+  projectInput?.addEventListener('change', async (e) => {
+    const f=e.target.files?.[0];
+    if(!f) return;
+    try{
+      const state=JSON.parse(await f.text());
+      if(state.format !== 'cctv-editor-project') throw new Error('CCTV 편집 프로젝트 JSON이 아닙니다.');
+      // 새 형식은 원본 영상까지 포함하므로, 현재 다른 영상이 열려 있어도
+      // 프로젝트에 담긴 원본을 우선 열어 작업 상태와 정확히 맞춥니다.
+      const embedded=state.sourceVideoData?.dataUrl;
+      if(embedded){
+        pendingProjectState=state;
+        const blob=await (await fetch(embedded)).blob();
+        currentSourceFile=blob;
+        currentSourceMeta={name:state.sourceVideo?.name || 'CCTV_원본영상.mp4',size:blob.size,lastModified:state.sourceVideo?.lastModified || Date.now(),type:blob.type};
+        if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
+        lastLoadedURL=URL.createObjectURL(blob);
+        srcVideo.dataset.sourceName=currentSourceMeta.name;
+        srcVideo.src=lastLoadedURL;
+        srcVideo.load();
+        projectStatusMsg('프로젝트와 원본 영상을 불러오는 중입니다. 영상 준비 후 편집 상태가 자동 복원됩니다.', 'ok');
+      }else if(!srcVideo || !duration){
+        pendingProjectState=state;
+        projectStatusMsg(`프로젝트 확인 완료 — 원본 영상(${state.sourceVideo?.name || '저장 당시 영상'})을 불러오면 편집 상태를 자동 복원합니다.`, 'ok');
+      }else{
+        applyProjectState(state);
+      }
+    }catch(err){
+      pendingProjectState=null;
+      console.error(err);
+      projectStatusMsg(`불러오기 실패: ${err.message || 'JSON 파일을 읽을 수 없습니다.'}`, 'warn');
+      alert(`프로젝트 JSON을 불러오지 못했습니다.\\n\\n${err.message || err}`);
+    }finally{
+      e.target.value='';
     }
   });
 
@@ -880,6 +1125,10 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   let drag = null;
   let lastLoadedURL = null;
   let previousMotionData = null;
+  // JSON 편집저장/불러오기용 상태
+  let pendingProjectState = null;
+  let currentSourceMeta = null;
+  let currentSourceFile = null;
 
   const COLORS = ['#4fd1c5','#f2a154','#e2555a','#8e7cff','#5adb6f','#ff7ab6'];
   const uid = () => Math.random().toString(36).slice(2,9);
@@ -933,6 +1182,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   fileInput.addEventListener('change', (e) => {
     const f = e.target.files[0];
     if(!f) return;
+    currentSourceFile = f;
+    currentSourceMeta = { name:f.name, size:f.size, lastModified:f.lastModified, type:f.type || '' };
     if(lastLoadedURL) URL.revokeObjectURL(lastLoadedURL);
     const url = URL.createObjectURL(f);
     lastLoadedURL = url;
@@ -976,6 +1227,12 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     previousMotionData = null;
     segments = [{id:uid(), start:0, end:duration}];
     selectedSegmentId = segments[0].id;
+
+    // 프로젝트 JSON을 먼저 불러온 뒤 영상을 선택한 경우, 영상 메타데이터가 준비되면 편집 상태를 복원합니다.
+    if(pendingProjectState){
+      applyProjectState(pendingProjectState);
+      pendingProjectState = null;
+    }
     renderRegionList();
     renderSegments();
     if(srcVideo.readyState >= 2){
@@ -3633,4 +3890,3 @@ if(document.readyState==='loading'){
 </script>
 </body>
 </html>
-
