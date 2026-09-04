@@ -2,817 +2,987 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Pro - 로컬 브라우저 PDF 에디터</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PDF Pro - Local PDF Editor</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- PDF & ZIP Libraries -->
-    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .animation-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        
-        /* 마스킹 영역 드로잉용 스타일 */
-        .mask-rect { position: absolute; background: rgba(0,0,0,0.8); border: 1px solid white; }
-        .mask-drawing { position: absolute; background: rgba(239, 68, 68, 0.5); border: 2px dashed #b91c1c; }
+        /* 탭 전환 오류를 해결하는 핵심 CSS (Tailwind Flex와의 충돌 방지) */
+        .tab-content:not(.active) { display: none !important; }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 md:p-8 relative">
+<!-- 전체 스크롤을 막고 꽉 찬 화면(App-like)으로 구동하기 위해 h-[100dvh] overflow-hidden 적용 -->
+<body class="bg-slate-100 h-[100dvh] overflow-hidden">
 
-    <div id="global-loader" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex-col items-center justify-center text-white">
-        <div class="w-16 h-16 border-4 border-indigo-400 border-t-white rounded-full animate-spin mb-4"></div>
-        <h2 class="text-2xl font-bold mb-2">작업 처리 중입니다...</h2>
-        <p class="text-indigo-200">파일 개수와 용량에 따라 다소 시간이 소요될 수 있습니다.</p>
-    </div>
-
-    <div id="notification-toast" class="hidden absolute top-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-xl flex items-center gap-2 z-40 transition-all">
-        <i data-lucide="info" id="notify-icon" class="w-5 h-5"></i>
-        <span id="notify-msg" class="font-semibold text-sm"></span>
-    </div>
-
-    <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row min-h-[800px]">
+    <div id="app" class="p-2 sm:p-4 md:p-8 flex flex-col md:flex-row h-full max-w-7xl mx-auto">
         
-        <!-- Sidebar Navigation -->
-        <div class="w-full md:w-72 bg-slate-900 text-slate-300 flex flex-col shrink-0">
-            <div class="p-6">
-                <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-                    <i data-lucide="file-code-2" class="w-8 h-8 text-indigo-400"></i>
-                    PDF Pro
-                </h1>
+        <!-- Sidebar / Top Nav -->
+        <div class="w-full md:w-20 lg:w-64 bg-slate-900 text-slate-300 flex md:flex-col shrink-0 z-20 overflow-x-auto md:overflow-visible rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none shadow-xl">
+            <div class="hidden lg:block p-6">
+                <h1 class="text-2xl font-bold text-white flex items-center gap-2"><i data-lucide="file-code-2" class="w-8 h-8 text-indigo-400"></i>PDF Pro</h1>
                 <p class="text-xs text-slate-400 mt-2">로컬 브라우저 & 다중 폴더 지원</p>
             </div>
-            <nav class="flex-1 px-4 space-y-2" id="sidebar-nav">
-                <button onclick="switchTab('upload')" id="btn-upload" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-indigo-600 text-white shadow-lg font-bold">
-                    <i data-lucide="upload" class="w-5 h-5"></i><span>파일 / 폴더 업로드</span>
-                </button>
-                <button onclick="switchTab('extract')" id="btn-extract" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white font-medium">
-                    <i data-lucide="file-up" class="w-5 h-5"></i><span>지정 페이지 추출</span>
-                </button>
-                <button onclick="switchTab('split')" id="btn-split" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white font-medium">
-                    <i data-lucide="scissors" class="w-5 h-5"></i><span>페이지별 분할</span>
-                </button>
-                <button onclick="switchTab('merge')" id="btn-merge" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white font-medium">
-                    <i data-lucide="merge" class="w-5 h-5"></i><span>파일 간 병합</span>
-                </button>
-                <button onclick="switchTab('compress')" id="btn-compress" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white font-medium">
-                    <i data-lucide="minimize-2" class="w-5 h-5"></i><span>파일 용량 최적화</span>
-                </button>
-                <button onclick="switchTab('pdf2jpg')" id="btn-pdf2jpg" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white font-medium">
-                    <i data-lucide="image" class="w-5 h-5"></i><span>PDF를 JPG로 변환</span>
-                </button>
-                <button onclick="switchTab('mask')" id="btn-mask" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white font-medium">
-                    <i data-lucide="square" class="w-5 h-5"></i><span>내용 마스킹 처리</span>
-                </button>
-            </nav>
-            <div class="p-4 bg-slate-800 m-4 rounded-xl border border-slate-700 text-sm text-center text-slate-300 font-medium">
-                현재 로드된 파일: <span id="total-file-count" class="text-indigo-400 font-bold">0</span> 개
-            </div>
-        </div>
+        
+        <nav id="nav-container" class="flex md:flex-1 md:flex-col px-2 md:px-4 py-2 md:py-0 gap-2 overflow-x-auto md:overflow-y-auto custom-scrollbar items-center md:items-stretch">
+            <!-- Navigation buttons will be injected here -->
+        </nav>
+    </div>
 
-        <div class="flex-1 flex flex-col relative w-full overflow-hidden p-6 lg:p-10 overflow-y-auto">
-            
-            <!-- 1. Upload View -->
-            <div id="view-upload" class="tab-content active max-w-3xl mx-auto animation-fade-in w-full">
-                <h2 class="text-3xl font-bold text-slate-800 mb-8">파일 및 폴더 업로드</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <label class="border-2 border-dashed border-indigo-300 bg-indigo-50 hover:bg-indigo-100 transition-colors rounded-2xl p-10 flex flex-col items-center justify-center cursor-pointer shadow-sm">
-                        <i data-lucide="upload" class="w-12 h-12 text-indigo-500 mb-4"></i>
-                        <span class="text-lg font-bold text-indigo-700">개별 파일 업로드</span>
-                        <span class="text-xs text-indigo-500 mt-2">여러 파일 동시 선택 가능</span>
-                        <input type="file" multiple accept=".pdf" class="hidden" onchange="handleFileUpload(event)">
-                    </label>
-                    <label class="border-2 border-dashed border-emerald-300 bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-2xl p-10 flex flex-col items-center justify-center cursor-pointer shadow-sm">
-                        <i data-lucide="folder-up" class="w-12 h-12 text-emerald-500 mb-4"></i>
-                        <span class="text-lg font-bold text-emerald-700">폴더 통째로 업로드</span>
-                        <span class="text-xs text-emerald-500 mt-2">폴더 내 모든 PDF 일괄 로드</span>
-                        <input type="file" webkitdirectory="" directory="" multiple class="hidden" onchange="handleFileUpload(event)">
-                    </label>
-                </div>
+    <!-- Main Content Area (overflow-hidden 추가하여 내부 스크롤만 동작하도록 고정) -->
+    <div class="flex-1 flex flex-col relative bg-slate-50/50 min-w-0 rounded-b-2xl md:rounded-r-2xl md:rounded-bl-none shadow-xl border-l-0 md:border-l border-slate-200 overflow-hidden">
+        
+        <!-- Global Loader -->
+        <div id="global-loader" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex-col items-center justify-center text-white rounded-b-2xl md:rounded-r-2xl md:rounded-bl-none">
+                <i data-lucide="loader-2" class="w-12 h-12 animate-spin mb-4 text-indigo-400"></i>
+                <h2 class="text-xl md:text-2xl font-bold mb-2">작업 처리 중입니다...</h2>
+                <p class="text-xs md:text-sm text-indigo-200">파일 크기에 따라 시간이 소요될 수 있습니다.</p>
+            </div>
+
+            <!-- Toast Notification -->
+            <div id="toast" class="hidden fixed top-4 md:absolute md:top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 md:px-6 md:py-3 rounded-full shadow-xl flex items-center gap-2 z-50 transition-all">
+                <i id="toast-icon" data-lucide="check-circle-2" class="w-4 h-4 md:w-5 md:h-5"></i>
+                <span id="toast-msg" class="font-semibold text-xs md:text-sm whitespace-nowrap">Message</span>
+            </div>
+
+            <div class="p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto relative h-full">
                 
-                <div id="upload-list-container" class="hidden">
-                    <div class="flex justify-between items-end mb-4">
-                        <h3 class="text-xl font-bold text-slate-800">현재 로드된 목록</h3>
-                        <button onclick="clearAllFiles()" class="text-sm text-red-500 hover:text-red-700 font-semibold underline">전체 비우기</button>
-                    </div>
-                    <div id="upload-file-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"></div>
-                </div>
-            </div>
+                <div id="tab-upload" class="tab-content active animation-fade-in max-w-4xl mx-auto h-full flex flex-col">
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">파일 및 폴더(트리) 업로드</h2>
+                    <p class="text-sm md:text-base text-slate-500 mb-6 md:mb-8">PDF 및 이미지 파일(JPG, PNG)을 추가하세요.</p>
 
-            <div id="view-extract" class="tab-content max-w-2xl mx-auto animation-fade-in w-full">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">지정 페이지 다중 추출</h2>
-                    <p class="text-slate-500">선택한 파일들에서 특정 페이지 번호를 각각 추출하여 저장합니다.</p>
-                </div>
-                <div id="list-extract"></div>
-                <div class="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
-                    <label class="block text-sm font-bold text-slate-700 mb-2">공통 추출할 페이지 번호</label>
-                    <input type="number" id="input-extract-page" placeholder="예시: 2" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                </div>
-                <button onclick="handleExtract()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]">
-                    <i data-lucide="download" class="w-5 h-5"></i> 파일 추출 및 다운로드 (ZIP)
-                </button>
-            </div>
-
-            <div id="view-split" class="tab-content max-w-2xl mx-auto animation-fade-in w-full">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">페이지별 전체 분할</h2>
-                    <p class="text-slate-500">선택한 문서들을 1페이지 단위로 각각 모두 분할하여 압축 파일로 저장합니다.</p>
-                </div>
-                <div id="list-split"></div>
-                <button onclick="handleSplit()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98] mt-8">
-                    <i data-lucide="scissors" class="w-5 h-5"></i> 일괄 분할 및 다운로드 (ZIP)
-                </button>
-            </div>
-
-            <div id="view-merge" class="tab-content max-w-2xl mx-auto animation-fade-in w-full">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">파일 간 다중 병합</h2>
-                    <p class="text-slate-500">선택한 여러 개의 PDF 파일을 순서대로 합쳐 단일 파일로 만듭니다.</p>
-                </div>
-                <div id="list-merge"></div>
-                <button onclick="handleMerge()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98] mt-8">
-                    <i data-lucide="merge" class="w-5 h-5"></i> 하나로 병합하여 다운로드
-                </button>
-            </div>
-
-            <div id="view-compress" class="tab-content max-w-2xl mx-auto animation-fade-in w-full">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">파일 용량 최적화</h2>
-                    <p class="text-slate-500">PDF를 이미지 기반으로 변환해 용량을 줄입니다. <span class="text-red-500">*텍스트 선택 불가</span></p>
-                </div>
-                <div id="list-compress"></div>
-                <div class="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
-                    <label class="block text-sm font-bold text-slate-700 mb-3">압축 품질</label>
-                    <div class="grid grid-cols-3 gap-3">
-                        <!-- Quality options -->
-                        <label class="flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200" onclick="setCompressQuality(this, 'high')">
-                            <input type="radio" name="compressLvl" value="high" class="hidden">
-                            <span class="font-bold text-slate-700">고품질</span><span class="text-[10px] text-slate-500">약한 압축</span>
-                        </label>
-                        <label class="flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer bg-indigo-100 border-indigo-500 ring-2 ring-indigo-200" onclick="setCompressQuality(this, 'medium')">
-                            <input type="radio" name="compressLvl" value="medium" checked class="hidden">
-                            <span class="font-bold text-indigo-700">표준</span><span class="text-[10px] text-slate-500">균형 (권장)</span>
-                        </label>
-                        <label class="flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200" onclick="setCompressQuality(this, 'low')">
-                            <input type="radio" name="compressLvl" value="low" class="hidden">
-                            <span class="font-bold text-slate-700">저품질</span><span class="text-[10px] text-slate-500">강한 압축</span>
-                        </label>
-                    </div>
-                </div>
-                <button onclick="handleCompress()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]">
-                    <i data-lucide="minimize-2" class="w-5 h-5"></i> 용량 조절 및 다운로드 (ZIP)
-                </button>
-            </div>
-
-            <div id="view-pdf2jpg" class="tab-content max-w-2xl mx-auto animation-fade-in w-full">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">PDF를 JPG로 변환</h2>
-                    <p class="text-slate-500">선택한 PDF 문서의 모든 페이지를 각각 JPG 이미지 파일로 변환하여 저장합니다.</p>
-                </div>
-                <div id="list-pdf2jpg"></div>
-                <div class="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
-                    <label class="block text-sm font-bold text-slate-700 mb-3">이미지 품질 및 해상도</label>
-                    <div class="grid grid-cols-3 gap-3">
-                        <label class="flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200" onclick="setPdf2JpgQuality(this, 'high')">
-                            <input type="radio" name="pdf2jpgLvl" value="high" class="hidden">
-                            <span class="font-bold text-slate-700">고화질</span><span class="text-[10px] text-slate-500">선명함</span>
-                        </label>
-                        <label class="flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer bg-indigo-100 border-indigo-500 ring-2 ring-indigo-200" onclick="setPdf2JpgQuality(this, 'medium')">
-                            <input type="radio" name="pdf2jpgLvl" value="medium" checked class="hidden">
-                            <span class="font-bold text-indigo-700">표준</span><span class="text-[10px] text-slate-500">균형 (권장)</span>
-                        </label>
-                        <label class="flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200" onclick="setPdf2JpgQuality(this, 'low')">
-                            <input type="radio" name="pdf2jpgLvl" value="low" class="hidden">
-                            <span class="font-bold text-slate-700">저용량</span><span class="text-[10px] text-slate-500">빠른 변환</span>
-                        </label>
-                    </div>
-                </div>
-                <button onclick="handlePdfToJpg()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]">
-                    <i data-lucide="image" class="w-5 h-5"></i> 이미지로 변환 및 다운로드 (ZIP)
-                </button>
-            </div>
-
-            <div id="view-mask" class="tab-content max-w-5xl mx-auto animation-fade-in w-full">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">내용 마스킹 처리 (영역 가리기)</h2>
-                    <p class="text-slate-500">미리보기 화면을 드래그하여 가릴 영역을 지정하세요. (1개 파일만 선택 가능)</p>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <!-- Controls -->
-                    <div class="col-span-1 lg:col-span-4 flex flex-col">
-                        <div id="list-mask"></div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">마스킹할 페이지</label>
-                            <input type="number" id="input-mask-page" value="1" onchange="handleMaskPageChange()" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <div id="drop-zone" class="mb-6 md:mb-8 border-4 border-dashed rounded-3xl p-6 md:p-10 transition-all duration-300 border-slate-300 bg-white shadow-sm">
+                        <div class="text-center mb-6 md:mb-8 pointer-events-none">
+                            <div class="bg-indigo-50 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="upload" id="drop-icon" class="w-8 h-8 md:w-10 md:h-10 text-indigo-400 transition-colors"></i>
+                            </div>
+                            <h3 class="text-lg md:text-xl font-bold text-slate-700">파일이나 폴더를 드래그 앤 드롭 하세요</h3>
                         </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 flex-1">
-                            <h4 class="text-sm font-bold text-slate-700 mb-3">지정된 영역: <span id="mask-count" class="text-indigo-600">0개</span></h4>
-                            <button onclick="clearMaskRects()" class="text-xs bg-white font-semibold text-slate-600 border border-slate-300 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors w-full">영역 모두 지우기 (초기화)</button>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                            <label class="border-2 border-dashed border-indigo-300 bg-indigo-50/50 hover:bg-indigo-100 transition-colors rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center cursor-pointer group">
+                                <i data-lucide="upload" class="w-6 h-6 md:w-7 md:h-7 text-indigo-600 mb-2 group-hover:scale-110 transition-transform"></i>
+                                <span class="text-sm md:text-base font-bold text-indigo-700">개별 파일 선택</span>
+                                <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFileUpload(event)">
+                            </label>
+
+                            <label class="border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-100 transition-colors rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center cursor-pointer group">
+                                <i data-lucide="folder-up" class="w-6 h-6 md:w-7 md:h-7 text-emerald-600 mb-2 group-hover:scale-110 transition-transform"></i>
+                                <span class="text-sm md:text-base font-bold text-emerald-700">폴더 통째로 업로드</span>
+                                <input type="file" webkitdirectory directory multiple class="hidden" onchange="handleFileUpload(event)">
+                            </label>
                         </div>
-                        <button onclick="applyMasking()" class="w-full py-4 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-md flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]">
-                            <i data-lucide="download" class="w-5 h-5"></i> 마스킹 적용 및 저장
-                        </button>
                     </div>
+
+                    <div id="file-list-container" class="hidden bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex-1 flex-col min-h-0">
+                        <div class="flex items-center justify-between mb-4 shrink-0">
+                            <h3 class="text-base md:text-lg font-bold text-slate-700" id="file-count-title">로드된 목록 (0개)</h3>
+                            <button onclick="downloadAllAsZip()" class="text-[11px] md:text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 md:px-4 py-2 rounded-lg hover:bg-indigo-100 flex items-center gap-1.5 md:gap-2">
+                                <i data-lucide="archive" class="w-3 h-3 md:w-4 md:h-4"></i> ZIP 백업
+                            </button>
+                        </div>
+                        <div id="upload-file-list" class="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1 h-[200px] md:h-auto">
+                            <!-- Files injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-convert" class="tab-content animation-fade-in max-w-2xl mx-auto">
+                    <div class="mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">PDF ↔ 이미지 양방향 변환</h2>
+                        <p class="text-sm md:text-base text-slate-500">PDF는 JPG로, 이미지는 PDF로 스마트하게 상호 변환됩니다.</p>
+                    </div>
+                    <div id="convert-list" class="mb-6"></div>
                     
-                    <!-- Preview Canvas -->
-                    <div class="col-span-1 lg:col-span-8 flex justify-center bg-slate-200 rounded-xl p-4 overflow-auto border border-slate-300 shadow-inner h-[600px] custom-scrollbar">
-                        <div id="preview-placeholder" class="flex items-center justify-center h-full text-slate-500 font-medium">좌측에서 파일을 선택하면 미리보기가 표시됩니다.</div>
-                        
-                        <div id="preview-container" class="hidden relative inline-block shadow-xl border border-slate-400 bg-white min-w-[300px] h-fit select-none">
-                            <div id="preview-loader" class="hidden absolute inset-0 bg-white/70 flex items-center justify-center z-10 backdrop-blur-sm">
-                                <span class="text-indigo-600 font-bold bg-indigo-50 px-4 py-2 rounded-full shadow-sm animate-pulse">페이지 렌더링 중...</span>
+                    <div class="mb-6 md:mb-8 bg-white p-4 md:p-6 rounded-xl border border-slate-200">
+                        <label class="block text-sm font-bold text-slate-700 mb-3">변환 품질 해상도</label>
+                        <div class="grid grid-cols-3 gap-2 md:gap-3">
+                            <label class="quality-radio convert flex flex-col items-center p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all border-slate-200 hover:border-indigo-300" onclick="setQuality('convert', 'low')">
+                                <span class="text-xs md:text-sm font-bold text-slate-700">저용량</span>
+                            </label>
+                            <label class="quality-radio convert flex flex-col items-center p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all border-indigo-600 bg-indigo-50" onclick="setQuality('convert', 'medium')">
+                                <span class="text-xs md:text-sm font-bold text-indigo-700">표준</span>
+                            </label>
+                            <label class="quality-radio convert flex flex-col items-center p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all border-slate-200 hover:border-indigo-300" onclick="setQuality('convert', 'high')">
+                                <span class="text-xs md:text-sm font-bold text-slate-700">고화질</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="handleConversion()" class="w-full py-3 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm md:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
+                        <i data-lucide="file-image" class="w-5 h-5"></i> 변환 및 다운로드
+                    </button>
+                </div>
+
+                <div id="tab-merge" class="tab-content animation-fade-in max-w-2xl mx-auto">
+                    <div class="mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">파일 간 병합</h2>
+                        <p class="text-sm text-slate-500">여러 개의 PDF를 하나의 파일로 순서대로 합칩니다. (드래그하여 순서 변경)</p>
+                    </div>
+                    <div id="merge-list" class="mb-6"></div>
+                    
+                    <div id="merge-order-container" class="hidden mb-6 md:mb-8 p-4 md:p-5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <h3 class="text-xs md:text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                            <i data-lucide="grip-vertical" class="w-4 h-4 text-indigo-600"></i> 병합 순서 지정
+                        </h3>
+                        <div id="merge-order-list" class="space-y-2"></div>
+                    </div>
+
+                    <button onclick="handleMerge()" class="w-full py-3 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm md:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
+                        <i data-lucide="merge" class="w-5 h-5"></i> 병합 및 다운로드
+                    </button>
+                </div>
+
+                <!-- Extract -->
+                <div id="tab-extract" class="tab-content animation-fade-in max-w-2xl mx-auto">
+                    <div class="mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">지정 페이지 추출</h2>
+                    </div>
+                    <div id="extract-list" class="mb-6"></div>
+                    <div class="mb-6 md:mb-8 bg-white p-4 md:p-5 rounded-xl border border-slate-200">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">추출할 페이지 번호</label>
+                        <input type="number" id="extract-page-input" placeholder="예: 2" class="w-full p-2.5 md:p-3 border border-slate-300 rounded-lg outline-none text-sm md:text-base focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    <button onclick="handleExtract()" class="w-full py-3 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm md:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
+                        <i data-lucide="download" class="w-5 h-5"></i> 처리 및 다운로드
+                    </button>
+                </div>
+
+                <!-- Split -->
+                <div id="tab-split" class="tab-content animation-fade-in max-w-2xl mx-auto">
+                    <div class="mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">페이지별 전체 분할</h2>
+                    </div>
+                    <div id="split-list" class="mb-6"></div>
+                    <button onclick="handleSplit()" class="w-full mt-6 py-3 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm md:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
+                        <i data-lucide="scissors" class="w-5 h-5"></i> 분할 및 다운로드
+                    </button>
+                </div>
+
+                <!-- Compress -->
+                <div id="tab-compress" class="tab-content animation-fade-in max-w-2xl mx-auto">
+                    <div class="mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">파일 용량 최적화</h2>
+                        <p class="text-xs md:text-sm text-rose-500 font-bold">* 텍스트가 이미지화되어 텍스트 복사가 불가능해집니다.</p>
+                    </div>
+                    <div id="compress-list" class="mb-6"></div>
+                    <div class="mb-6 md:mb-8 bg-white p-4 md:p-6 rounded-xl border border-slate-200">
+                        <label class="block text-sm font-bold text-slate-700 mb-3">압축 품질 (PPI)</label>
+                        <div class="grid grid-cols-3 gap-2 md:gap-3">
+                            <label class="quality-radio compress flex flex-col items-center p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all border-slate-200 hover:border-indigo-300" onclick="setQuality('compress', 'low')">
+                                <span class="text-xs md:text-sm font-bold text-slate-700">최대 압축</span>
+                            </label>
+                            <label class="quality-radio compress flex flex-col items-center p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all border-indigo-600 bg-indigo-50" onclick="setQuality('compress', 'medium')">
+                                <span class="text-xs md:text-sm font-bold text-indigo-700">표준</span>
+                            </label>
+                            <label class="quality-radio compress flex flex-col items-center p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all border-slate-200 hover:border-indigo-300" onclick="setQuality('compress', 'high')">
+                                <span class="text-xs md:text-sm font-bold text-slate-700">고화질</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button onclick="handleCompress()" class="w-full py-3 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm md:text-lg flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
+                        <i data-lucide="minimize-2" class="w-5 h-5"></i> 압축 및 다운로드
+                    </button>
+                </div>
+
+                <div id="tab-mask" class="tab-content animation-fade-in max-w-5xl mx-auto h-full flex flex-col">
+                    <div class="mb-4 md:mb-6">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2">내용 일괄 마스킹 처리</h2>
+                        <p class="text-xs md:text-sm text-slate-500">터치나 마우스로 가릴 영역을 드래그하세요. 다중 페이지 지정이 가능합니다.</p>
+                    </div>
+
+                    <div class="flex flex-col lg:flex-row gap-4 md:gap-6 flex-1 min-h-0">
+                        <div class="w-full lg:w-80 flex flex-col gap-4 md:gap-6 shrink-0">
+                            <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                                <div id="mask-list" class="mb-4"></div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">마스킹할 페이지 (미리보기)</label>
+                                    <input type="number" id="mask-page-input" value="1" onchange="handleMaskPageChange()" class="w-full p-2.5 border border-slate-300 rounded-lg outline-none text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                </div>
                             </div>
+
+                            <div class="bg-slate-800 p-4 md:p-5 rounded-xl text-white shadow-md">
+                                <div class="flex justify-between items-center text-xs text-slate-300 mb-1">
+                                    <span>현재 페이지 영역</span><span id="mask-count-current" class="font-bold text-white bg-slate-700 px-2 rounded-full">0개</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm font-bold mb-4">
+                                    <span>전체 누적 마스킹</span><span id="mask-count-total" class="text-indigo-300">0개</span>
+                                </div>
+                                <div class="flex gap-2 mb-4">
+                                    <button onclick="clearMaskRects(false)" class="w-1/2 text-[10px] md:text-xs font-semibold bg-slate-700 hover:bg-slate-600 py-2 rounded-lg transition-colors">현재 페이지만 지우기</button>
+                                    <button onclick="clearMaskRects(true)" class="w-1/2 text-[10px] md:text-xs font-semibold bg-rose-600 hover:bg-rose-500 py-2 rounded-lg transition-colors">전체 초기화</button>
+                                </div>
+                                <button onclick="applyMasking()" class="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                                    <i data-lucide="download" class="w-4 h-4"></i> 일괄 마스킹 저장
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 flex flex-col items-center justify-center bg-slate-200/80 rounded-2xl p-2 md:p-4 overflow-hidden border border-slate-300 shadow-inner relative min-h-[400px]">
+                            <div id="mask-info-toast" class="hidden absolute top-2 left-2 md:top-4 md:left-4 z-10 bg-black/60 text-white text-[10px] md:text-xs px-2 py-1 md:px-3 md:py-1.5 rounded-full pointer-events-none"></div>
                             
-                            <canvas id="pdf-canvas" class="block w-full max-w-[800px] h-auto"></canvas>
-                            
-                            <!-- Drawing Overlay -->
-                            <div id="mask-overlay" class="absolute inset-0 cursor-crosshair z-20"
-                                onmousedown="startDraw(event)" onmousemove="doDraw(event)" onmouseup="endDraw()" onmouseleave="endDraw()">
+                            <div id="mask-canvas-container" class="relative bg-white shadow-lg cursor-crosshair border border-slate-300 mx-auto transition-all touch-none w-full h-full max-h-full flex items-center justify-center overflow-hidden">
+                                <div id="mask-empty-state" class="text-slate-400 text-xs md:text-sm select-none pointer-events-none text-center p-8 whitespace-pre-line">
+                                    파일을 선택하면 뷰어가 나타납니다.
+                                </div>
+                                
+                                <div id="mask-wrapper" class="relative hidden max-w-full max-h-full">
+                                    <canvas id="pdf-canvas" class="block max-w-full max-h-[65vh] object-contain"></canvas>
+                                    <div id="mask-overlay" class="absolute inset-0 z-20"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
+            </div>
         </div>
     </div>
 
     <script>
-        // PDF.js 워커 설정
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
         // Global State
-        let files = [];
-        let activeTab = 'upload';
-        
-        let selections = { extract: [], split: [], merge: [], compress: [], pdf2jpg: [], mask: null };
-        let compressQualityLevel = 'medium';
-        let pdf2jpgQualityLevel = 'medium';
-        
-        let maskRects = [];
-        let isDrawing = false;
-        let currentRect = null;
-        let renderTask = null;
+        const state = {
+            files: [],
+            activeTab: 'upload',
+            selections: {
+                convert: [], merge: [], extract: [], split: [], compress: [], mask: []
+            },
+            quality: { convert: 'medium', compress: 'medium' },
+            mask: {
+                page: 1,
+                rects: [],
+                allRects: {}, // { '1': [...], '2': [...] }
+                isDrawing: false,
+                currentRect: null
+            },
+            draggedMergeIndex: null
+        };
 
-        // Initialize Icons
-        lucide.createIcons();
+        const tabs = [
+            { id: 'upload', icon: 'upload', label: '파일/폴더 로드' },
+            { id: 'extract', icon: 'file-up', label: '페이지 추출' },
+            { id: 'split', icon: 'scissors', label: '개별 분할' },
+            { id: 'merge', icon: 'merge', label: '파일 병합' },
+            { id: 'compress', icon: 'minimize-2', label: '용량 최적화' },
+            { id: 'convert', icon: 'file-image', label: 'PDF↔이미지' },
+            { id: 'mask', icon: 'square', label: '내용 마스킹' }
+        ];
 
-        function switchTab(tabId) {
-            activeTab = tabId;
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(`view-${tabId}`).classList.add('active');
-            
-            document.querySelectorAll('.nav-btn').forEach(el => {
-                el.className = 'nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-800 hover:text-white font-medium';
+        // Library Loaders
+        async function loadScript(src, checkVar) {
+            if (window[checkVar]) return window[checkVar];
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload = () => resolve(window[checkVar]);
+                s.onerror = reject;
+                document.head.appendChild(s);
             });
-            const activeBtn = document.getElementById(`btn-${tabId}`);
-            activeBtn.className = 'nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-indigo-600 text-white shadow-lg font-bold';
-            
-            if(tabId === 'mask') renderMaskPreview();
+        }
+        const getPdfLib = () => loadScript('https://unpkg.com/pdf-lib/dist/pdf-lib.min.js', 'PDFLib');
+        const getJSZip = () => loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'JSZip');
+        const getPdfJs = async () => {
+            if (window.pdfjsLib) return window.pdfjsLib;
+            const lib = await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', 'pdfjsLib');
+            lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            return lib;
+        };
+
+        // UI Helpers
+        const el = id => document.getElementById(id);
+        const showLoader = () => el('global-loader').classList.remove('hidden');
+        const hideLoader = () => el('global-loader').classList.add('hidden');
+        const notify = (msg, type = 'success') => {
+            const t = el('toast');
+            el('toast-msg').textContent = msg;
+            t.className = `fixed top-4 md:absolute md:top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 md:px-6 md:py-3 rounded-full shadow-xl flex items-center gap-2 z-50 animate-bounce ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            el('toast-icon').setAttribute('data-lucide', type === 'error' ? 'alert-circle' : 'check-circle-2');
+            lucide.createIcons();
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        };
+
+        function renderNav() {
+            const nav = el('nav-container');
+            nav.innerHTML = tabs.map(t => `
+                <button onclick="setActiveTab('${t.id}')" class="flex shrink-0 items-center gap-3 px-3 md:px-4 py-2.5 rounded-xl transition-all ${state.activeTab === t.id ? 'bg-indigo-600 text-white shadow-lg font-bold' : 'hover:bg-slate-800 hover:text-white font-medium'}">
+                    <i data-lucide="${t.icon}" class="w-5 h-5"></i>
+                    <span class="text-sm hidden lg:block">${t.label}</span>
+                    <span class="text-[11px] md:hidden">${t.label}</span>
+                </button>
+            `).join('');
+            lucide.createIcons();
         }
 
-        function showLoader() { document.getElementById('global-loader').classList.remove('hidden'); document.getElementById('global-loader').classList.add('flex'); }
-        function hideLoader() { document.getElementById('global-loader').classList.add('hidden'); document.getElementById('global-loader').classList.remove('flex'); }
-        
-        function notify(msg, type = 'success') {
-            const toast = document.getElementById('notification-toast');
-            const icon = document.getElementById('notify-icon');
-            document.getElementById('notify-msg').textContent = msg;
+        function setActiveTab(id) {
+            state.activeTab = id;
+            document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+            el(`tab-${id}`).classList.add('active');
+            renderNav();
+            if(id === 'mask') renderMaskPreview();
+        }
+
+        function renderMainFileList() {
+            const container = el('upload-file-list');
+            const wrapper = el('file-list-container');
+            if (state.files.length === 0) {
+                wrapper.classList.add('hidden');
+                return;
+            }
+            wrapper.classList.remove('hidden');
+            el('file-count-title').textContent = `로드된 목록 (${state.files.length}개)`;
             
-            toast.className = `absolute top-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-xl flex items-center gap-2 z-40 animate-bounce ${type==='error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
-            icon.setAttribute('data-lucide', type === 'error' ? 'alert-circle' : 'check-circle-2');
+            container.innerHTML = state.files.map(f => `
+                <div class="flex items-center justify-between p-2 md:p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div class="flex items-center gap-2 md:gap-3 overflow-hidden flex-1">
+                        <i data-lucide="${f.isImage ? 'image' : 'file-code-2'}" class="w-4 h-4 md:w-5 md:h-5 ${f.isImage ? 'text-emerald-500' : 'text-rose-500'} flex-shrink-0"></i>
+                        <div class="flex flex-col min-w-0">
+                            <span class="font-semibold text-slate-700 text-xs md:text-sm truncate">${f.name}</span>
+                            ${f.path !== f.name ? `<span class="text-[9px] md:text-[10px] text-slate-400 truncate">${f.path}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 md:gap-3 pl-2">
+                        <button onclick="removeFile('${f.id}')" class="p-1 md:p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+            updateAllToolLists();
+        }
+
+        function renderToolList(type, filterOnlyPdf, multiSelect) {
+            const container = el(`${type}-list`);
+            if(!container) return;
+            
+            const displayFiles = filterOnlyPdf ? state.files.filter(f => !f.isImage) : state.files;
+            const selArray = state.selections[type];
+            
+            let html = `
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-sm font-semibold text-slate-700">대상 선택 <span class="text-indigo-600 font-bold ml-1">(${selArray.length}개)</span></label>
+                    ${displayFiles.length > 0 ? `
+                        <button onclick="toggleSelectAll('${type}', ${filterOnlyPdf})" class="text-[11px] md:text-xs font-semibold flex items-center gap-1 text-slate-600 bg-slate-100 px-2 md:px-3 py-1.5 rounded-md hover:bg-slate-200">
+                            <i data-lucide="check-square" class="w-3 h-3"></i> ${selArray.length === displayFiles.length ? '전체 해제' : '전체 선택'}
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+
+            if (displayFiles.length === 0) {
+                html += `<p class="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-200">목록이 비어있습니다.</p>`;
+            } else {
+                html += `<div class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar border border-slate-100 p-2 rounded-lg bg-slate-50">`;
+                html += displayFiles.map(f => {
+                    const isChecked = selArray.includes(f.id);
+                    return `
+                        <label class="flex items-center p-2.5 md:p-3 border rounded-lg cursor-pointer transition-colors ${isChecked ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50'}">
+                            <input type="checkbox" class="mr-3 w-4 h-4 text-indigo-600 rounded" ${isChecked ? 'checked' : ''} onchange="toggleSelection('${type}', '${f.id}', ${multiSelect})">
+                            <div class="flex-1 min-w-0 flex flex-col">
+                                <span class="font-semibold text-xs md:text-sm truncate ${isChecked ? 'text-indigo-900' : 'text-slate-700'}">${f.name}</span>
+                            </div>
+                            ${f.isImage ? 
+                                `<span class="text-[10px] md:text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200 ml-2 whitespace-nowrap font-bold">IMG</span>` :
+                                `<span class="text-[10px] md:text-xs text-slate-500 bg-white px-2 py-1 rounded-md border ml-2 whitespace-nowrap">${f.pageCount}P</span>`
+                            }
+                        </label>
+                    `;
+                }).join('');
+                html += `</div>`;
+            }
+            container.innerHTML = html;
             lucide.createIcons();
             
-            setTimeout(() => toast.classList.add('hidden'), 4000);
+            if(type === 'merge') renderMergeOrderList();
+            if(type === 'mask') renderMaskPreview();
         }
 
-        async function handleFileUpload(event) {
-            const uploadedFiles = Array.from(event.target.files);
-            if(uploadedFiles.length === 0) return;
-            
-            showLoader();
-            try {
-                let addedCount = 0;
-                for (const file of uploadedFiles) {
-                    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) continue;
-                    
-                    try {
-                        const arrayBuffer = await file.arrayBuffer();
-                        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                        files.push({
-                            id: Math.random().toString(36).substr(2, 9),
-                            name: file.name,
-                            path: file.webkitRelativePath || file.name,
-                            arrayBuffer: arrayBuffer,
-                            pageCount: pdfDoc.getPageCount()
-                        });
-                        addedCount++;
-                    } catch(e) { console.error('Load err:', file.name); }
-                }
-                
-                document.getElementById('total-file-count').textContent = files.length;
-                updateAllUI();
-                if(addedCount > 0) notify(`${addedCount}개 파일 로드 완료`);
-                else notify('유효한 PDF가 없습니다.', 'error');
-            } catch (error) {
-                notify('업로드 중 오류 발생', 'error');
-            } finally {
-                event.target.value = '';
-                hideLoader();
+        function updateAllToolLists() {
+            renderToolList('convert', false, true);
+            renderToolList('merge', true, true);
+            renderToolList('extract', true, true);
+            renderToolList('split', true, true);
+            renderToolList('compress', true, true);
+            renderToolList('mask', true, true);
+        }
+
+        function toggleSelection(type, id, multi) {
+            let arr = state.selections[type];
+            if (!multi) {
+                state.selections[type] = arr.includes(id) ? [] : [id];
+            } else {
+                if (arr.includes(id)) state.selections[type] = arr.filter(i => i !== id);
+                else state.selections[type].push(id);
             }
+            
+            if(type === 'mask') {
+                state.mask.page = 1;
+                el('mask-page-input').value = 1;
+                state.mask.allRects = {};
+                clearMaskRects(true);
+            }
+            renderToolList(type, type !== 'convert', multi);
         }
 
-        function clearAllFiles() {
-            files = [];
-            selections = { extract: [], split: [], merge: [], compress: [], pdf2jpg: [], mask: null };
-            document.getElementById('total-file-count').textContent = 0;
-            updateAllUI();
+        function toggleSelectAll(type, filterOnlyPdf) {
+            const displayFiles = filterOnlyPdf ? state.files.filter(f => !f.isImage) : state.files;
+            if (state.selections[type].length === displayFiles.length) {
+                state.selections[type] = [];
+            } else {
+                state.selections[type] = displayFiles.map(f => f.id);
+            }
+            renderToolList(type, filterOnlyPdf, true);
         }
 
         function removeFile(id) {
-            files = files.filter(f => f.id !== id);
-            for(let key in selections) {
-                if(Array.isArray(selections[key])) selections[key] = selections[key].filter(i => i !== id);
-                else if(selections[key] === id) selections[key] = null;
+            state.files = state.files.filter(f => f.id !== id);
+            for(let key in state.selections) {
+                state.selections[key] = state.selections[key].filter(tid => tid !== id);
             }
-            document.getElementById('total-file-count').textContent = files.length;
-            updateAllUI();
+            renderMainFileList();
         }
 
-        function updateAllUI() {
-            renderUploadList();
-            renderSelectionList('extract', true);
-            renderSelectionList('split', true);
-            renderSelectionList('merge', true);
-            renderSelectionList('compress', true);
-            renderSelectionList('pdf2jpg', true);
-            renderSelectionList('mask', false);
-            if(activeTab === 'mask') renderMaskPreview();
-            lucide.createIcons();
-        }
-
-        function renderUploadList() {
-            const container = document.getElementById('upload-list-container');
-            const list = document.getElementById('upload-file-list');
-            list.innerHTML = '';
-            
-            if(files.length === 0) {
-                container.classList.add('hidden');
-                return;
-            }
-            container.classList.remove('hidden');
-
-            files.forEach(file => {
-                const displayPath = file.path.includes('/') ? file.path : file.name;
-                list.innerHTML += `
-                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <i data-lucide="file-code-2" class="w-6 h-6 text-indigo-500 flex-shrink-0"></i>
-                            <div class="truncate">
-                                <p class="font-bold text-slate-700 text-sm truncate" title="${displayPath}">${displayPath}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <span class="bg-slate-100 text-slate-600 font-semibold text-xs px-2 py-1 rounded-md">${file.pageCount} P</span>
-                            <button onclick="removeFile('${file.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
-                                <i data-lucide="trash-2" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>`;
+        function setQuality(type, val) {
+            state.quality[type] = val;
+            const labels = document.querySelectorAll(`.quality-radio.${type}`);
+            labels.forEach(l => {
+                l.classList.remove('border-indigo-600', 'bg-indigo-50');
+                l.classList.add('border-slate-200');
+                l.querySelector('span').classList.remove('text-indigo-700');
+                l.querySelector('span').classList.add('text-slate-700');
             });
-        }
-
-        function renderSelectionList(type, multiple) {
-            const container = document.getElementById(`list-${type}`);
-            if(!container) return;
-            
-            const isAllSelected = multiple && files.length > 0 && selections[type].length === files.length;
-            
-            let html = `
-                <div class="mb-6">
-                    <div class="flex justify-between items-end mb-2">
-                        <label class="block text-sm font-semibold text-slate-700">대상 파일 선택</label>
-                        ${multiple && files.length > 0 ? `
-                            <label class="flex items-center text-sm cursor-pointer text-indigo-600 font-bold hover:text-indigo-800 bg-indigo-50 px-3 py-1 rounded-full">
-                                <input type="checkbox" class="mr-2 w-4 h-4 accent-indigo-600 cursor-pointer" ${isAllSelected ? 'checked' : ''} onchange="toggleSelectAll('${type}', this.checked)">
-                                전체 선택
-                            </label>
-                        ` : ''}
-                    </div>
-            `;
-
-            if(files.length === 0) {
-                html += `<p class="text-sm text-slate-500 italic bg-slate-50 p-4 rounded-lg border border-slate-200">먼저 파일을 업로드 해주세요.</p></div>`;
-                container.innerHTML = html;
-                return;
+            const selected = Array.from(labels).find(l => l.getAttribute('onclick').includes(val));
+            if(selected) {
+                selected.classList.add('border-indigo-600', 'bg-indigo-50');
+                selected.classList.remove('border-slate-200');
+                selected.querySelector('span').classList.add('text-indigo-700');
+                selected.querySelector('span').classList.remove('text-slate-700');
             }
+        }
 
-            html += `<div class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">`;
+        async function processFiles(uploadedFiles) {
+            if (!uploadedFiles || uploadedFiles.length === 0) return;
+            showLoader();
+            try {
+                const PDFLib = await getPdfLib();
+                const newFiles = [];
+                for (const file of uploadedFiles) {
+                    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                    const isImg = file.type.startsWith('image/') || /\.(jpg|jpeg|png)$/i.test(file.name);
+                    if (!isPdf && !isImg) continue;
+
+                    const arrayBuffer = await file.arrayBuffer();
+                    let pageCount = 1;
+                    if (isPdf) {
+                        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer.slice(0), { ignoreEncryption: true });
+                        pageCount = pdfDoc.getPageCount();
+                    }
+                    newFiles.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        name: file.name,
+                        path: file.webkitRelativePath || file.name,
+                        arrayBuffer, pageCount, isImage: isImg, mimeType: file.type
+                    });
+                }
+                if (newFiles.length > 0) {
+                    state.files.push(...newFiles);
+                    notify(`${newFiles.length}개의 파일이 로드되었습니다.`);
+                    renderMainFileList();
+                } else notify('유효한 파일을 찾지 못했습니다.', 'error');
+            } catch(e) { console.error(e); notify('오류 발생', 'error'); }
+            finally { hideLoader(); }
+        }
+
+        function handleFileUpload(e) {
+            processFiles(Array.from(e.target.files));
+            e.target.value = '';
+        }
+
+        // Drag & Drop for Upload
+        const dz = el('drop-zone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => e.preventDefault(), false));
+        ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, () => {
+            dz.classList.add('border-indigo-500', 'bg-indigo-50/80', 'scale-[1.02]');
+            el('drop-icon').classList.add('text-indigo-600');
+        }, false));
+        ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, () => {
+            dz.classList.remove('border-indigo-500', 'bg-indigo-50/80', 'scale-[1.02]');
+            el('drop-icon').classList.remove('text-indigo-600');
+        }, false));
+
+        dz.addEventListener('drop', async (e) => {
+            const items = e.dataTransfer.items;
+            const fileArray = [];
             
-            files.forEach(file => {
-                const isChecked = multiple ? selections[type].includes(file.id) : selections[type] === file.id;
-                const displayPath = file.path.includes('/') ? file.path : file.name;
-                
-                html += `
-                    <label class="flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${isChecked ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50'}">
-                        <input type="${multiple ? 'checkbox' : 'radio'}" name="sel-${type}" class="mr-3 w-4 h-4 accent-indigo-600" ${isChecked ? 'checked' : ''} onchange="handleSelection('${type}', '${file.id}', ${multiple})">
-                        <div class="flex-1 overflow-hidden">
-                            <p class="font-medium text-slate-700 truncate text-sm" title="${displayPath}">${displayPath}</p>
-                        </div>
-                        <span class="ml-2 text-xs text-slate-400 bg-white px-2 py-1 rounded-full border whitespace-nowrap">${file.pageCount} Pages</span>
-                    </label>
-                `;
-            });
-            html += `</div></div>`;
-            container.innerHTML = html;
-        }
-
-        function toggleSelectAll(type, checked) {
-            selections[type] = checked ? files.map(f => f.id) : [];
-            updateAllUI();
-        }
-
-        function handleSelection(type, id, multiple) {
-            if(multiple) {
-                if(selections[type].includes(id)) selections[type] = selections[type].filter(i => i !== id);
-                else selections[type].push(id);
-            } else {
-                selections[type] = id;
-                if(type === 'mask') {
-                    document.getElementById('input-mask-page').value = '1';
-                    clearMaskRects();
-                    renderMaskPreview();
+            async function scanFiles(entry) {
+                if (entry.isFile) {
+                    return new Promise(resolve => {
+                        entry.file(f => {
+                            Object.defineProperty(f, 'webkitRelativePath', { value: entry.fullPath.replace(/^\//, ''), writable: false });
+                            fileArray.push(f);
+                            resolve();
+                        });
+                    });
+                } else if (entry.isDirectory) {
+                    const dirReader = entry.createReader();
+                    return new Promise(resolve => {
+                        const readEntries = () => {
+                            dirReader.readEntries(async entries => {
+                                if (entries.length === 0) resolve();
+                                else {
+                                    for (let i = 0; i < entries.length; i++) await scanFiles(entries[i]);
+                                    readEntries();
+                                }
+                            });
+                        };
+                        readEntries();
+                    });
                 }
             }
-            updateAllUI();
-        }
 
-        async function saveOutputFiles(generatedFiles, defaultZipName) {
+            if (items) {
+                showLoader();
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].kind === 'file') {
+                        const entry = items[i].webkitGetAsEntry();
+                        if (entry) await scanFiles(entry);
+                    }
+                }
+                hideLoader();
+            } else {
+                for (let i = 0; i < e.dataTransfer.files.length; i++) fileArray.push(e.dataTransfer.files[i]);
+            }
+            processFiles(fileArray);
+        });
+
+        async function saveOutputFiles(generatedFiles, zipName) {
             if (generatedFiles.length === 1 && !generatedFiles[0].path.includes('/')) {
                 const ext = generatedFiles[0].path.split('.').pop().toLowerCase();
-                const mimeType = (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg' : 'application/pdf';
+                let mimeType = 'application/pdf';
+                if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+                else if (ext === 'png') mimeType = 'image/png';
                 const blob = new Blob([generatedFiles[0].bytes], { type: mimeType });
                 const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url; link.download = generatedFiles[0].path;
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                const a = document.createElement('a'); a.href = url; a.download = generatedFiles[0].path;
+                a.click(); URL.revokeObjectURL(url);
             } else {
+                const JSZip = await getJSZip();
                 const zip = new JSZip();
                 generatedFiles.forEach(f => zip.file(f.path, f.bytes));
-                const zipContent = await zip.generateAsync({ type: 'blob' });
-                const url = URL.createObjectURL(zipContent);
-                const link = document.createElement('a');
-                link.href = url; link.download = defaultZipName;
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                const blob = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = zipName;
+                a.click(); URL.revokeObjectURL(url);
             }
+        }
+        function downloadAllAsZip() {
+            if(state.files.length === 0) return notify('파일 없음', 'error');
+            showLoader();
+            setTimeout(async () => {
+                try {
+                    const out = state.files.map(f => ({path: f.path, bytes: f.arrayBuffer}));
+                    await saveOutputFiles(out, `PDF_Backup_${Date.now()}.zip`);
+                    notify('전체 압축 완료');
+                } catch(e) { notify('오류', 'error'); } finally { hideLoader(); }
+            }, 100);
+        }
+
+        async function handleConversion() {
+            const targets = state.selections.convert;
+            if (targets.length === 0) return notify('파일을 선택하세요.', 'error');
+            showLoader();
+            try {
+                const PDFLib = await getPdfLib();
+                const pdfjs = await getPdfJs();
+                const outFiles = [];
+                let scale = 1.5, quality = 0.8;
+                if (state.quality.convert === 'high') { scale = 2.5; quality = 1.0; }
+                if (state.quality.convert === 'low') { scale = 1.0; quality = 0.6; }
+
+                for (const tId of targets) {
+                    const file = state.files.find(f => f.id === tId);
+                    if (!file) continue;
+                    const pathParts = file.path.split('/');
+                    const nameNoExt = pathParts.pop().replace(/\.(pdf|jpg|jpeg|png)$/i, '');
+
+                    if (file.isImage) {
+                        const newDoc = await PDFLib.PDFDocument.create();
+                        let img;
+                        if (file.mimeType.includes('png') || file.name.toLowerCase().endsWith('png')) {
+                            img = await newDoc.embedPng(file.arrayBuffer.slice(0));
+                        } else {
+                            img = await newDoc.embedJpg(file.arrayBuffer.slice(0));
+                        }
+                        const { width, height } = img.scale(1);
+                        const page = newDoc.addPage([width, height]);
+                        page.drawImage(img, { x: 0, y: 0, width, height });
+                        outFiles.push({ path: [...pathParts, `${nameNoExt}.pdf`].join('/'), bytes: await newDoc.save() });
+                    } else {
+                        const task = pdfjs.getDocument({ data: file.arrayBuffer.slice(0) });
+                        const pdf = await task.promise;
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({ scale });
+                            const cvs = document.createElement('canvas');
+                            cvs.width = viewport.width; cvs.height = viewport.height;
+                            const ctx = cvs.getContext('2d');
+                            ctx.fillStyle = 'white'; ctx.fillRect(0, 0, cvs.width, cvs.height);
+                            await page.render({ canvasContext: ctx, viewport }).promise;
+                            const dataUrl = cvs.toDataURL('image/jpeg', quality);
+                            const res = await fetch(dataUrl);
+                            outFiles.push({ path: [...pathParts, `${nameNoExt}_p${i}.jpg`].join('/'), bytes: await res.arrayBuffer() });
+                        }
+                    }
+                }
+                await saveOutputFiles(outFiles, 'converted.zip'); notify('변환 완료');
+            } catch(e) { console.error(e); notify('오류 발생', 'error'); } finally { hideLoader(); }
         }
 
         async function handleExtract() {
-            const pageInput = document.getElementById('input-extract-page').value;
-            const pageNum = parseInt(pageInput, 10);
-            if (selections.extract.length === 0 || !pageNum || pageNum < 1) return notify('파일 및 올바른 페이지 입력 요망', 'error');
+            const targets = state.selections.extract;
+            const pageStr = el('extract-page-input').value;
+            if (targets.length === 0 || !pageStr) return notify('정보를 입력하세요.', 'error');
+            const pageNum = parseInt(pageStr, 10);
+            if (isNaN(pageNum) || pageNum < 1) return notify('올바른 페이지 입력 요망.', 'error');
 
             showLoader();
             try {
+                const PDFLib = await getPdfLib();
                 const outFiles = [];
-                for (const targetId of selections.extract) {
-                    const file = files.find(f => f.id === targetId);
-                    if (!file || pageNum > file.pageCount) continue;
-
+                for (const tId of targets) {
+                    const file = state.files.find(f => f.id === tId);
+                    if (!file || file.isImage || pageNum > file.pageCount) continue;
                     const srcDoc = await PDFLib.PDFDocument.load(file.arrayBuffer.slice(0));
                     const newDoc = await PDFLib.PDFDocument.create();
-                    const [copiedPage] = await newDoc.copyPages(srcDoc, [pageNum - 1]);
-                    newDoc.addPage(copiedPage);
-                    const bytes = await newDoc.save();
-                    
-                    const pathParts = file.path.split('/');
-                    const fileName = pathParts.pop();
-                    outFiles.push({ path: [...pathParts, `ext_p${pageNum}_${fileName}`].join('/'), bytes });
+                    const [copied] = await newDoc.copyPages(srcDoc, [pageNum - 1]);
+                    newDoc.addPage(copied);
+                    const p = file.path.split('/');
+                    const n = p.pop();
+                    outFiles.push({ path: [...p, `ext_p${pageNum}_${n}`].join('/'), bytes: await newDoc.save() });
                 }
-                if(outFiles.length === 0) notify('해당 페이지가 포함된 파일이 없음', 'error');
-                else { await saveOutputFiles(outFiles, 'extracted.zip'); notify('추출 완료'); }
-            } catch(e) { notify('추출 오류', 'error'); } finally { hideLoader(); }
+                if(outFiles.length > 0) { await saveOutputFiles(outFiles, 'extracted.zip'); notify('추출 완료'); }
+                else notify('해당 페이지 없음', 'error');
+            } catch(e) { notify('오류', 'error'); } finally { hideLoader(); }
         }
 
         async function handleSplit() {
-            if (selections.split.length === 0) return notify('분할할 파일을 선택하세요', 'error');
+            const targets = state.selections.split;
+            if (targets.length === 0) return notify('선택 요망', 'error');
             showLoader();
             try {
+                const PDFLib = await getPdfLib();
                 const outFiles = [];
-                for (const targetId of selections.split) {
-                    const file = files.find(f => f.id === targetId);
-                    if (!file) continue;
+                for (const tId of targets) {
+                    const file = state.files.find(f => f.id === tId);
+                    if (!file || file.isImage) continue;
                     const srcDoc = await PDFLib.PDFDocument.load(file.arrayBuffer.slice(0));
-                    const pathParts = file.path.split('/');
-                    const nameNoExt = pathParts.pop().replace(/\.pdf$/i, '');
-                    
+                    const p = file.path.split('/');
+                    const n = p.pop().replace(/\.pdf$/i, '');
                     for (let i = 0; i < file.pageCount; i++) {
                         const newDoc = await PDFLib.PDFDocument.create();
-                        const [copiedPage] = await newDoc.copyPages(srcDoc, [i]);
-                        newDoc.addPage(copiedPage);
-                        outFiles.push({ path: [...pathParts, `${nameNoExt}_p${i+1}.pdf`].join('/'), bytes: await newDoc.save() });
+                        const [copied] = await newDoc.copyPages(srcDoc, [i]);
+                        newDoc.addPage(copied);
+                        outFiles.push({ path: [...p, `${n}_p${i + 1}.pdf`].join('/'), bytes: await newDoc.save() });
                     }
                 }
-                await saveOutputFiles(outFiles, 'split.zip'); notify('전체 분할 완료');
-            } catch(e) { notify('분할 오류', 'error'); } finally { hideLoader(); }
-        }
-
-        async function handleMerge() {
-            if (selections.merge.length < 2) return notify('병합할 파일 2개 이상 선택', 'error');
-            showLoader();
-            try {
-                const mergedDoc = await PDFLib.PDFDocument.create();
-                for (const targetId of selections.merge) {
-                    const file = files.find(f => f.id === targetId);
-                    if(!file) continue;
-                    const srcDoc = await PDFLib.PDFDocument.load(file.arrayBuffer.slice(0));
-                    const copiedPages = await mergedDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-                    copiedPages.forEach(p => mergedDoc.addPage(p));
-                }
-                await saveOutputFiles([{ path: 'merged_doc.pdf', bytes: await mergedDoc.save() }], '');
-                notify('병합 완료');
-            } catch(e) { notify('병합 오류', 'error'); } finally { hideLoader(); }
-        }
-
-        function setCompressQuality(element, lvl) {
-            compressQualityLevel = lvl;
-            const labels = element.parentElement.querySelectorAll('label');
-            labels.forEach(l => {
-                l.className = 'flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200';
-                l.querySelector('span').classList.remove('text-indigo-700');
-                l.querySelector('span').classList.add('text-slate-700');
-            });
-            element.className = 'flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer bg-indigo-100 border-indigo-500 ring-2 ring-indigo-200';
-            element.querySelector('span').classList.remove('text-slate-700');
-            element.querySelector('span').classList.add('text-indigo-700');
-        }
-
-        function setPdf2JpgQuality(element, lvl) {
-            pdf2jpgQualityLevel = lvl;
-            const labels = element.parentElement.querySelectorAll('label');
-            labels.forEach(l => {
-                l.className = 'flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 border-slate-200';
-                l.querySelector('span').classList.remove('text-indigo-700');
-                l.querySelector('span').classList.add('text-slate-700');
-            });
-            element.className = 'flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer bg-indigo-100 border-indigo-500 ring-2 ring-indigo-200';
-            element.querySelector('span').classList.remove('text-slate-700');
-            element.querySelector('span').classList.add('text-indigo-700');
-        }
-
-        async function handlePdfToJpg() {
-            if (selections.pdf2jpg.length === 0) return notify('변환할 파일을 선택하세요', 'error');
-            showLoader();
-            try {
-                const outFiles = [];
-                let scale = 1.5, quality = 0.8;
-                if (pdf2jpgQualityLevel === 'high') { scale = 2.5; quality = 1.0; }
-                if (pdf2jpgQualityLevel === 'low') { scale = 1.0; quality = 0.6; }
-
-                for (const targetId of selections.pdf2jpg) {
-                    const file = files.find(f => f.id === targetId);
-                    if (!file) continue;
-
-                    const loadingTask = pdfjsLib.getDocument({ data: file.arrayBuffer.slice(0) });
-                    const pdf = await loadingTask.promise;
-                    
-                    const pathParts = file.path.split('/');
-                    const nameNoExt = pathParts.pop().replace(/\.pdf$/i, '');
-
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const viewport = page.getViewport({ scale });
-                        
-                        const canvas = document.createElement('canvas');
-                        canvas.width = viewport.width; 
-                        canvas.height = viewport.height;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // 배경을 흰색으로 채우기 (투명도 방지)
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        
-                        await page.render({ canvasContext: ctx, viewport }).promise;
-
-                        const imgDataUrl = canvas.toDataURL('image/jpeg', quality);
-                        const res = await fetch(imgDataUrl);
-                        const imgBytes = await res.arrayBuffer();
-                        
-                        outFiles.push({ 
-                            path: [...pathParts, `${nameNoExt}_p${i}.jpg`].join('/'), 
-                            bytes: imgBytes 
-                        });
-                    }
-                }
-                
-                await saveOutputFiles(outFiles, 'pdf_to_jpg.zip'); 
-                notify('JPG 이미지 변환 완료');
-            } catch(e) { 
-                console.error(e); 
-                notify('이미지 변환 오류', 'error'); 
-            } finally { 
-                hideLoader(); 
-            }
+                await saveOutputFiles(outFiles, 'split.zip'); notify('분할 완료');
+            } catch(e) { notify('오류', 'error'); } finally { hideLoader(); }
         }
 
         async function handleCompress() {
-            if (selections.compress.length === 0) return notify('압축할 파일 선택', 'error');
+            const targets = state.selections.compress;
+            if (targets.length === 0) return notify('선택 요망', 'error');
             showLoader();
             try {
+                const PDFLib = await getPdfLib();
+                const pdfjs = await getPdfJs();
                 const outFiles = [];
                 let scale = 1.5, quality = 0.6;
-                if (compressQualityLevel === 'high') { scale = 2.0; quality = 0.8; }
-                if (compressQualityLevel === 'low') { scale = 1.0; quality = 0.4; }
+                if(state.quality.compress === 'high') { scale = 2.0; quality = 0.8; }
+                if(state.quality.compress === 'low') { scale = 1.0; quality = 0.4; }
 
-                for (const targetId of selections.compress) {
-                    const file = files.find(f => f.id === targetId);
-                    if (!file) continue;
-
-                    const loadingTask = pdfjsLib.getDocument({ data: file.arrayBuffer.slice(0) });
-                    const pdf = await loadingTask.promise;
+                for(const tId of targets) {
+                    const file = state.files.find(f => f.id === tId);
+                    if(!file || file.isImage) continue;
+                    const task = pdfjs.getDocument({data: file.arrayBuffer.slice(0)});
+                    const srcPdf = await task.promise;
                     const newDoc = await PDFLib.PDFDocument.create();
-
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const viewport = page.getViewport({ scale });
+                    for (let i = 1; i <= srcPdf.numPages; i++) {
+                        const page = await srcPdf.getPage(i);
+                        const viewport = page.getViewport({scale});
+                        const cvs = document.createElement('canvas');
+                        cvs.width = viewport.width; cvs.height = viewport.height;
+                        const ctx = cvs.getContext('2d');
+                        ctx.fillStyle = 'white'; ctx.fillRect(0,0,cvs.width,cvs.height);
+                        await page.render({canvasContext: ctx, viewport}).promise;
                         
-                        const canvas = document.createElement('canvas');
-                        canvas.width = viewport.width; canvas.height = viewport.height;
-                        const ctx = canvas.getContext('2d');
-                        await page.render({ canvasContext: ctx, viewport }).promise;
-
-                        const imgDataUrl = canvas.toDataURL('image/jpeg', quality);
-                        const res = await fetch(imgDataUrl);
+                        const res = await fetch(cvs.toDataURL('image/jpeg', quality));
                         const imgBytes = await res.arrayBuffer();
-                        
-                        const jpgImage = await newDoc.embedJpg(imgBytes);
-                        const newPage = newDoc.addPage([viewport.width, viewport.height]);
-                        newPage.drawImage(jpgImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+                        const jpg = await newDoc.embedJpg(imgBytes);
+                        const p = newDoc.addPage([viewport.width, viewport.height]);
+                        p.drawImage(jpg, {x:0, y:0, width:viewport.width, height:viewport.height});
                     }
-                    const pathParts = file.path.split('/');
-                    outFiles.push({ path: [...pathParts, `comp_${pathParts.pop()}`].join('/'), bytes: await newDoc.save() });
+                    const p = file.path.split('/');
+                    outFiles.push({ path: [...p, `compressed_${p.pop()}`].join('/'), bytes: await newDoc.save() });
                 }
-                await saveOutputFiles(outFiles, 'compressed.zip'); notify('용량 최적화 완료');
-            } catch(e) { console.error(e); notify('압축 오류', 'error'); } finally { hideLoader(); }
+                await saveOutputFiles(outFiles, 'compressed.zip'); notify('압축 완료');
+            } catch(e) { notify('오류', 'error'); } finally { hideLoader(); }
         }
 
-        function handleMaskPageChange() {
-            clearMaskRects();
-            renderMaskPreview();
+        function renderMergeOrderList() {
+            const c = el('merge-order-container');
+            const l = el('merge-order-list');
+            const targets = state.selections.merge;
+            if (targets.length < 2) { c.classList.add('hidden'); return; }
+            c.classList.remove('hidden');
+
+            l.innerHTML = targets.map((id, index) => {
+                const f = state.files.find(x => x.id === id);
+                if(!f) return '';
+                return `
+                    <div draggable="true" ondragstart="onMergeDragStart(event, ${index})" ondragover="event.preventDefault()" ondrop="onMergeDrop(event, ${index})" class="flex items-center justify-between p-2 md:p-3 bg-white border border-slate-300 rounded-lg shadow-sm cursor-grab">
+                        <div class="flex items-center gap-2 overflow-hidden flex-1 pointer-events-none">
+                            <span class="text-[10px] md:text-xs font-bold text-indigo-600 bg-indigo-100 px-2 py-1 rounded shrink-0">${index + 1}</span>
+                            <p class="font-bold text-slate-700 text-xs md:text-sm truncate">${f.name}</p>
+                        </div>
+                        <div class="flex gap-1 shrink-0 ml-2">
+                            <button onclick="moveMergeItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} class="p-1 text-slate-400 hover:text-indigo-600 rounded disabled:opacity-30"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                            <button onclick="moveMergeItem(${index}, 1)" ${index === targets.length-1 ? 'disabled' : ''} class="p-1 text-slate-400 hover:text-indigo-600 rounded disabled:opacity-30"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+        function onMergeDragStart(e, index) { state.draggedMergeIndex = index; e.dataTransfer.effectAllowed = 'move'; }
+        function onMergeDrop(e, dropIndex) {
+            e.preventDefault();
+            if (state.draggedMergeIndex === null || state.draggedMergeIndex === dropIndex) return;
+            const arr = state.selections.merge;
+            const item = arr.splice(state.draggedMergeIndex, 1)[0];
+            arr.splice(dropIndex, 0, item);
+            state.draggedMergeIndex = null;
+            renderMergeOrderList();
+        }
+        function moveMergeItem(i, dir) {
+            const arr = state.selections.merge;
+            if (i+dir < 0 || i+dir >= arr.length) return;
+            const t = arr[i]; arr[i] = arr[i+dir]; arr[i+dir] = t;
+            renderMergeOrderList();
+        }
+        async function handleMerge() {
+            const targets = state.selections.merge;
+            if(targets.length < 2) return notify('2개 이상 선택', 'error');
+            showLoader();
+            try {
+                const PDFLib = await getPdfLib();
+                const newDoc = await PDFLib.PDFDocument.create();
+                for(const tId of targets) {
+                    const f = state.files.find(x => x.id === tId);
+                    if(f && !f.isImage) {
+                        const srcDoc = await PDFLib.PDFDocument.load(f.arrayBuffer.slice(0));
+                        const copied = await newDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+                        copied.forEach(p => newDoc.addPage(p));
+                    }
+                }
+                await saveOutputFiles([{path: 'merged.pdf', bytes: await newDoc.save()}], '');
+                notify('병합 완료');
+            } catch(e) { notify('오류', 'error'); } finally { hideLoader(); }
         }
 
+        let maskRenderTask = null;
         async function renderMaskPreview() {
-            const canvas = document.getElementById('pdf-canvas');
-            const placeholder = document.getElementById('preview-placeholder');
-            const container = document.getElementById('preview-container');
-            const loader = document.getElementById('preview-loader');
-            
-            if (!selections.mask) {
-                container.classList.add('hidden');
-                placeholder.classList.remove('hidden');
+            const targets = state.selections.mask;
+            const emptyState = el('mask-empty-state');
+            const wrapper = el('mask-wrapper');
+            const cvs = el('pdf-canvas');
+            const toast = el('mask-info-toast');
+
+            if(targets.length === 0) {
+                emptyState.classList.remove('hidden');
+                wrapper.classList.add('hidden');
+                toast.classList.add('hidden');
+                emptyState.textContent = '파일을 선택하면 뷰어가 나타납니다.';
                 return;
             }
 
-            const file = files.find(f => f.id === selections.mask);
-            const pageNum = parseInt(document.getElementById('input-mask-page').value, 10);
-            
-            if (!file || isNaN(pageNum) || pageNum < 1 || pageNum > file.pageCount) return;
+            const file = state.files.find(f => f.id === targets[0]);
+            if(!file || file.isImage) return;
 
-            placeholder.classList.add('hidden');
-            container.classList.remove('hidden');
-            loader.classList.remove('hidden');
+            const pageNum = state.mask.page;
+            if(pageNum < 1 || pageNum > file.pageCount) {
+                emptyState.classList.remove('hidden');
+                wrapper.classList.add('hidden');
+                toast.classList.add('hidden');
+                emptyState.textContent = '페이지 없음';
+                return;
+            }
+
+            emptyState.classList.remove('hidden');
+            emptyState.innerHTML = '<i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500"></i>렌더링 중...';
+            wrapper.classList.add('hidden');
+            lucide.createIcons();
 
             try {
-                if (renderTask) {
-                    await renderTask.cancel();
-                }
-                const loadingTask = pdfjsLib.getDocument({ data: file.arrayBuffer.slice(0) });
-                const pdf = await loadingTask.promise;
+                if(maskRenderTask) maskRenderTask.cancel();
+                const pdfjs = await getPdfJs();
+                const task = pdfjs.getDocument({data: file.arrayBuffer.slice(0)});
+                const pdf = await task.promise;
                 const page = await pdf.getPage(pageNum);
+                
+                const viewport = page.getViewport({scale: 1.5});
+                cvs.width = viewport.width; cvs.height = viewport.height;
+                const ctx = cvs.getContext('2d');
+                maskRenderTask = page.render({canvasContext: ctx, viewport});
+                await maskRenderTask.promise;
 
-                const viewport = page.getViewport({ scale: 1.5 });
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-
-                const ctx = canvas.getContext('2d');
-                renderTask = page.render({ canvasContext: ctx, viewport });
-                await renderTask.promise;
-            } catch (err) {
-                if(err.name !== 'RenderingCancelledException') console.error('Preview error', err);
-            } finally {
-                loader.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                wrapper.classList.remove('hidden');
+                toast.classList.remove('hidden');
+                toast.textContent = `* 기준: ${file.name}`;
+                drawMaskRects();
+                updateMaskCount();
+            } catch(e) {
+                if(e?.name !== 'RenderingCancelledException') {
+                    console.error(e);
+                    emptyState.textContent = '렌더링 오류';
+                }
             }
         }
 
-        function startDraw(e) {
-            const rect = e.target.getBoundingClientRect();
-            isDrawing = true;
-            currentRect = { 
-                startX: ((e.clientX - rect.left) / rect.width) * 100,
-                startY: ((e.clientY - rect.top) / rect.height) * 100,
-                w: 0, h: 0 
-            };
-            drawMaskRects();
+        function handleMaskPageChange() {
+            state.mask.allRects[state.mask.page] = [...state.mask.rects];
+            let p = parseInt(el('mask-page-input').value, 10);
+            if(isNaN(p) || p < 1) p = 1;
+            state.mask.page = p;
+            state.mask.rects = state.mask.allRects[p] || [];
+            renderMaskPreview();
         }
 
-        function doDraw(e) {
-            if (!isDrawing) return;
-            const rect = e.target.getBoundingClientRect();
-            currentRect.w = (((e.clientX - rect.left) / rect.width) * 100) - currentRect.startX;
-            currentRect.h = (((e.clientY - rect.top) / rect.height) * 100) - currentRect.startY;
-            drawMaskRects();
-        }
-
-        function endDraw() {
-            if (!isDrawing) return;
-            isDrawing = false;
-            if (Math.abs(currentRect.w) > 2 && Math.abs(currentRect.h) > 2) {
-                maskRects.push({
-                    x: currentRect.w < 0 ? currentRect.startX + currentRect.w : currentRect.startX,
-                    y: currentRect.h < 0 ? currentRect.startY + currentRect.h : currentRect.startY,
-                    w: Math.abs(currentRect.w),
-                    h: Math.abs(currentRect.h)
-                });
-            }
-            currentRect = null;
-            document.getElementById('mask-count').textContent = `${maskRects.length}개`;
-            drawMaskRects();
+        function updateMaskCount() {
+            let total = 0;
+            for(let k in state.mask.allRects) total += state.mask.allRects[k].length;
+            total += state.mask.rects.length - (state.mask.allRects[state.mask.page]?.length || 0);
+            el('mask-count-current').textContent = `${state.mask.rects.length}개`;
+            el('mask-count-total').textContent = `${total}개`;
         }
 
         function drawMaskRects() {
-            const overlay = document.getElementById('mask-overlay');
+            const overlay = el('mask-overlay');
             overlay.innerHTML = '';
-            
-            maskRects.forEach(rect => {
+            state.mask.rects.forEach(r => {
                 const div = document.createElement('div');
-                div.className = 'mask-rect pointer-events-none';
-                div.style.left = `${rect.x}%`; div.style.top = `${rect.y}%`;
-                div.style.width = `${rect.w}%`; div.style.height = `${rect.h}%`;
+                div.className = 'absolute bg-slate-900 opacity-90 border border-slate-500';
+                div.style.left = `${r.x}%`; div.style.top = `${r.y}%`; div.style.width = `${r.w}%`; div.style.height = `${r.h}%`;
                 overlay.appendChild(div);
             });
-
-            if (isDrawing && currentRect) {
+            if(state.mask.isDrawing && state.mask.currentRect) {
+                const cr = state.mask.currentRect;
                 const div = document.createElement('div');
-                div.className = 'mask-drawing pointer-events-none';
-                div.style.left = `${currentRect.w < 0 ? currentRect.startX + currentRect.w : currentRect.startX}%`;
-                div.style.top = `${currentRect.h < 0 ? currentRect.startY + currentRect.h : currentRect.startY}%`;
-                div.style.width = `${Math.abs(currentRect.w)}%`;
-                div.style.height = `${Math.abs(currentRect.h)}%`;
+                div.className = 'absolute bg-rose-500 opacity-40 border-2 border-rose-700 border-dashed';
+                div.style.left = `${cr.w < 0 ? cr.startX + cr.w : cr.startX}%`;
+                div.style.top = `${cr.h < 0 ? cr.startY + cr.h : cr.startY}%`;
+                div.style.width = `${Math.abs(cr.w)}%`;
+                div.style.height = `${Math.abs(cr.h)}%`;
                 overlay.appendChild(div);
             }
         }
 
-        function clearMaskRects() {
-            maskRects = [];
-            document.getElementById('mask-count').textContent = `0개`;
+        const overlayEvt = el('mask-overlay');
+        function getPos(e) {
+            const rect = overlayEvt.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: ((clientX - rect.left) / rect.width) * 100, y: ((clientY - rect.top) / rect.height) * 100 };
+        }
+        function startDraw(e) {
+            if(e.type==='touchstart') e.preventDefault();
+            const p = getPos(e);
+            state.mask.isDrawing = true;
+            state.mask.currentRect = { startX: p.x, startY: p.y, w: 0, h: 0 };
             drawMaskRects();
+        }
+        function moveDraw(e) {
+            if(!state.mask.isDrawing) return;
+            if(e.type==='touchmove') e.preventDefault();
+            const p = getPos(e);
+            state.mask.currentRect.w = p.x - state.mask.currentRect.startX;
+            state.mask.currentRect.h = p.y - state.mask.currentRect.startY;
+            drawMaskRects();
+        }
+        function endDraw(e) {
+            if(!state.mask.isDrawing) return;
+            if(e && e.type==='touchend') e.preventDefault();
+            state.mask.isDrawing = false;
+            const cr = state.mask.currentRect;
+            if(cr && Math.abs(cr.w) > 2 && Math.abs(cr.h) > 2) {
+                state.mask.rects.push({
+                    x: cr.w < 0 ? cr.startX + cr.w : cr.startX,
+                    y: cr.h < 0 ? cr.startY + cr.h : cr.startY,
+                    w: Math.abs(cr.w), h: Math.abs(cr.h)
+                });
+            }
+            state.mask.currentRect = null;
+            state.mask.allRects[state.mask.page] = [...state.mask.rects];
+            updateMaskCount(); drawMaskRects();
+        }
+        
+        ['mousedown', 'touchstart'].forEach(ev => overlayEvt.addEventListener(ev, startDraw, {passive:false}));
+        ['mousemove', 'touchmove'].forEach(ev => overlayEvt.addEventListener(ev, moveDraw, {passive:false}));
+        ['mouseup', 'mouseleave', 'touchend'].forEach(ev => overlayEvt.addEventListener(ev, endDraw, {passive:false}));
+
+        function clearMaskRects(all) {
+            if(all) { state.mask.allRects = {}; state.mask.rects = []; }
+            else { state.mask.rects = []; state.mask.allRects[state.mask.page] = []; }
+            updateMaskCount(); drawMaskRects();
         }
 
         async function applyMasking() {
-            if (!selections.mask || maskRects.length === 0) return notify('파일 선택 및 마스킹 영역 지정 요망', 'error');
-            const file = files.find(f => f.id === selections.mask);
-            const pageNum = parseInt(document.getElementById('input-mask-page').value, 10);
-            
+            state.mask.allRects[state.mask.page] = [...state.mask.rects];
+            let tot = 0; for(let k in state.mask.allRects) tot += state.mask.allRects[k].length;
+            const targets = state.selections.mask;
+            if(targets.length === 0 || tot === 0) return notify('마스킹할 대상과 영역 지정 요망', 'error');
+
             showLoader();
             try {
-                const srcDoc = await PDFLib.PDFDocument.load(file.arrayBuffer.slice(0));
-                const targetPage = srcDoc.getPages()[pageNum - 1];
-                const { width: pdfW, height: pdfH } = targetPage.getSize();
-
-                maskRects.forEach(rect => {
-                    const x = (rect.x / 100) * pdfW;
-                    const w = (rect.w / 100) * pdfW;
-                    const h = (rect.h / 100) * pdfH;
-                    const y = pdfH - ((rect.y / 100) * pdfH) - h; 
-                    targetPage.drawRectangle({ x, y, width: w, height: h, color: PDFLib.rgb(0, 0, 0) });
-                });
-
-                await saveOutputFiles([{ path: `masked_${file.name}`, bytes: await srcDoc.save() }], '');
-                clearMaskRects();
-                notify('마스킹 저장 완료');
-            } catch (e) { notify('마스킹 오류', 'error'); } finally { hideLoader(); }
+                const PDFLib = await getPdfLib();
+                const outFiles = [];
+                for(const tId of targets) {
+                    const f = state.files.find(x => x.id === tId);
+                    if(!f || f.isImage) continue;
+                    const doc = await PDFLib.PDFDocument.load(f.arrayBuffer.slice(0));
+                    const pages = doc.getPages();
+                    for(let p in state.mask.allRects) {
+                        const pNum = parseInt(p, 10);
+                        if(pNum < 1 || pNum > pages.length) continue;
+                        const rects = state.mask.allRects[p];
+                        if(rects.length === 0) continue;
+                        const tPage = pages[pNum-1];
+                        const {width: pw, height: ph} = tPage.getSize();
+                        rects.forEach(r => {
+                            const x = (r.x/100)*pw, w = (r.w/100)*pw, h = (r.h/100)*ph;
+                            const y = ph - ((r.y/100)*ph) - h;
+                            tPage.drawRectangle({x,y,width:w,height:h,color: PDFLib.rgb(0,0,0)});
+                        });
+                    }
+                    outFiles.push({path: `masked_${f.name}`, bytes: await doc.save()});
+                }
+                await saveOutputFiles(outFiles, 'masked.zip');
+                clearMaskRects(true); notify('마스킹 일괄 적용 완료');
+            } catch(e) { notify('오류', 'error'); } finally { hideLoader(); }
         }
+
+        // Init
+        renderNav();
     </script>
 </body>
 </html>
