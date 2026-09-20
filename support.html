@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지원근무 현황 및 분석</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1216; --bg-panel:#0f181e; --bg-panel-raised:#15222a;
+  --line-2:#10b981; --line-2-dim:rgba(16, 185, 129, 0.18);
+  --amber:#f59e0b; --amber-dim:rgba(245, 158, 11, 0.18);
+  --red:#ef4444; --red-dim:rgba(239, 68, 68, 0.18);
+  --blue:#3b82f6; --blue-dim:rgba(59, 130, 246, 0.18);
+  --purple:#8b5cf6; --purple-dim:rgba(139, 92, 246, 0.18);
+  --ink:#f1f5f9; --ink-dim:#94a3b8; --ink-faint:#64748b;
+  --rule:#1e293b; --rule-strong:#334155;
+  --mono:'IBM Plex Mono', ui-monospace, monospace; --sans:'Noto Sans KR', -apple-system, sans-serif;
+}
+/* 명시적 라이트/다크 테마 오버라이드 지원 */
+[data-theme="light"] {
+  --bg:#f8fafc; --bg-panel:#ffffff; --bg-panel-raised:#f1f5f9;
+  --ink:#0f172a; --ink-dim:#475569; --ink-faint:#94a3b8;
+  --rule:#e2e8f0; --rule-strong:#cbd5e1;
+  --line-2:#059669; --line-2-dim:#d1fae5;
+  --amber:#d97706; --amber-dim:#fef3c7;
+  --red:#dc2626; --red-dim:#fee2e2;
+  --blue:#2563eb; --blue-dim:#dbeafe;
+  --purple:#7c3aed; --purple-dim:#ede9fe;
+}
+[data-theme="dark"] {
+  --bg:#0a1216; --bg-panel:#0f181e; --bg-panel-raised:#15222a;
+  --line-2:#10b981; --line-2-dim:rgba(16, 185, 129, 0.18);
+  --amber:#f59e0b; --amber-dim:rgba(245, 158, 11, 0.18);
+  --red:#ef4444; --red-dim:rgba(239, 68, 68, 0.18);
+  --blue:#3b82f6; --blue-dim:rgba(59, 130, 246, 0.18);
+  --purple:#8b5cf6; --purple-dim:rgba(139, 92, 246, 0.18);
+  --ink:#f1f5f9; --ink-dim:#94a3b8; --ink-faint:#64748b;
+  --rule:#1e293b; --rule-strong:#334155;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{ background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:12px; line-height:1.45; transition:background-color .2s ease, color .2s ease; }
+.wrap{ max-width:1440px; margin:0 auto; padding:16px 16px 80px; }
+
+header.top{ display:flex; justify-content:space-between; align-items:center; gap:14px;
+  padding-bottom:12px; margin-bottom:14px; border-bottom:1px solid var(--rule-strong); flex-wrap:wrap; }
+.brand{ display:flex; flex-direction:column; gap:4px; }
+.brand-top{ display:flex; align-items:center; gap:8px; }
+.brand .badge{ font-family:var(--mono); font-size:11px; font-weight:700; color:var(--line-2);
+  border:1px solid var(--line-2-dim); background:var(--line-2-dim); padding:2px 8px; border-radius:4px; width:fit-content; }
+.brand h1{ font-size:20px; font-weight:800; margin:0; letter-spacing:-0.02em; }
+.top-meta{ text-align:right; color:var(--ink-faint); font-family:var(--mono); font-size:11px; line-height:1.4; }
+
+.action-btn{ background:var(--line-2); color:#fff; border:0; border-radius:4px; padding:6px 13px; font-weight:700; cursor:pointer; min-height:31px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:11.5px; transition:all .15s ease; text-decoration:none; white-space:nowrap; }
+.action-btn:hover{ filter:brightness(1.1); transform:translateY(-1px); }
+.action-btn:disabled{ opacity:.55; cursor:not-allowed; }
+.action-btn.secondary{ background:var(--blue); }
+.action-btn.slate{ background:#334155; }
+.action-btn.slate:hover{ background:#475569; }
+.action-btn.sm{ padding:4px 9px; font-size:11px; min-height:28px; }
+
+/* 낮/밤 모드 토글 버튼 */
+.theme-toggle-btn{
+  background:var(--bg-panel-raised); border:1px solid var(--rule-strong);
+  color:var(--ink); width:32px; height:31px; border-radius:4px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:16px; cursor:pointer; transition:all .15s ease; user-select:none;
+}
+.theme-toggle-btn:hover{
+  background:var(--rule); transform:scale(1.06);
+}
+
+.panel{ background:var(--bg-panel); border:1px solid var(--rule); border-radius:8px; padding:14px 16px; margin-bottom:14px; }
+.panel-head{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
+.panel h2{ font-size:14px; margin:0; font-weight:700; display:flex; align-items:center; gap:8px;}
+.panel h2 .cnt{ font-family:var(--mono); font-size:11.5px; color:var(--ink-faint); font-weight:500; }
+.panel .sub{ font-size:11px; color:var(--ink-dim); margin-bottom:10px; }
+
+.callout-teal{ border-left:4px solid var(--line-2); }
+.callout-blue{ border-left:4px solid var(--blue); }
+.callout-amber{ border-left:4px solid var(--amber); }
+
+.upload-row-grid{
+  display:grid; grid-template-columns: 1fr 1fr auto;
+  gap:10px; align-items:flex-end;
+}
+@media (max-width:1100px){
+  .upload-row-grid{ grid-template-columns: 1fr 1fr; }
+}
+.file-box{ display:flex; flex-direction:column; gap:4px; }
+.file-box label{ font-size:11px; color:var(--ink-dim); font-weight:700; }
+.file-box input[type="file"]{
+  background:var(--bg-panel-raised); border:1px solid var(--rule-strong);
+  color:var(--ink); padding:5px 8px; border-radius:4px; font-size:11px; width:100%;
+}
+.upload-status{ margin-top:10px; padding:8px 12px; border:1px solid var(--rule); border-radius:5px; background:var(--bg-panel-raised); color:var(--ink-dim); font-size:11px; line-height:1.45; }
+.upload-status.ok{ border-color:var(--line-2-dim); color:var(--line-2); font-weight:600; }
+.upload-status.err{ border-color:var(--red-dim); color:var(--red); }
+
+/* Modal and KPI row styles */
+.kpi-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+@media (max-width:1100px){ .kpi-row{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:700px){ .kpi-row{ grid-template-columns:repeat(1,1fr); } }
+.kpi{ background:var(--bg-panel); border:1px solid var(--rule); border-radius:6px; padding:12px 14px; position:relative; overflow:hidden;}
+.kpi::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--accent, var(--line-2)); }
+.kpi .n{ font-family:var(--mono); font-size:24px; font-weight:800; color:var(--accent, var(--line-2)); line-height:1;}
+.kpi .l{ margin-top:5px; font-size:11.5px; color:var(--ink); font-weight:700; }
+.kpi .s{ margin-top:2px; font-size:10px; color:var(--ink-faint); }
+.kpi.amber{ --accent:var(--amber); }
+.kpi.red{ --accent:var(--red); }
+.kpi.blue{ --accent:var(--blue); }
+.kpi.purple{ --accent:var(--purple); }
+
+.filters-row{
+  display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end;
+  margin-bottom:10px; background:var(--bg-panel-raised); padding:8px 10px;
+  border-radius:6px; border:1px solid var(--rule);
+}
+.f-item{ display:flex; flex-direction:column; gap:2px; flex-shrink:0; position:relative; }
+.f-item label{ font-size:10px; color:var(--ink-faint); font-weight:700; white-space:nowrap; }
+.f-item select, .f-item input{
+  background:var(--bg-panel); border:1px solid var(--rule-strong); color:var(--ink);
+  padding:3px 6px; border-radius:4px; font-family:var(--sans); font-size:11px; height:27px;
+}
+.f-item input[type="date"]{ width:104px; font-family:var(--mono); font-size:10.5px; }
+.f-item input:focus, .f-item select:focus{ outline:2px solid var(--line-2); outline-offset:1px; }
+
+.month-trigger-btn{
+  background:var(--bg-panel); border:1px solid var(--rule-strong); color:var(--ink);
+  padding:3px 8px; border-radius:4px; font-family:var(--sans); font-size:11px; height:27px;
+  cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:130px;
+  user-select:none; font-weight:600;
+}
+.month-trigger-btn:hover{ border-color:var(--line-2); }
+.month-trigger-btn .tag-count{
+  background:var(--line-2); color:#fff; font-family:var(--mono); font-size:10px;
+  padding:1px 5px; border-radius:10px; font-weight:700;
+}
+
+.tbl-container{ width:100%; overflow-x:hidden; border:1px solid var(--rule); border-radius:6px; }
+table{ width:100%; border-collapse:collapse; font-size:11px; table-layout:auto; }
+
+thead th{
+  text-align:left; padding:6px 6px; color:var(--ink-faint); font-weight:700; font-size:10.5px;
+  border-bottom:1px solid var(--rule-strong); background:var(--bg-panel-raised); cursor:pointer; white-space:nowrap;
+  position:sticky; top:0; z-index:20; height:38px;
+}
+thead th:hover{ color:var(--ink); }
+thead th .arrow{ opacity:0.8; font-size:9px; margin-left:2px; color:var(--line-2); }
+tbody td{ padding:4px 5px; border-bottom:1px solid var(--rule); white-space:nowrap; }
+tbody tr:hover{ background:var(--bg-panel-raised); }
+tbody tr.offday td:first-child{ box-shadow: inset 3px 0 0 var(--red); }
+tbody tr.highlight-twoperson{ background:rgba(59, 130, 246, 0.08); }
+td.name{ font-weight:700; }
+td.rank{ font-family:var(--mono); font-size:10.5px; color:var(--line-2); font-weight:600; }
+td.mono, th.mono{ font-family:var(--mono); }
+
+.tag{ display:inline-block; padding:1px 4px; border-radius:10px; font-size:9px; font-weight:700; white-space:nowrap;}
+.tag-same{ background:var(--amber-dim); color:var(--amber); }
+.tag-diff{ background:var(--line-2-dim); color:var(--line-2); }
+.tag-twoperson{ background:var(--blue-dim); color:#fff; }
+.tag-risk-red{ background:rgba(217, 97, 79, 0.2); color:var(--red); border:1px solid var(--red); }
+.tag-risk-purple{ background:rgba(168, 85, 247, 0.2); color:var(--purple); border:1px solid var(--purple); }
+.tag-switch{ background:rgba(224, 165, 68, 0.2); color:var(--amber); border:1px solid var(--amber); }
+
+.badge-cat{ display:inline-block; font-size:8.5px; font-weight:800; padding:1px 4px; border-radius:3px; margin-bottom:3px; letter-spacing:0.02em; }
+.badge-dae{ background:rgba(16, 185, 129, 0.2); color:var(--line-2); border:1px solid rgba(16, 185, 129, 0.4); }
+.badge-dae-blue{ background:rgba(59, 130, 246, 0.2); color:var(--blue); border:1px solid rgba(59, 130, 246, 0.4); }
+.badge-so{ background:rgba(148, 163, 184, 0.15); color:var(--ink-dim); border:1px solid rgba(148, 163, 184, 0.3); }
+.badge-tot{ background:rgba(245, 158, 11, 0.2); color:var(--amber); border:1px solid rgba(245, 158, 11, 0.4); }
+
+.offbadge{ color:var(--red); font-weight:700; font-family:var(--mono); font-size:10px; }
+.note-cell{ color:var(--ink-dim); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bodyscroll{ max-height:480px; overflow-y:auto; overflow-x:hidden; position:relative; }
+.count-tag{ font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); font-weight:600; white-space:nowrap; margin-left:auto; }
+.empty-row td{ text-align:center; color:var(--ink-faint); padding:20px; }
+
+/* Sticky summary total row */
+.sticky-total-row td{
+  position:sticky !important;
+  top:38px !important;
+  z-index:18 !important;
+  background:#1e2d36 !important;
+  border-bottom:2px solid var(--line-2) !important;
+  box-shadow:0 3px 6px rgba(0,0,0,0.55);
+  font-weight:700;
+  padding:6px 6px;
+  color:#fff !important;
+}
+.sticky-total-row td.total-val{
+  color:var(--line-2) !important;
+  font-family:var(--mono);
+  font-size:11.5px;
+  font-weight:800;
+}
+[data-theme="light"] .sticky-total-row td {
+  background:#e2e8f0 !important;
+  color:#0f172a !important;
+  border-bottom:2px solid var(--line-2) !important;
+}
+
+.pattern-seq{ display:inline-flex; align-items:center; gap:2px; font-family:var(--mono); font-size:9.5px; vertical-align:middle; }
+.p-day{ padding:1px 2px; border-radius:2px; background:var(--bg-panel-raised); border:1px solid var(--rule); color:var(--ink-dim); min-width:15px; text-align:center; }
+.p-day.curr{ border-color:var(--amber); color:var(--amber); font-weight:800; background:rgba(224, 165, 68, 0.2); box-shadow:0 0 0 1px rgba(224,165,68,0.3); }
+.p-day.night{ color:var(--red); font-weight:700; }
+.p-day.daytime{ color:var(--blue); font-weight:700; }
+.p-day.off{ color:var(--ink-faint); opacity:0.85; }
+
+.dash-grid-5{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:12px; }
+@media (max-width:1100px){ .dash-grid-5{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:700px){ .dash-grid-5{ grid-template-columns:repeat(2,1fr); } }
+.dash-card{ background:var(--bg-panel-raised); border:1px solid var(--rule); border-radius:6px; padding:10px 12px; text-align:center; position:relative; }
+.dash-card.is-dae{ border-top:3px solid var(--line-2); }
+.dash-card.is-dae-blue{ border-top:3px solid var(--blue); }
+.dash-card.is-so{ border-top:2px dashed var(--rule-strong); background:rgba(21, 34, 42, 0.6); }
+.dash-card.is-tot{ border-top:3px solid var(--amber); }
+
+.dash-card .val{ font-family:var(--mono); font-size:20px; font-weight:800; color:var(--line-2); line-height:1.2; }
+.dash-card .lbl{ font-size:11px; color:var(--ink-dim); margin-top:3px; font-weight:700; }
+.dash-card .sub-lbl{ font-size:9.5px; color:var(--ink-faint); margin-top:2px; }
+
+.chart-container{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+@media (max-width:850px){ .chart-container{ grid-template-columns:1fr; } }
+.chart-box{ background:var(--bg-panel-raised); border:1px solid var(--rule); border-radius:6px; padding:10px 12px; }
+.chart-box h3{ font-size:11.5px; margin:0 0 8px; font-weight:700; color:var(--ink-dim); }
+.chart-scroll-box{ max-height:220px; overflow-y:auto; padding-right:4px; }
+.bar-row{ display:flex; align-items:center; gap:6px; margin-bottom:4px; font-size:10.5px; }
+.bar-rank{ width:36px; min-width:36px; font-family:var(--mono); font-size:10px; color:var(--ink-faint); font-weight:700; text-align:center; white-space:nowrap; }
+.bar-lbl{ width:92px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; color:var(--ink-dim); font-size:10px; text-align:right; }
+.bar-track{ flex:1; height:9px; background:var(--bg-panel); border-radius:3px; overflow:hidden; }
+.bar-fill{ height:100%; background:var(--line-2); border-radius:3px; }
+.bar-val{ font-family:var(--mono); width:32px; text-align:right; font-size:10px; color:var(--ink); font-weight:700; }
+
+/* Ranking mini table styles */
+.mini-rank-table{ width:100%; border-collapse:collapse; font-size:10.5px; }
+.mini-rank-table th{ position:sticky; top:0; z-index:10; background:var(--bg-panel); color:var(--ink-faint); padding:5px 6px; border-bottom:1px solid var(--rule-strong); font-size:10px; text-align:left; }
+.mini-rank-table td{ padding:4px 6px; border-bottom:1px solid var(--rule); white-space:nowrap; }
+.mini-rank-table tr:hover td{ background:var(--bg-panel); }
+.mini-rank-badge{ font-family:var(--mono); font-size:9.5px; font-weight:800; border-radius:3px; padding:1px 5px; }
+.mini-rank-1{ background:#f59e0b; color:#000; }
+.mini-rank-2{ background:#94a3b8; color:#000; }
+.mini-rank-3{ background:#b45309; color:#fff; }
+.mini-rank-other{ color:var(--ink-faint); }
+
+/* Modal and toast */
+.modal-overlay{ position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.72); backdrop-filter:blur(3px); z-index:99999; display:none; align-items:center; justify-content:center; }
+.modal-overlay.active{ display:flex; }
+.month-dialog{ background:var(--bg-panel); border:1px solid var(--rule-strong); border-top:4px solid var(--line-2); border-radius:10px; width:92%; max-width:440px; box-shadow:0 24px 48px rgba(0,0,0,0.6); animation:popIn .18s ease-out; overflow:hidden; }
+@keyframes popIn{ from{ opacity:0; transform:scale(0.96) translateY(-8px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+.month-dialog-head{ display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--rule); }
+.month-dialog-title{ font-size:14px; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:8px; }
+.month-dialog-close{ background:transparent; border:0; color:var(--ink-faint); font-size:22px; cursor:pointer; line-height:1; }
+.month-dialog-close:hover{ color:var(--ink); }
+.month-dialog-body{ padding:16px 18px; }
+.month-tiles-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:14px 0; }
+.month-btn-tile{ background:var(--bg-panel-raised); border:1px solid var(--rule-strong); border-radius:6px; color:var(--ink-dim); font-family:var(--mono); font-size:13px; font-weight:700; padding:12px 0; text-align:center; cursor:pointer; transition:all .12s ease; user-select:none; }
+.month-btn-tile:hover{ border-color:var(--line-2); color:var(--ink); background:rgba(16,185,129,0.06); }
+.month-btn-tile.selected{ background:var(--line-2); border-color:var(--line-2); color:#ffffff; font-weight:800; box-shadow:0 2px 8px rgba(16,185,129,0.35); }
+.month-dialog-actions{ display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid var(--rule); gap:8px; }
+.month-dialog-tools{ display:flex; gap:6px; }
+.month-dialog-tools button{ background:var(--bg-panel-raised); border:1px solid var(--rule-strong); color:var(--ink-dim); font-size:11px; padding:4px 10px; border-radius:4px; cursor:pointer; }
+.month-dialog-tools button:hover{ color:var(--ink); background:var(--rule); }
+
+.toast-box{ position:fixed; bottom:24px; right:24px; background:#0f172a; color:#fff; border:1px solid var(--line-2); border-radius:6px; padding:10px 16px; font-size:12px; font-weight:700; box-shadow:0 8px 24px rgba(0,0,0,0.5); z-index:999999; transition:opacity .3s ease; }
+.toast-box.err{ border-color:var(--red); color:#fca5a5; }
+.toast-box.warn{ border-color:var(--amber); color:#fde68a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-top">
+        <span class="badge">2호선 · 역무</span>
+      </div>
+      <h1>지원근무 현황 및 분석</h1>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
+      <div class="top-meta" id="topMeta">
+        데이터 기간 -- ~ --<br>
+        명부 기준 -
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button class="action-btn secondary" id="exportJsonBtn" type="button" style="min-height:31px;">💾 JSON 저장</button>
+        <button class="action-btn slate" id="importJsonBtn" type="button" style="min-height:31px;">📂 JSON 불러오기</button>
+        <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
+        <button class="theme-toggle-btn" id="themeToggleBtn" type="button" title="화면 모드 전환 (낮/밤)">
+          <span id="themeEmoji">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 엑셀 데이터 불러오기 패널 -->
+  <div class="panel" style="border-top:3px solid var(--line-2); margin-bottom:14px;">
+    <div style="margin-bottom:8px;">
+      <div style="font-weight:800; font-size:13.5px; color:var(--ink);">
+        엑셀 데이터 불러오기 <span class="badge-cat badge-dae" style="font-size:9.5px; margin:0 0 0 4px;">붙임1 + 붙임2</span>
+      </div>
+      <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">
+        붙임1 전직원명부와 붙임2 역무일지 로데이터를 선택하면, 브라우저 내에서 직접 분석하여 대시보드 데이터를 산출합니다.
+      </div>
+    </div>
+    
+    <div class="upload-row-grid">
+      <div class="file-box">
+        <label>붙임1 · 전직원명부 (.xlsx / .xls)</label>
+        <input type="file" id="rosterFile" accept=".xlsx,.xls,.xlsm,.xlsb">
+      </div>
+      <div class="file-box">
+        <label>붙임2 · 근무자현황 역무일지 로데이터 (.xls / .xlsx)</label>
+        <input type="file" id="logFile" accept=".xlsx,.xls,.xlsm,.xlsb">
+      </div>
+      <button class="action-btn" id="loadExcelBtn" type="button" style="min-height:31px;">📊 엑셀 분석 · 반영</button>
+    </div>
+
+    <div class="upload-status" id="uploadStatus">
+      두 엑셀 파일을 선택한 후 <b>엑셀 분석 · 반영</b>을 누르거나 <b>JSON 불러오기</b>를 클릭해 주세요.
+    </div>
+  </div>
+
+  <!-- Excel Report Downloader Bar -->
+  <div class="panel" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:var(--bg-panel-raised);">
+    <div>
+      <div style="font-weight:700; font-size:12.5px;">📑 지원 근무 현황 종합 엑셀 보고서 추출 (다중 탭/시트)</div>
+      <div style="font-size:10.5px; color:var(--ink-dim); margin-top:2px;">대시보드 테이블 항목과 1:1 일치하는 종합 집계표 및 세부 탭 완벽 서식 추출</div>
+    </div>
+    <button class="action-btn" id="exportAllExcelBtn" type="button" style="background:#059669; padding:5px 12px; font-size:11.5px;">📥 지원근무 종합 엑셀 보고서 다운로드 (.xlsx)</button>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="n" id="kpiMain">0</div>
+      <div class="l">순수 불일치 지원근무 (건)</div>
+      <div class="s">비번·휴무일 출근 및 타조 대근</div>
+    </div>
+    <div class="kpi">
+      <div class="n" id="kpiEmp">0</div>
+      <div class="l">해당 직원 수</div>
+      <div class="s">순수 지원근무를 수행한 인원</div>
+    </div>
+    <div class="kpi blue">
+      <div class="n" id="kpiMaster">0</div>
+      <div class="l">역장 지원 근무 (건)</div>
+      <div class="s" id="kpiMasterSub">일근 관리·환승·독립역장</div>
+    </div>
+    <div class="kpi amber">
+      <div class="n" id="kpiSwitch">0</div>
+      <div class="l">근무조 변경 감지 (명)</div>
+      <div class="s">타 조로 파견·전환된 정규 변경자</div>
+    </div>
+    <div class="kpi purple">
+      <div class="n" id="kpiRisk">0</div>
+      <div class="l">연속근무 주의 (건)</div>
+      <div class="s">24h 철야연속 + 야-야 연속 투입 건수</div>
+    </div>
+  </div>
+
+  <!-- Master Support Panel -->
+  <div class="panel callout-blue">
+    <div class="panel-head">
+      <h2>일근 역장(관리역장 · 환승역장 · 독립역장) 교대 및 지원 근무 현황 <span class="cnt" id="masterHeaderCnt"></span></h2>
+      <button class="action-btn sm secondary" id="exportMasterExcelBtn" type="button">📥 역장 지원 엑셀 다운로드</button>
+    </div>
+    <div class="sub">근무조가 없는 일근 역장(I열: 관리역장, 환승역장, 역장)이 역사 <b>2명 근무 지원</b> 또는 <b>지정 7개 거점역(덕천·사상·수영·장산·양산·경성대부경대·센텀시티) 3명 근무 지원</b>, 산하·타역 지원, 일지에 명시된 지원 등에 투입된 내역입니다.</div>
+
+    <div class="filters-row">
+      <div class="f-item">
+        <label>역장 구분</label>
+        <select id="masterTypeFilter">
+          <option value="">전체 역장 (관리·환승·독립)</option>
+          <option value="관리역장">관리역장만</option>
+          <option value="환승역장">환승역장만 (수영·덕천)</option>
+          <option value="독립역장">독립역장만 (사상)</option>
+        </select>
+      </div>
+      <div class="f-item">
+        <label>근무 형태 필터</label>
+        <select id="masterWorkFilter">
+          <option value="">전체 지원 근무 보기</option>
+          <option value="집중지원">2·3인 집중지원 전체</option>
+          <option value="2명근무">2명 근무 지원만 보기</option>
+          <option value="3명근무">3명 근무 지원만 보기 (7개 거점역)</option>
+          <option value="주간">주간 근무만</option>
+          <option value="야간">야간 근무만</option>
+          <option value="타역">산하·타역 지원만</option>
+        </select>
+      </div>
+      <div class="f-item">
+        <label>소속 관리역 / 소속역</label>
+        <select id="fMasterMgmt"><option value="">전체 소속역</option></select>
+      </div>
+      <div class="f-item">
+        <label>실제 근무 역</label>
+        <select id="fMasterStation"><option value="">전체 근무역</option></select>
+      </div>
+      <div class="f-item" style="min-width:130px;">
+        <label>역장 성명 / 사번</label>
+        <input type="text" id="fMasterSearch" placeholder="이름 또는 사번">
+      </div>
+      <span class="count-tag" id="masterRowCount"></span>
+    </div>
+
+    <div class="tbl-container">
+      <div class="bodyscroll" style="max-height:260px;">
+      <table id="masterTable">
+        <thead>
+          <tr>
+            <th data-k="home_station">소속 관리역(소속역)<span class="arrow"></span></th>
+            <th data-k="master_type">역장 구분<span class="arrow"></span></th>
+            <th data-k="title">I열 직책명<span class="arrow"></span></th>
+            <th data-k="emp_id" class="mono">사번<span class="arrow"></span></th>
+            <th data-k="name">역장 성명<span class="arrow"></span></th>
+            <th data-k="date" class="mono">해당일 (요일)<span class="arrow"></span></th>
+            <th data-k="slot">근무구분<span class="arrow"></span></th>
+            <th data-k="work_station">실제 근무 역<span class="arrow"></span></th>
+            <th data-k="station_day_count">당일 주간총인원<span class="arrow"></span></th>
+            <th>지원 구분</th>
+            <th>역무일지 기재 내용</th>
+          </tr>
+        </thead>
+        <tbody id="masterBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>근무조 불일치 근무자 명단 <span class="cnt" id="mainCnt"></span></h2>
+      <button class="action-btn sm" id="exportMainExcelBtn" type="button">📥 불일치 명단 엑셀 다운로드</button>
+    </div>
+    <div class="sub">조변경 인원의 정상 로테이션은 <b>완전 제외</b>하고, <b>본인의 당시 유효 조 스케줄이 아닌 날 투입된 순수 지원근무(비번·휴무일 출근 or 타 조 대근)</b> 명단입니다. 소속 관리역·소속 근무역 열 클릭 시 <b>역번호순(1차) ➔ 가나다순(2차)</b>으로 정렬됩니다.</div>
+
+    <div class="filters-row">
+      <div class="f-item">
+        <label>월별 다중 선택</label>
+        <button type="button" class="month-trigger-btn" id="openMonthModalBtn" title="클릭하여 조회할 월을 다중 선택합니다.">
+          <span id="monthTriggerLabel">전체 월</span>
+          <span style="font-size:9px; opacity:0.8;">📅 ▾</span>
+        </button>
+      </div>
+
+      <div class="f-item"><label>시작일</label><input type="date" id="fStart"></div>
+      <div class="f-item"><label>종료일</label><input type="date" id="fEnd"></div>
+      <div class="f-item">
+        <label>소속 관리역</label>
+        <select id="fMgmt"><option value="">전체 관리역</option></select>
+      </div>
+      <div class="f-item">
+        <label>소속 근무역</label>
+        <select id="fStation"><option value="">전체 근무역</option></select>
+      </div>
+      <div class="f-item" style="min-width:145px;">
+        <label>근무 형태 / 연속근무 구분</label>
+        <select id="fRiskType">
+          <option value="">전체 불일치 근무</option>
+          <option value="normal">일반 지원근무 (정상)</option>
+          <option value="night_night">⚠️ 야-야 연속근무만</option>
+          <option value="consec_24h">🚨 24시간 연속 (주-야/야-주)만</option>
+          <option value="any_risk">⚡ 연속근무 주의 전체</option>
+        </select>
+      </div>
+      <div class="f-item" style="min-width:130px;">
+        <label>이름 / 사번 검색</label>
+        <input type="text" id="fSearch" placeholder="이름 또는 사번">
+      </div>
+      <span class="count-tag" id="rowCount"></span>
+    </div>
+
+    <div class="tbl-container">
+      <div class="bodyscroll">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th data-k="mgmt_station">소속 관리역<span class="arrow"></span></th>
+            <th data-k="home_station">소속 근무역<span class="arrow"></span></th>
+            <th data-k="emp_id" class="mono">사번<span class="arrow"></span></th>
+            <th data-k="rank_full">직급<span class="arrow"></span></th>
+            <th data-k="name">이름<span class="arrow"></span></th>
+            <th data-k="date" class="mono">해당일 (요일)<span class="arrow"></span></th>
+            <th data-k="slot">근무구분<span class="arrow"></span></th>
+            <th data-k="current_active_group">당시 유효조<span class="arrow"></span></th>
+            <th data-k="own_shift_that_day">그날 본인조 일정<span class="arrow"></span></th>
+            <th data-k="work_station">실제 근무 역<span class="arrow"></span></th>
+            <th>비고 (전후 2일 패턴 / 연속근무 알림 / 일지메모)</th>
+          </tr>
+        </thead>
+        <tbody id="mainBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel callout-teal">
+    <div class="panel-head">
+      <h2>종합 통계 분석 및 시각화 대시보드 <span class="cnt" id="dashPeriodLbl"></span></h2>
+      <div style="font-size:11px; color:var(--ink-faint);">* 상단의 월별 / 기간 필터와 실시간 연동됩니다.</div>
+    </div>
+
+    <!-- 5 KPI Cards -->
+    <div class="dash-grid-5">
+      <div class="dash-card is-tot">
+        <span class="badge-cat badge-tot">종합 합계</span>
+        <div class="val" id="statGrandTotal" style="color:var(--amber);">0건</div>
+        <div class="lbl">총 지원 건수</div>
+        <div class="sub-lbl">교대자 순수지원 + 역장지원 합계</div>
+      </div>
+
+      <div class="dash-card is-dae">
+        <span class="badge-cat badge-dae">대항목 ①</span>
+        <div class="val" id="statMismatchCnt">0건</div>
+        <div class="lbl">교대자 순수지원 건수</div>
+        <div class="sub-lbl" id="statAvgDailySub">1일 평균 0.0건</div>
+      </div>
+
+      <div class="dash-card is-so">
+        <span class="badge-cat badge-so">소항목 (교대자 세부)</span>
+        <div class="val" id="statSubSupportCnt">0건</div>
+        <div class="lbl">↳ 관할 내 타역 지원 건수</div>
+        <div class="sub-lbl" id="statSubSupportSub">전체 순수지원의 0%</div>
+      </div>
+
+      <div class="dash-card is-so">
+        <span class="badge-cat badge-so">소항목 (교대자 세부)</span>
+        <div class="val" id="statRiskCount">0건</div>
+        <div class="lbl">↳ 연속근무 주의 건수</div>
+        <div class="sub-lbl">야-야 및 24h 철야 연속투입</div>
+      </div>
+
+      <div class="dash-card is-dae-blue">
+        <span class="badge-cat badge-dae-blue">대항목 ②</span>
+        <div class="val" id="statMasterCnt" style="color:var(--blue);">0건</div>
+        <div class="lbl">역장 지원 건수</div>
+        <div class="sub-lbl">관리·환승·독립역장 일근 투입</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-box">
+        <h3>📍 전체 거점역(관리역·환승역·독립역) 순수 지원근무 발생 순위 (전체 16개 거점역)</h3>
+        <div class="chart-scroll-box" id="mgmtChartBars"></div>
+      </div>
+      <div class="chart-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h3 style="margin:0; font-size:11.5px; font-weight:700; color:var(--ink);">🏆 개인별 순수 지원근무 수행 직원 전체 순위 및 현황</h3>
+          <span id="topEmpTotalCount" style="font-family:var(--mono); font-size:10.5px; color:var(--line-2); font-weight:700;"></span>
+        </div>
+        <div class="chart-scroll-box" style="max-height:220px; overflow-y:auto;">
+          <table class="mini-rank-table">
+            <thead>
+              <tr>
+                <th style="width:38px; text-align:center;">순위</th>
+                <th>소속 관리역</th>
+                <th>소속 근무역</th>
+                <th>직급</th>
+                <th>성명</th>
+                <th style="text-align:right; padding-right:8px;">지원건수</th>
+                <th style="width:70px;">비율</th>
+              </tr>
+            </thead>
+            <tbody id="topEmpTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:12px; font-weight:700; margin:12px 0 6px; color:var(--ink);">역사별 종합 지원 집계표 (클릭 시 역번호순 ➔ 가나다순 정렬)</h3>
+    <div class="tbl-container">
+      <div class="bodyscroll" style="max-height:290px;">
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th data-k="station_no" class="mono">역번호<span class="arrow"></span></th>
+              <th data-k="station_name">역명<span class="arrow"></span></th>
+              <th data-k="station_type">역 구분<span class="arrow"></span></th>
+              <th data-k="mismatch_cnt">
+                <span class="badge-cat badge-dae">대항목</span><br>
+                교대자 순수지원(건)<span class="arrow"></span>
+              </th>
+              <th data-k="sub_support_cnt">
+                <span class="badge-cat badge-so">소항목</span><br>
+                ↳ 타역 지원근무(건)<span class="arrow"></span>
+              </th>
+              <th data-k="master_cnt">
+                <span class="badge-cat badge-dae-blue">대항목</span><br>
+                역장 지원(건)<span class="arrow"></span>
+              </th>
+              <th data-k="total_cnt">
+                <span class="badge-cat badge-tot">종합</span><br>
+                총 지원 건수(건)<span class="arrow"></span>
+              </th>
+            </tr>
+            <tr class="sticky-total-row" id="summaryTotalRow">
+              <td class="mono">-</td>
+              <td class="name">합계</td>
+              <td><span class="tag tag-switch">43개역</span></td>
+              <td class="mono total-val" id="sumTotalMismatch">0</td>
+              <td class="mono total-val" id="sumTotalSub">0</td>
+              <td class="mono total-val" id="sumTotalMaster">0</td>
+              <td class="mono total-val" style="color:var(--amber);" id="sumTotalGrand">0</td>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shift Change Panel -->
+  <div class="panel callout-amber" style="margin-top:20px;">
+    <div class="panel-head">
+      <h2>근무조 변경 감지 현황 <span class="cnt" id="switchCnt"></span></h2>
+      <button class="action-btn sm slate" id="exportSwitchExcelBtn" type="button">📥 조변경자 엑셀 다운로드</button>
+    </div>
+    <div class="sub">1월 명부 기준 조와 다르더라도, <b>역무일지에서 타 조의 순환 주기(`주-야-비-휴`)에 맞춰 지속 근무하고 기존 조 근무가 중단된 인원</b>입니다. 파견/전환 후 본래 조로 복귀한 내역까지 시계열 순으로 완벽 동기화되어 정상 로테이션 근무는 불일치 지원근무 명단에서 100% 제외됩니다.</div>
+    <div class="tbl-container">
+      <div class="bodyscroll" style="max-height:240px;">
+      <table id="switchTable">
+        <thead>
+          <tr>
+            <th data-k="home_station">소속 관리역</th>
+            <th data-k="work_station">소속 근무역</th>
+            <th data-k="emp_id" class="mono">사번</th>
+            <th data-k="name">이름</th>
+            <th data-k="roster_group">명부상 조</th>
+            <th>근무조 변경 내역 (직전 ➔ 변경)</th>
+            <th data-k="switch_date" class="mono">변경 시작일</th>
+            <th>순환 일치 검증 근거</th>
+          </tr>
+        </thead>
+        <tbody id="switchBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dedicated Month Modal -->
+<div class="modal-overlay" id="monthModalOverlay">
+  <div class="month-dialog">
+    <div class="month-dialog-head">
+      <div class="month-dialog-title">
+        <span>📅 조회 대상 월 다중 선택</span>
+        <span class="badge-cat badge-dae" id="monthModalYearBadge" style="font-size:11px; margin:0;">2026년</span>
+      </div>
+      <button type="button" class="month-dialog-close" id="closeMonthModalBtn" title="닫기">&times;</button>
+    </div>
+    <div class="month-dialog-body">
+      <div style="font-size:11px; color:var(--ink-dim); margin-bottom:6px;">
+        조회하고 싶은 월 버튼을 클릭하여 자유롭게 복수 선택할 수 있습니다.
+      </div>
+      
+      <div class="month-tiles-grid" id="modalMonthTilesGrid"></div>
+
+      <div class="month-dialog-actions">
+        <div class="month-dialog-tools">
+          <button type="button" id="btnModalSelectAll">전체 선택</button>
+          <button type="button" id="btnModalClearAll">선택 해제</button>
+        </div>
+        <button type="button" class="action-btn sm" id="btnModalApplyClose" style="min-height:28px;">적용 및 완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastNotification" class="toast-box" style="display:none;"></div>
+
+<!-- XLSX Library -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+// Canonical 43 stations of Line 2 (201 to 243)
+const CANONICAL_LINE2_STATIONS = [
+  { no: 201, name: '장산역', mgmt: '장산관리역', type: '관리역' },
+  { no: 202, name: '중동역', mgmt: '장산관리역', type: '일반역' },
+  { no: 203, name: '해운대역', mgmt: '장산관리역', type: '일반역' },
+  { no: 204, name: '동백역', mgmt: '센텀시티관리역', type: '일반역' },
+  { no: 205, name: '벡스코역', mgmt: '센텀시티관리역', type: '일반역' },
+  { no: 206, name: '센텀시티역', mgmt: '센텀시티관리역', type: '관리역' },
+  { no: 207, name: '민락역', mgmt: '광안관리역', type: '일반역' },
+  { no: 208, name: '수영역', mgmt: '수영역', type: '환승역' },
+  { no: 209, name: '광안역', mgmt: '광안관리역', type: '관리역' },
+  { no: 210, name: '금련산역', mgmt: '광안관리역', type: '일반역' },
+  { no: 211, name: '남천역', mgmt: '경성대ㆍ부경대관리역', type: '일반역' },
+  { no: 212, name: '경성대ㆍ부경대역', mgmt: '경성대ㆍ부경대관리역', type: '관리역' },
+  { no: 213, name: '대연역', mgmt: '경성대ㆍ부경대관리역', type: '일반역' },
+  { no: 214, name: '못골역', mgmt: '문현관리역', type: '일반역' },
+  { no: 215, name: '지게골역', mgmt: '문현관리역', type: '일반역' },
+  { no: 216, name: '문현역', mgmt: '문현관리역', type: '관리역' },
+  { no: 217, name: '국제금융센터ㆍ부산은행역', mgmt: '전포관리역', type: '일반역' },
+  { no: 218, name: '전포역', mgmt: '전포관리역', type: '관리역' },
+  { no: 219, name: '서면역', mgmt: '전포관리역', type: '일반역' },
+  { no: 220, name: '부암역', mgmt: '전포관리역', type: '일반역' },
+  { no: 221, name: '가야역', mgmt: '동의대관리역', type: '일반역' },
+  { no: 222, name: '동의대역', mgmt: '동의대관리역', type: '관리역' },
+  { no: 223, name: '개금역', mgmt: '동의대관리역', type: '일반역' },
+  { no: 224, name: '냉정역', mgmt: '냉정관리역', type: '관리역' },
+  { no: 225, name: '주례역', mgmt: '냉정관리역', type: '일반역' },
+  { no: 226, name: '감전역', mgmt: '냉정관리역', type: '일반역' },
+  { no: 227, name: '사상역', mgmt: '사상역', type: '독립역' },
+  { no: 228, name: '덕포역', mgmt: '모덕관리역', type: '일반역' },
+  { no: 229, name: '모덕역', mgmt: '모덕관리역', type: '관리역' },
+  { no: 230, name: '모라역', mgmt: '모덕관리역', type: '일반역' },
+  { no: 231, name: '구남역', mgmt: '구명관리역', type: '일반역' },
+  { no: 232, name: '구명역', mgmt: '구명관리역', type: '관리역' },
+  { no: 233, name: '덕천역', mgmt: '덕천역', type: '환승역' },
+  { no: 234, name: '수정역', mgmt: '구명관리역', type: '일반역' },
+  { no: 235, name: '화명역', mgmt: '화명관리역', type: '관리역' },
+  { no: 236, name: '율리역', mgmt: '화명관리역', type: '일반역' },
+  { no: 237, name: '동원역', mgmt: '화명관리역', type: '일반역' },
+  { no: 238, name: '금곡역', mgmt: '호포관리역', type: '일반역' },
+  { no: 239, name: '호포역', mgmt: '호포관리역', type: '관리역' },
+  { no: 240, name: '증산역', mgmt: '호포관리역', type: '일반역' },
+  { no: 241, name: '부산대양산캠퍼스역', mgmt: '양산관리역', type: '일반역' },
+  { no: 242, name: '남양산역', mgmt: '양산관리역', type: '일반역' },
+  { no: 243, name: '양산역', mgmt: '양산관리역', type: '관리역' }
+];
+
+function normStName(s){ 
+  return String(s||'').replace(/\s+/g,'').replace(/·/g,'ㆍ').replace(/관리역$/, '역'); 
+}
+
+function getCanonicalStation(rawName){
+  const clean = normStName(rawName);
+  const found = CANONICAL_LINE2_STATIONS.find(st => normStName(st.name) === clean);
+  if(found) return found;
+  const partial = CANONICAL_LINE2_STATIONS.find(st => clean.includes(normStName(st.name).replace(/역$/, '')) || normStName(st.name).includes(clean.replace(/역$/, '')));
+  return partial || { no: 999, name: String(rawName || '-'), mgmt: '-', type: '일반역' };
+}
+
+function isSameStation(a, b){
+  return normStName(a) === normStName(b);
+}
+
+function getStationNumber(st){ return getCanonicalStation(st).no; }
+function getStationMgmt(st){ return getCanonicalStation(st).mgmt; }
+
+let DATA = {
+  meta: { roster_date: '-', log_range: ['-', '-'] },
+  main_events: [],
+  master_events: [],
+  switch_events: [],
+  all_raw_events: []
+};
+
+let mainSort = { k: 'date', dir: -1, stationSortMode: 'none' };
+let masterSort = { k: 'date', dir: -1, stationSortMode: 'none' };
+let switchSort = { k: 'switch_date', dir: -1 };
+let summarySort = { k: 'station_no', dir: 1, stationSortMode: 'none' };
+
+let mainFiltered = [];
+let masterFiltered = [];
+
+let selectedMonths = new Set();
+let availableMonthsList = [];
+
+function fmtNum(n){ return Number(n||0).toLocaleString('ko-KR'); }
+function esc(v){ return String(v??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function fmtDate(v){
+  const s = String(v??'').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s + 'T00:00:00');
+  if(Number.isNaN(d.getTime())) return s;
+  const days = ['일','월','화','수','목','금','토'];
+  return `${s}(${days[d.getDay()]})`;
+}
+
+function setStatus(msg, kind=''){
+  const el = document.getElementById('uploadStatus');
+  if(el){ el.className = 'upload-status' + (kind ? ' ' + kind : ''); el.innerHTML = msg; }
+}
+
+function showToast(msg, type = 'info'){
+  let toast = document.getElementById('toastNotification');
+  if(!toast) return;
+  toast.textContent = msg;
+  toast.className = 'toast-box' + (type === 'err' ? ' err' : type === 'warn' ? ' warn' : '');
+  toast.style.display = 'block';
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => { toast.style.display = 'none'; }, 300);
+  }, 3500);
+}
+
+function ymd(v){
+  if(v == null || v === '') return '';
+  if(v instanceof Date && !isNaN(v)) return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;
+  if(typeof v === 'number' && typeof XLSX !== 'undefined'){
+    const d = XLSX.SSF.parse_date_code(v);
+    if(d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  let t = String(v).trim().replace(/\.0$/, '');
+  let m = t.match(/(20\d{2})[^0-9]?(\d{1,2})[^0-9]?(\d{1,2})/);
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return '';
+}
+
+function normGroup(v){
+  const m = String(v??'').toUpperCase().replace(/\s/g,'').match(/([ABCD])조?/);
+  return m ? m[1] + '조' : '';
+}
+
+function ownShift(group, dateStr){
+  const refs = {'A조':'2026-09-02','B조':'2026-09-01','C조':'2026-09-04','D조':'2026-09-03'};
+  if(!refs[group] || !dateStr) return '';
+  const a = new Date(dateStr + 'T00:00:00'), b = new Date(refs[group] + 'T00:00:00');
+  const days = Math.round((a - b) / 86400000);
+  const idx = ((days % 4) + 4) % 4;
+  return ['주간','야간','비번','휴무'][idx];
+}
+
+function getGroupOfSlot(dateStr, slot){
+  for(const g of ['A조','B조','C조','D조']){
+    if(ownShift(g, dateStr) === slot) return g;
+  }
+  return '';
+}
+
+function determineStationMaster(rawTitle, rawStation, rawDept, rawRank, rawGroup){
+  if(rawGroup) return null;
+  const title = String(rawTitle || '').trim();
+  const st = String(rawStation || '').trim();
+  const cleanSt = normStName(st);
+
+  if(title.includes('환승역장') || (title.includes('역장') && (cleanSt.includes('수영') || cleanSt.includes('덕천')))){
+    return { type: '환승역장', title: title || '환승역장' };
+  }
+  if(title.includes('독립역장') || (title.includes('역장') && cleanSt.includes('사상'))){
+    return { type: '독립역장', title: title || '독립역장' };
+  }
+  if(title.includes('관리역장') || title.includes('역장')){
+    return { type: '관리역장', title: title || '관리역장' };
+  }
+  return null;
+}
+
+const THREE_PERSON_TARGET_STATIONS = [
+  '덕천역', '사상역', '수영역', '장산역', '양산역', '경성대ㆍ부경대역', '센텀시티역'
+];
+
+function isThreePersonTargetStation(rawStationName){
+  const clean = normStName(rawStationName).replace(/관리역$/, '역');
+  return THREE_PERSON_TARGET_STATIONS.some(target => {
+    return normStName(target).replace(/관리역$/, '역') === clean;
+  });
+}
+
+function cleanCellText(v){ return String(v??'').replace(/\r/g,'').trim(); }
+
+function findHeaderIndex(headers, names){
+  const h = headers.map(x=>String(x??'').trim().replace(/\s/g,''));
+  for(const n of names){
+    const nn = n.replace(/\s/g,'');
+    const i = h.findIndex(x=>x===nn || x.includes(nn));
+    if(i>=0) return i;
+  }
+  return -1;
+}
+
+function extractRoster(rows){
+  let hr = rows.findIndex(r=>Array.isArray(r) && r.some(v=>String(v).trim()==='사번') && r.some(v=>String(v).trim()==='성명'));
+  if(hr<0) throw new Error('붙임1에서 사번/성명 헤더를 찾지 못했습니다.');
+  const h = rows[hr];
+  const ci = {
+    id: findHeaderIndex(h, ['사번']),
+    name: findHeaderIndex(h, ['성명', '이름']),
+    station: findHeaderIndex(h, ['팀,역,분소', '역,분소', '소속역']),
+    lineage: findHeaderIndex(h, ['직렬']),
+    rank: findHeaderIndex(h, ['직급']),
+    title_i: (h.length > 8) ? 8 : -1,
+    title: findHeaderIndex(h, ['직위', '직책명', '보임현황']),
+    group: findHeaderIndex(h, ['근무조'])
+  };
+  if(ci.id<0 || ci.name<0) throw new Error('붙임1 필수 열(사번·성명)을 확인할 수 없습니다.');
+
+  const out = [];
+  for(let r = hr+1; r < rows.length; r++){
+    const row = rows[r] || [];
+    const id = String(row[ci.id]??'').trim().replace(/\.0$/, '');
+    const name = String(row[ci.name]??'').trim();
+    if(!id || !name) continue;
+
+    const rawStation = String(row[ci.station]??'').trim();
+    const canon = getCanonicalStation(rawStation);
+    const rawLineage = ci.lineage >= 0 ? String(row[ci.lineage]??'').trim() : '';
+    const rawRank = ci.rank >= 0 ? String(row[ci.rank]??'').trim() : '';
+    const rankFull = (rawLineage || rawRank) ? `${rawLineage}${rawRank}`.replace(/\s+/g, '') : '-';
+    const rawGroup = normGroup(row[ci.group]);
+    const rawTitleI = ci.title_i >= 0 ? String(row[ci.title_i]??'').trim() : '';
+    const rawTitleOther = ci.title >= 0 ? String(row[ci.title]??'').trim() : '';
+    const chosenTitle = rawTitleI || rawTitleOther;
+
+    const masterInfo = determineStationMaster(chosenTitle, rawStation, '', rawRank, rawGroup);
+
+    out.push({
+      emp_id: id,
+      name,
+      home_station: canon.name,
+      mgmt_station: canon.mgmt,
+      group: rawGroup,
+      rank: rawRank,
+      rank_full: rankFull,
+      title: chosenTitle,
+      is_master: !!masterInfo,
+      master_type: masterInfo ? masterInfo.type : null
+    });
+  }
+  return out;
+}
+
+function matchRosterNames(text, roster, nameMap, currentStationMgmt, currentStationName){
+  const t = cleanCellText(text);
+  if(!t) return [];
+  const found = [];
+  for(const name of nameMap.keys()){
+    if(t.includes(name)){
+      const candidates = nameMap.get(name);
+      if(candidates.length === 1){
+        found.push(candidates[0]);
+      } else {
+        // 1순위: 소속 근무역(home_station) 일치자 우선 매칭
+        const homeMatched = currentStationName ? candidates.filter(p => isSameStation(p.home_station, currentStationName)) : [];
+        if(homeMatched.length > 0){
+          found.push(...homeMatched);
+        } else {
+          // 2순위: 관할 관리역(mgmt_station) 매칭
+          const matched = candidates.filter(p => isSameStation(p.mgmt_station, currentStationMgmt));
+          if(matched.length > 0) found.push(...matched);
+          else found.push(candidates[0]);
+        }
+      }
+    }
+  }
+  const uniq = new Map();
+  found.forEach(x=>uniq.set(x.emp_id, x));
+  return [...uniq.values()];
+}
+
+function extractActualEvents(rows, roster){
+  const nameMap = new Map();
+  roster.forEach(p => {
+    if(!nameMap.has(p.name)) nameMap.set(p.name, []);
+    nameMap.get(p.name).push(p);
+  });
+
+  const dayCols = [8, 9, 10, 11, 12, 13];
+  const nightCols = [14, 15, 16, 17, 18, 19];
+
+  const shiftMap = new Map();
+  let datedRows = 0;
+
+  rows.forEach(row => {
+    const date = ymd(row?.[1]);
+    const rawStation = String(row?.[0] ?? '').trim();
+    if(!date || !rawStation) return;
+    datedRows++;
+    const canon = getCanonicalStation(rawStation);
+    const station = canon.name;
+    const currentStationMgmt = canon.mgmt;
+
+    for(const [slot, cols] of [['주간', dayCols], ['야간', nightCols]]){
+      cols.forEach(c => {
+        const note = cleanCellText(row?.[c]);
+        if(!note) return;
+
+        const people = matchRosterNames(note, roster, nameMap, currentStationMgmt, station);
+        people.forEach(p => {
+          const key = `${p.emp_id}_${date}_${slot}`;
+          const currentEvent = { date, work_station: station, slot, note, ...p };
+
+          if(!shiftMap.has(key)){
+            shiftMap.set(key, currentEvent);
+          } else {
+            const existing = shiftMap.get(key);
+            const isNoteSupport = /지원|대체|파견/.test(note);
+            const isExistingNoteSupport = /지원|대체|파견/.test(existing.note);
+
+            if(isNoteSupport && !isExistingNoteSupport){
+              shiftMap.set(key, { ...currentEvent, note: `${note} / ${existing.note}` });
+            } else if(station !== p.home_station && existing.work_station === p.home_station && isNoteSupport){
+              shiftMap.set(key, { ...currentEvent, note: `${note} / ${existing.note}` });
+            } else {
+              existing.note = `${existing.note} / ${note}`;
+            }
+          }
+        });
+      });
+    }
+  });
+
+  const events = Array.from(shiftMap.values());
+  if(!datedRows) throw new Error('붙임2에서 역명/일자 데이터 행을 찾지 못했습니다.');
+  if(!events.length) throw new Error('붙임2 근무자 이름과 붙임1 명부가 매칭되지 않았습니다.');
+  return events;
+}
+
+/**
+ * 정밀 구간 확정형 근무조 편성 및 복귀 추적 알고리즘 (Segment-based Shift State Machine)
+ * - 3회 이상(4일 이상) 새 조의 순환주기로 지속 근무한 구간을 독립 조변경 구간으로 100% 확정
+ * - 본래 조로 복귀한 시점 또한 '본래 조 복귀'로 기록하여 C ➔ B ➔ C ➔ B ➔ C 순환 흐름 완벽 동기화
+ * - 박기윤, 이지수, 허의전 등 파견 후 복귀자의 정상 로테이션 근무를 지원근무에서 100% 완전 제외
+ */
+function resolveDynamicShiftSchedules(allEvents, roster){
+  const byEmp = new Map();
+  allEvents.forEach(e => {
+    if(!byEmp.has(e.emp_id)) byEmp.set(e.emp_id, []);
+    byEmp.get(e.emp_id).push(e);
+  });
+
+  const switchEvents = [];
+  const activeSchedules = new Map();
+
+  byEmp.forEach((events, empId) => {
+    const p = roster.find(r => r.emp_id === empId);
+    if(!p || !p.group) return;
+
+    // 일자 및 근무슬롯 순 정렬 및 동일일자 중복 정제
+    events.sort((a, b) => a.date.localeCompare(b.date) || (a.slot === '주간' ? -1 : 1));
+
+    const seen = new Set();
+    const uniqueEvents = [];
+    events.forEach(e => {
+      const k = `${e.date}_${e.slot}`;
+      if(!seen.has(k)){
+        seen.add(k);
+        uniqueEvents.push(e);
+      }
+    });
+
+    const evList = uniqueEvents.map(e => ({
+      ...e,
+      dutyGroup: getGroupOfSlot(e.date, e.slot)
+    }));
+
+    const intervals = [];
+    let curGroup = p.group;
+    let curStart = evList[0] ? evList[0].date : '2026-01-01';
+
+    let i = 0;
+    while(i < evList.length){
+      const curEv = evList[i];
+
+      // 현재 유효조와 다른 조의 근무가 발생했을 때
+      if(curEv.dutyGroup && curEv.dutyGroup !== curGroup){
+        const candGroup = curEv.dutyGroup;
+        const candStart = curEv.date;
+        let j = i;
+        let candCount = 0;
+        let lastCandDate = candStart;
+        let tolerance = 1; // 1개월 파견 중 발생한 단 1회의 타조 비번 대근 허용
+
+        while(j < evList.length){
+          const nextEv = evList[j];
+          if(nextEv.dutyGroup === candGroup){
+            candCount++;
+            lastCandDate = nextEv.date;
+            j++;
+          } else {
+            // 새 조(candGroup)가 바로 다음 근무에서 재개되는 경우 1회 허용
+            if(tolerance > 0 && j + 1 < evList.length && evList[j + 1].dutyGroup === candGroup){
+              tolerance--;
+              j++;
+            } else {
+              break; // 새 조의 연속 구간 종료 (복귀 또는 타 조 전환)
+            }
+          }
+        }
+
+        const spanDays = Math.round((new Date(lastCandDate) - new Date(candStart)) / 86400000);
+
+        // 공식 조변경 인정 기준: 최소 3회 이상 근무 및 4일 이상 지속 (1주기 이상)
+        if(candCount >= 3 && spanDays >= 4){
+          intervals.push({
+            start: curStart,
+            end: addDaysSafe(candStart, -1),
+            group: curGroup
+          });
+
+          const isReturn = (candGroup === p.group);
+          const transitionDesc = isReturn 
+            ? `${curGroup} ➔ ${candGroup} (본래 조 복귀)` 
+            : `${curGroup} ➔ ${candGroup}`;
+
+          switchEvents.push({
+            emp_id: p.emp_id,
+            name: p.name,
+            home_station: p.home_station,
+            work_station: curEv.work_station,
+            roster_group: p.group,
+            prev_group: curGroup,
+            active_group: candGroup,
+            transition_desc: transitionDesc,
+            is_return: isReturn,
+            switch_date: candStart,
+            reason: `${candStart}부터 ${candGroup} 순환주기(주-야-비-휴)로 공식 전환 (${candCount}회 연속 일치)`
+          });
+
+          curGroup = candGroup;
+          curStart = candStart;
+          i = j;
+          continue;
+        }
+      }
+      i++;
+    }
+
+    intervals.push({
+      start: curStart,
+      end: '2099-12-31',
+      group: curGroup
+    });
+
+    // 각 이벤트 일자별 확정된 유효 근무조 부여
+    events.forEach(e => {
+      let eff = p.group;
+      for(const inv of intervals){
+        if(e.date >= inv.start && e.date <= inv.end){
+          eff = inv.group;
+          break;
+        }
+      }
+      activeSchedules.set(`${empId}_${e.date}`, eff);
+    });
+  });
+
+  return { switchEvents, activeSchedules };
+}
+
+function addDaysSafe(ymdStr, days){
+  const [y, m, d] = ymdStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  const ry = dt.getFullYear();
+  const rm = String(dt.getMonth() + 1).padStart(2, '0');
+  const rd = String(dt.getDate()).padStart(2, '0');
+  return `${ry}-${rm}-${rd}`;
+}
+
+function computeSequencePattern(targetEvent, allEmpEvents){
+  const offsets = [-2, -1, 0, 1, 2];
+  const daysInfo = [];
+  const activeGroup = targetEvent.current_active_group || targetEvent.group;
+
+  offsets.forEach(offset => {
+    const ymdStr = addDaysSafe(targetEvent.date, offset);
+    const dayOfWeek = ['일','월','화','수','목','금','토'][new Date(ymdStr + 'T00:00:00').getDay()];
+
+    const matchLogs = allEmpEvents.filter(x => x.date === ymdStr);
+    const hasActualDay = matchLogs.some(x => x.slot === '주간');
+    const hasActualNight = matchLogs.some(x => x.slot === '야간');
+    const regularShift = activeGroup ? ownShift(activeGroup, ymdStr) : '';
+
+    let label = '';
+    let isDay = false;
+    let isNight = false;
+    let isOff = false;
+    let desc = '';
+
+    if(offset === 0){
+      const isCurDay = hasActualDay || targetEvent.slot === '주간';
+      const isCurNight = hasActualNight || targetEvent.slot === '야간';
+      if(isCurDay && isCurNight){
+        label = '주야'; isDay = true; isNight = true; desc = '당일 [주야간 연속지원]';
+      } else if(isCurNight){
+        label = '야'; isNight = true; desc = `당일 [야간 지원근무] (당시 본인조: ${regularShift || '-'})`;
+      } else {
+        label = '주'; isDay = true; desc = `당일 [주간 지원근무] (당시 본인조: ${regularShift || '-'})`;
+      }
+    } else {
+      if(hasActualDay && hasActualNight){
+        label = '주야'; isDay = true; isNight = true; desc = '일지: 주야간 출근';
+      } else if(hasActualDay){
+        label = '주'; isDay = true; desc = (regularShift === '주간') ? '정규 주간근무' : '타조 주간지원';
+      } else if(hasActualNight){
+        label = '야'; isNight = true; desc = (regularShift === '야간') ? '정규 야간근무' : '타조 야간지원';
+      } else {
+        if(regularShift === '주간'){ label = '주'; isDay = true; desc = '정규 주간근무'; }
+        else if(regularShift === '야간'){ label = '야'; isNight = true; desc = '정규 야간근무'; }
+        else if(regularShift === '비번'){ label = '비'; isOff = true; desc = '정규 비번'; }
+        else if(regularShift === '휴무'){ label = '휴'; isOff = true; desc = '정규 휴무'; }
+        else { label = '-'; isOff = true; desc = '근무 없음'; }
+      }
+    }
+
+    daysInfo.push({
+      offset,
+      date: ymdStr,
+      dayOfWeek,
+      label,
+      isDay,
+      isNight,
+      isOff,
+      desc: `${ymdStr.slice(5)}(${dayOfWeek}): ${label} (${desc})`,
+      isCurr: offset === 0
+    });
+  });
+
+  const prev = daysInfo[1];
+  const curr = daysInfo[2];
+  const next = daysInfo[3];
+
+  const hasNightNight = curr.isNight && (prev.isNight || next.isNight);
+  const has24hConsec = (curr.isDay && curr.isNight) ||
+                       (prev.isNight && curr.isDay) ||
+                       (curr.isNight && next.isDay);
+
+  return { daysInfo, hasNightNight, has24hConsec };
+}
+
+function analyze(roster, actual){
+  const { switchEvents, activeSchedules } = resolveDynamicShiftSchedules(actual, roster);
+
+  const dayStationCounts = new Map();
+  actual.forEach(e => {
+    if(e.slot === '주간'){
+      const k = `${e.date}_${e.work_station}`;
+      dayStationCounts.set(k, (dayStationCounts.get(k) || 0) + 1);
+    }
+  });
+
+  const empEventMap = new Map();
+  actual.forEach(e => {
+    if(!empEventMap.has(e.emp_id)) empEventMap.set(e.emp_id, []);
+    empEventMap.get(e.emp_id).push(e);
+  });
+
+  const main_events = [];
+  const master_events = [];
+
+  actual.forEach(e => {
+    const stationDayCount = (e.slot === '주간') ? (dayStationCounts.get(`${e.date}_${e.work_station}`) || 0) : 0;
+    const isSubSupport = !isSameStation(e.home_station, e.work_station);
+    const hasSupportNote = /지원|대체|파견/.test(e.note || '');
+
+    if(e.is_master){
+      const isTwoPersonSupport = (e.slot === '주간' && stationDayCount === 2);
+      const isThreePersonSupport = (e.slot === '주간' && stationDayCount === 3 && isThreePersonTargetStation(e.work_station));
+
+      if(isTwoPersonSupport || isThreePersonSupport || isSubSupport || hasSupportNote || e.slot === '야간'){
+        let supportDesc = '';
+        if(isTwoPersonSupport) supportDesc = '2인근무 지원';
+        else if(isThreePersonSupport) supportDesc = '3인근무 지원(거점역)';
+        else if(isSubSupport) supportDesc = '산하·타역 지원';
+        else if(e.slot === '야간') supportDesc = '야간 근무';
+        else supportDesc = '일지명시 지원';
+
+        master_events.push({
+          ...e,
+          station_day_count: stationDayCount,
+          is_twoperson: isTwoPersonSupport,
+          is_threeperson: isThreePersonSupport,
+          is_sub_support: isSubSupport,
+          support_type_desc: supportDesc
+        });
+      }
+    } else if(e.group){
+      const activeGroup = activeSchedules.get(`${e.emp_id}_${e.date}`) || e.group;
+      const own = ownShift(activeGroup, e.date);
+      const isMismatch = (own !== e.slot);
+
+      if(isMismatch){
+        const allEmpEvents = empEventMap.get(e.emp_id) || [];
+        const { daysInfo, hasNightNight, has24hConsec } = computeSequencePattern({
+          ...e,
+          current_active_group: activeGroup
+        }, allEmpEvents);
+
+        main_events.push({
+          ...e,
+          current_active_group: activeGroup,
+          own_shift_that_day: own,
+          off_day_flag: ['비번','휴무'].includes(own),
+          same_station: isSameStation(e.home_station, e.work_station),
+          daysInfo,
+          hasNightNight,
+          has24hConsec
+        });
+      }
+    }
+  });
+
+  const dates = actual.map(e => e.date).filter(Boolean).sort();
+  return {
+    meta: { roster_date: '업로드 명부', log_range: [dates[0] || '-', dates.at(-1) || '-'] },
+    main_events,
+    master_events,
+    switch_events: switchEvents,
+    all_raw_events: actual
+  };
+}
+
+async function readWorkbook(file){
+  const ab = await file.arrayBuffer();
+  return XLSX.read(ab, { type: 'array', cellDates: true, cellText: false });
+}
+function workbookRows(wb, preferred){
+  const name = preferred && wb.SheetNames.includes(preferred) ? preferred : wb.SheetNames[0];
+  return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+}
+
+async function loadExcelData(){
+  if(typeof XLSX === 'undefined'){
+    setStatus('엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.', 'err');
+    return;
+  }
+  const rf = document.getElementById('rosterFile')?.files[0];
+  const lf = document.getElementById('logFile')?.files[0];
+  if(!rf || !lf){
+    setStatus('붙임1 전직원명부와 붙임2 역무일지 파일을 모두 선택해 주세요.', 'err');
+    return;
+  }
+  const btn = document.getElementById('loadExcelBtn');
+  if(btn) btn.disabled = true;
+  setStatus('두 엑셀 파일을 정밀 분석 중입니다. 잠시만 기다려 주세요…');
+
+  try{
+    const [rwb, lwb] = await Promise.all([readWorkbook(rf), readWorkbook(lf)]);
+    const roster = extractRoster(workbookRows(rwb, '전직원명부'));
+    const actual = extractActualEvents(workbookRows(lwb, 'Data Exporting...'), roster);
+    DATA = analyze(roster, actual);
+    resetAllUI();
+    setStatus(`<b>분석 완료</b> · 명부 ${fmtNum(roster.length)}명 · 유효 근무 ${fmtNum(actual.length)}건 매칭 · 조변경 ${fmtNum(DATA.switch_events.length)}건 감지 (정규 전환 및 복귀 반영) · 순수 지원근무 정밀 산출 완료`, 'ok');
+    showToast('엑셀 데이터 분석이 완료되었습니다.');
+  } catch(err){
+    console.error(err);
+    setStatus(`<b>분석 실패</b> · ${esc(err.message || err)}`, 'err');
+    showToast(`분석 실패: ${err.message || err}`, 'err');
+  } finally {
+    if(btn) btn.disabled = false;
+  }
+}
+
+function exportDataToJson(){
+  if(!DATA.all_raw_events.length){
+    showToast('저장할 분석 데이터가 없습니다. 먼저 엑셀을 분석해 주세요.', 'warn');
+    return;
+  }
+  const jsonStr = JSON.stringify(DATA, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `지원근무_분석데이터_${DATA.meta.log_range[0]}_${DATA.meta.log_range[1]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('JSON 데이터가 성공적으로 내보내졌습니다.');
+}
+
+function importDataFromJson(file){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const imported = JSON.parse(e.target.result);
+      if(!imported.main_events || !imported.master_events){
+        throw new Error('유효한 지원근무 분석 JSON 파일이 아닙니다.');
+      }
+      if(imported.switch_events){
+        imported.switch_events = imported.switch_events.filter(r => r.prev_group && r.active_group && r.prev_group !== r.active_group);
+      }
+      DATA = imported;
+      resetAllUI();
+      setStatus(`JSON 데이터 불러오기 성공: 순수지원 ${DATA.main_events.length}건, 조변경 ${DATA.switch_events.length}건 반영됨`, 'ok');
+      showToast('JSON 데이터를 성공적으로 불러왔습니다.');
+    } catch(err){
+      showToast(`JSON 로드 실패: ${err.message}`, 'err');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function initMonthModalPicker(){
+  const ymSet = new Set();
+  const allEvents = [...DATA.main_events, ...DATA.master_events, ...DATA.all_raw_events];
+  allEvents.forEach(e => {
+    if(e.date && e.date.length >= 7) ymSet.add(e.date.slice(0, 7));
+  });
+  availableMonthsList = [...ymSet].sort();
+
+  const grid = document.getElementById('modalMonthTilesGrid');
+  const yearBadge = document.getElementById('monthModalYearBadge');
+  if(!grid) return;
+
+  const year = availableMonthsList.length ? availableMonthsList[0].slice(0, 4) : '2026';
+  if(yearBadge) yearBadge.textContent = `${year}년`;
+
+  grid.innerHTML = '';
+  for(let m = 1; m <= 12; m++){
+    const mStr = String(m).padStart(2, '0');
+    const ym = `${year}-${mStr}`;
+    const isAvailable = availableMonthsList.includes(ym);
+    
+    const tile = document.createElement('div');
+    tile.className = 'month-btn-tile' + (selectedMonths.has(ym) ? ' selected' : '');
+    tile.textContent = `${m}월`;
+    tile.dataset.ym = ym;
+
+    if(!isAvailable && availableMonthsList.length > 0){
+      tile.style.opacity = '0.4';
+      tile.title = '해당 월 데이터 없음';
+    }
+
+    tile.addEventListener('click', () => {
+      if(selectedMonths.has(ym)){
+        selectedMonths.delete(ym);
+        tile.classList.remove('selected');
+      } else {
+        selectedMonths.add(ym);
+        tile.classList.add('selected');
+      }
+      updateMonthTriggerDisplay();
+      syncDatesFromSelectedMonths();
+      applyMainFilters();
+      applyMasterFilters();
+    });
+
+    grid.appendChild(tile);
+  }
+
+  updateMonthTriggerDisplay();
+}
+
+function updateMonthTriggerDisplay(){
+  const label = document.getElementById('monthTriggerLabel');
+  if(!label) return;
+
+  if(selectedMonths.size === 0){
+    label.innerHTML = '전체 월 선택';
+  } else if(selectedMonths.size === availableMonthsList.length && availableMonthsList.length > 0){
+    label.innerHTML = '전체 월 <span class="tag-count">전체</span>';
+  } else {
+    const sorted = [...selectedMonths].sort();
+    const monthsText = sorted.map(ym => parseInt(ym.slice(5), 10) + '월').join(', ');
+    label.innerHTML = `${monthsText} <span class="tag-count">${selectedMonths.size}</span>`;
+  }
+
+  document.querySelectorAll('#modalMonthTilesGrid .month-btn-tile').forEach(t => {
+    const ym = t.dataset.ym;
+    t.classList.toggle('selected', selectedMonths.has(ym));
+  });
+}
+
+function syncDatesFromSelectedMonths(){
+  if(selectedMonths.size === 0) return;
+  const sorted = [...selectedMonths].sort();
+  const firstYm = sorted[0];
+  const lastYm = sorted.at(-1);
+
+  const [ly, lm] = lastYm.split('-').map(Number);
+  const lastDay = new Date(ly, lm, 0).getDate();
+
+  const sEl = document.getElementById('fStart');
+  const eEl = document.getElementById('fEnd');
+  if(sEl) sEl.value = `${firstYm}-01`;
+  if(eEl) eEl.value = `${lastYm}-${String(lastDay).padStart(2,'0')}`;
+}
+
+const monthModalOverlay = document.getElementById('monthModalOverlay');
+const openMonthModalBtn = document.getElementById('openMonthModalBtn');
+const closeMonthModalBtn = document.getElementById('closeMonthModalBtn');
+const btnModalApplyClose = document.getElementById('btnModalApplyClose');
+
+function openMonthModal(){
+  if(monthModalOverlay) monthModalOverlay.classList.add('active');
+}
+function closeMonthModal(){
+  if(monthModalOverlay) monthModalOverlay.classList.remove('active');
+}
+
+if(openMonthModalBtn) openMonthModalBtn.addEventListener('click', openMonthModal);
+if(closeMonthModalBtn) closeMonthModalBtn.addEventListener('click', closeMonthModal);
+if(btnModalApplyClose) btnModalApplyClose.addEventListener('click', closeMonthModal);
+if(monthModalOverlay){
+  monthModalOverlay.addEventListener('click', (e) => {
+    if(e.target === monthModalOverlay) closeMonthModal();
+  });
+}
+
+const btnModalSelectAll = document.getElementById('btnModalSelectAll');
+if(btnModalSelectAll){
+  btnModalSelectAll.addEventListener('click', () => {
+    selectedMonths = new Set(availableMonthsList);
+    updateMonthTriggerDisplay();
+    syncDatesFromSelectedMonths();
+    applyMainFilters();
+    applyMasterFilters();
+  });
+}
+
+const btnModalClearAll = document.getElementById('btnModalClearAll');
+if(btnModalClearAll){
+  btnModalClearAll.addEventListener('click', () => {
+    selectedMonths.clear();
+    updateMonthTriggerDisplay();
+    initPeriod();
+    applyMainFilters();
+    applyMasterFilters();
+  });
+}
+
+function currentRange(){
+  return {
+    start: document.getElementById('fStart')?.value || '',
+    end: document.getElementById('fEnd')?.value || ''
+  };
+}
+
+function inRange(e, start, end){
+  if(selectedMonths.size > 0){
+    const ym = e.date ? e.date.slice(0, 7) : '';
+    if(!selectedMonths.has(ym)) return false;
+  }
+  return (!start || e.date >= start) && (!end || e.date <= end);
+}
+
+function applyMainFilters(){
+  const { start, end } = currentRange();
+  const mgmt = document.getElementById('fMgmt')?.value || '';
+  const station = document.getElementById('fStation')?.value || '';
+  const riskType = document.getElementById('fRiskType')?.value || '';
+  const search = (document.getElementById('fSearch')?.value || '').trim().toLowerCase();
+
+  mainFiltered = DATA.main_events.filter(e => {
+    if(!inRange(e, start, end)) return false;
+    if(mgmt && e.mgmt_station !== mgmt) return false;
+    if(station && e.home_station !== station) return false;
+    if(search && !(e.name + ' ' + e.emp_id).toLowerCase().includes(search)) return false;
+
+    if(riskType === 'normal'){
+      if(e.hasNightNight || e.has24hConsec) return false;
+    } else if(riskType === 'night_night'){
+      if(!e.hasNightNight) return false;
+    } else if(riskType === 'consec_24h'){
+      if(!e.has24hConsec) return false;
+    } else if(riskType === 'any_risk'){
+      if(!e.hasNightNight && !e.has24hConsec) return false;
+    }
+    return true;
+  });
+
+  renderMain();
+  updateTopAndKpi();
+  renderDashboardAndCharts();
+}
+
+function applyMasterFilters(){
+  const { start, end } = currentRange();
+  const typeF = document.getElementById('masterTypeFilter')?.value || '';
+  const workF = document.getElementById('masterWorkFilter')?.value || '';
+  const mgmt = document.getElementById('fMasterMgmt')?.value || '';
+  const st = document.getElementById('fMasterStation')?.value || '';
+  const search = (document.getElementById('fMasterSearch')?.value || '').trim().toLowerCase();
+
+  masterFiltered = DATA.master_events.filter(e => {
+    if(!inRange(e, start, end)) return false;
+    if(typeF && e.master_type !== typeF) return false;
+    if(mgmt && e.home_station !== mgmt) return false;
+    if(st && e.work_station !== st) return false;
+    if(search && !(e.name + ' ' + e.emp_id).toLowerCase().includes(search)) return false;
+
+    if(workF === '집중지원' && !e.is_twoperson && !e.is_threeperson) return false;
+    if(workF === '2명근무' && !e.is_twoperson) return false;
+    if(workF === '3명근무' && !e.is_threeperson) return false;
+    if(workF === '주간' && e.slot !== '주간') return false;
+    if(workF === '야간' && e.slot !== '야간') return false;
+    if(workF === '타역' && !e.is_sub_support) return false;
+    return true;
+  });
+
+  renderMaster();
+  updateMasterCountDisplay();
+}
+
+function renderMain(){
+  const tbody = document.getElementById('mainBody');
+  if(!tbody) return;
+
+  const rows = mainFiltered.slice().sort((a, b) => {
+    if(mainSort.k === 'home_station' || mainSort.k === 'mgmt_station'){
+      const va = String(a[mainSort.k] || '');
+      const vb = String(b[mainSort.k] || '');
+      if(mainSort.stationSortMode === 'stno'){
+        return (getStationNumber(va) - getStationNumber(vb)) * mainSort.dir;
+      }
+      return va.localeCompare(vb, 'ko-KR') * mainSort.dir;
+    }
+    const va = a[mainSort.k] ?? '';
+    const vb = b[mainSort.k] ?? '';
+    return va < vb ? -1 * mainSort.dir : va > vb ? 1 * mainSort.dir : 0;
+  });
+
+  const rowCountEl = document.getElementById('rowCount');
+  if(rowCountEl) rowCountEl.textContent = `${fmtNum(rows.length)}건 표시 중`;
+
+  if(!rows.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="11">조건에 맞는 내역이 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(e => {
+    const tagClass = e.same_station ? 'tag-same' : 'tag-diff';
+    const tagLabel = e.same_station ? '소속역' : '관리역내';
+    const shift = e.off_day_flag ? `<span class="offbadge">${esc(e.own_shift_that_day)}</span>` : esc(e.own_shift_that_day);
+
+    let seqHtml = '';
+    if(e.daysInfo && e.daysInfo.length){
+      const fullTooltip = e.daysInfo.map(d => d.desc).join('\n');
+      seqHtml = `<span class="pattern-seq" title="${esc(fullTooltip)}">` + e.daysInfo.map(d => {
+        const cls = [
+          'p-day',
+          d.isCurr ? 'curr' : '',
+          d.isNight ? 'night' : '',
+          d.isDay && !d.isNight ? 'daytime' : '',
+          d.isOff ? 'off' : ''
+        ].filter(Boolean).join(' ');
+        return `<span class="${cls}">${esc(d.label)}</span>`;
+      }).join('') + '</span>';
+    }
+
+    const riskBadges = [];
+    if(e.hasNightNight) riskBadges.push('<span class="tag tag-risk-red">⚠️ 야-야 연속</span>');
+    if(e.has24hConsec) riskBadges.push('<span class="tag tag-risk-purple">🚨 24h 철야연속</span>');
+
+    return `<tr class="${e.off_day_flag ? 'offday' : ''}">
+      <td>${esc(e.mgmt_station)}</td>
+      <td>${esc(e.home_station)}</td>
+      <td class="mono">${esc(e.emp_id)}</td>
+      <td class="rank">${esc(e.rank_full || e.rank || '-')}</td>
+      <td class="name">${esc(e.name)}</td>
+      <td class="mono">${esc(fmtDate(e.date))}</td>
+      <td>${esc(e.slot)}</td>
+      <td><span class="tag tag-switch">${esc(e.current_active_group)}</span></td>
+      <td>${shift}</td>
+      <td>${esc(e.work_station)} <span class="tag ${tagClass}">${tagLabel}</span></td>
+      <td class="note-cell" title="${esc(e.note || '')}">
+        <div style="display:flex; align-items:center; gap:4px; flex-wrap:nowrap;">
+          ${seqHtml}
+          ${riskBadges.join(' ')}
+          <span style="font-size:10.5px;">${esc(e.note || '-')}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMaster(){
+  const tbody = document.getElementById('masterBody');
+  if(!tbody) return;
+
+  const rows = masterFiltered.slice().sort((a, b) => {
+    if(masterSort.k === 'home_station' || masterSort.k === 'work_station'){
+      const va = String(a[masterSort.k] || '');
+      const vb = String(b[masterSort.k] || '');
+      if(masterSort.stationSortMode === 'stno'){
+        return (getStationNumber(va) - getStationNumber(vb)) * masterSort.dir;
+      }
+      return va.localeCompare(vb, 'ko-KR') * masterSort.dir;
+    }
+    const va = a[masterSort.k] ?? '';
+    const vb = b[masterSort.k] ?? '';
+    return va < vb ? -1 * masterSort.dir : va > vb ? 1 * masterSort.dir : 0;
+  });
+
+  const countEl = document.getElementById('masterRowCount');
+  if(countEl) countEl.textContent = `${fmtNum(rows.length)}건 표시 중`;
+
+  if(!rows.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="11">조건에 해당하는 역장 교대 및 지원근무 내역이 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(e => {
+    const isTwo = e.is_twoperson;
+    const isThree = e.is_threeperson;
+    let badgeTwo = `${e.station_day_count || '-'}명`;
+    if(isTwo){
+      badgeTwo = '<span class="tag tag-twoperson">2명 (2인근무 지원)</span>';
+    } else if(isThree){
+      badgeTwo = '<span class="tag tag-risk-purple">3명 (3인근무 지원)</span>';
+    }
+
+    let supportBadge = '';
+    if(isTwo){
+      supportBadge = '<span class="tag tag-twoperson">2인근무 지원</span>';
+    } else if(isThree){
+      supportBadge = '<span class="tag tag-risk-purple">3인근무 지원(거점역)</span>';
+    } else if(e.is_sub_support){
+      supportBadge = '<span class="tag tag-diff">산하역 지원</span>';
+    } else if(e.slot === '야간'){
+      supportBadge = '<span class="tag tag-risk-red">야간 투입</span>';
+    } else {
+      supportBadge = '<span class="tag tag-same">소속역 교대</span>';
+    }
+
+    return `<tr class="${(isTwo || isThree) ? 'highlight-twoperson' : ''}">
+      <td>${esc(e.home_station)}</td>
+      <td><span class="tag tag-diff">${esc(e.master_type)}</span></td>
+      <td style="color:var(--ink-dim); font-size:11px;">${esc(e.title || '-')}</td>
+      <td class="mono">${esc(e.emp_id)}</td>
+      <td class="name">${esc(e.name)}</td>
+      <td class="mono">${esc(fmtDate(e.date))}</td>
+      <td>${esc(e.slot)}</td>
+      <td>${esc(e.work_station)}</td>
+      <td>${badgeTwo}</td>
+      <td>${supportBadge}</td>
+      <td class="note-cell" title="${esc(e.note || '')}">${esc(e.note || '-')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSwitch(){
+  const tbody = document.getElementById('switchBody');
+  if(!tbody) return;
+
+  const rows = DATA.switch_events.slice().sort((a, b) => {
+    const va = a[switchSort.k] ?? '';
+    const vb = b[switchSort.k] ?? '';
+    return va < vb ? -1 * switchSort.dir : va > vb ? 1 * switchSort.dir : 0;
+  });
+
+  const cntEl = document.getElementById('switchCnt');
+  if(cntEl) cntEl.textContent = `(${rows.length}건 감지 / 정상근무 제외 완료)`;
+
+  if(!rows.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">감지된 근무조 변경자가 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${esc(getStationMgmt(r.home_station))}</td>
+    <td>${esc(r.home_station)}</td>
+    <td class="mono">${esc(r.emp_id)}</td>
+    <td class="name">${esc(r.name)}</td>
+    <td><span class="tag tag-same">${esc(r.roster_group)}</span></td>
+    <td><span class="tag ${r.is_return ? 'tag-diff' : 'tag-switch'}">${esc(r.transition_desc || `${r.prev_group} ➔ ${r.active_group}`)}</span></td>
+    <td class="mono">${esc(fmtDate(r.switch_date))}</td>
+    <td style="font-size:11px; color:var(--ink-dim);">${esc(r.reason)}</td>
+  </tr>`).join('');
+}
+
+function updateTopAndKpi(){
+  const { start, end } = currentRange();
+  const filteredMain = DATA.main_events.filter(e => inRange(e, start, end));
+  const empSet = new Set(filteredMain.map(e => e.emp_id));
+  const filteredMaster = DATA.master_events.filter(e => inRange(e, start, end));
+  const riskCount = filteredMain.filter(e => e.hasNightNight || e.has24hConsec).length;
+  const intensiveMaster = filteredMaster.filter(e => e.is_twoperson || e.is_threeperson).length;
+
+  const topMetaEl = document.getElementById('topMeta');
+  if(topMetaEl){
+    topMetaEl.innerHTML = `데이터 기간 ${esc(DATA.meta.log_range[0])} ~ ${esc(DATA.meta.log_range[1])}<br>명부 기준 ${esc(DATA.meta.roster_date)}`;
+  }
+  const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+
+  setTxt('kpiMain', fmtNum(filteredMain.length));
+  setTxt('kpiEmp', fmtNum(empSet.size));
+  setTxt('kpiMaster', fmtNum(filteredMaster.length));
+  setTxt('kpiMasterSub', `2·3인근무 지원 ${intensiveMaster}건 (전체 ${filteredMaster.length}건 중)`);
+  setTxt('kpiSwitch', fmtNum(DATA.switch_events.length));
+  setTxt('kpiRisk', fmtNum(riskCount));
+
+  setTxt('mainCnt', `(${filteredMain.length}건 / 전체 ${DATA.main_events.length}건)`);
+}
+
+function updateMasterCountDisplay(){
+  const { start, end } = currentRange();
+  const rangeMaster = DATA.master_events.filter(e => inRange(e, start, end));
+  const cntEl = document.getElementById('masterHeaderCnt');
+  if(cntEl){
+    cntEl.textContent = (masterFiltered.length !== rangeMaster.length)
+      ? `(${masterFiltered.length}건 / 전체 ${rangeMaster.length}건)`
+      : `(${rangeMaster.length}건)`;
+  }
+}
+
+function renderDashboardAndCharts(){
+  const { start, end } = currentRange();
+  const mainList = DATA.main_events.filter(e => inRange(e, start, end));
+  const masterList = DATA.master_events.filter(e => inRange(e, start, end));
+
+  const periodLbl = document.getElementById('dashPeriodLbl');
+  if(periodLbl){
+    let periodDesc = `(${start || DATA.meta.log_range[0]} ~ ${end || DATA.meta.log_range[1]})`;
+    if(selectedMonths.size > 0){
+      const sorted = [...selectedMonths].sort();
+      periodDesc = `(${sorted.map(ym => parseInt(ym.slice(5),10)+'월').join(', ')} 선택)`;
+    }
+    periodLbl.textContent = periodDesc;
+  }
+
+  let daysCount = 1;
+  if(start && end){
+    daysCount = Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
+  } else if(DATA.meta.log_range[0] !== '-' && DATA.meta.log_range[1] !== '-'){
+    daysCount = Math.max(1, Math.round((new Date(DATA.meta.log_range[1]) - new Date(DATA.meta.log_range[0])) / 86400000) + 1);
+  }
+
+  const avgDaily = (mainList.length / daysCount).toFixed(1);
+  const subSupportCnt = mainList.filter(e => !e.same_station).length;
+  const subRate = mainList.length ? Math.round((subSupportCnt / mainList.length) * 100) : 0;
+  const riskCnt = mainList.filter(e => e.hasNightNight || e.has24hConsec).length;
+  const grandTotalCnt = mainList.length + masterList.length;
+
+  const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+
+  setTxt('statGrandTotal', `${fmtNum(grandTotalCnt)}건`);
+  setTxt('statMismatchCnt', `${fmtNum(mainList.length)}건`);
+  setTxt('statAvgDailySub', `1일 평균 ${avgDaily}건`);
+  setTxt('statSubSupportCnt', `${fmtNum(subSupportCnt)}건`);
+  setTxt('statSubSupportSub', `전체 순수지원의 ${subRate}% (타역 투입)`);
+  setTxt('statRiskCount', `${fmtNum(riskCnt)}건`);
+  setTxt('statMasterCnt', `${fmtNum(masterList.length)}건`);
+
+  // Hub stations ranking chart
+  const ALL_HUB_STATIONS = [
+    '장산관리역', '센텀시티관리역', '수영역', '광안관리역', '경성대ㆍ부경대관리역',
+    '문현관리역', '전포관리역', '동의대관리역', '냉정관리역', '사상역',
+    '모덕관리역', '구명관리역', '덕천역', '화명관리역', '호포관리역', '양산관리역'
+  ];
+  const mgmtCounts = new Map();
+  ALL_HUB_STATIONS.forEach(st => mgmtCounts.set(st, 0));
+
+  mainList.forEach(e => {
+    const mg = e.mgmt_station;
+    if(mgmtCounts.has(mg)){
+      mgmtCounts.set(mg, mgmtCounts.get(mg) + 1);
+    } else {
+      const matched = ALL_HUB_STATIONS.find(h => isSameStation(h, mg));
+      if(matched) mgmtCounts.set(matched, mgmtCounts.get(matched) + 1);
+    }
+  });
+
+  const sortedHubs = [...mgmtCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const maxMgmt = Math.max(...sortedHubs.map(x => x[1]), 1);
+
+  const mgmtBarsEl = document.getElementById('mgmtChartBars');
+  if(mgmtBarsEl){
+    mgmtBarsEl.innerHTML = sortedHubs.map(([name, val], idx) => `
+      <div class="bar-row">
+        <div class="bar-rank">${idx + 1}위</div>
+        <div class="bar-lbl" title="${esc(name)}">${esc(name.replace('관리역',''))}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((val/maxMgmt)*100)}%"></div></div>
+        <div class="bar-val">${val}건</div>
+      </div>
+    `).join('');
+  }
+
+  // Top Supporting Employees Table - 전체 지원근무 직원 표기
+  const empStatMap = new Map();
+  mainList.forEach(e => {
+    if(!empStatMap.has(e.emp_id)){
+      empStatMap.set(e.emp_id, {
+        emp_id: e.emp_id,
+        name: e.name,
+        rank: e.rank_full || e.rank || '-',
+        mgmt_station: e.mgmt_station || '-',
+        home_station: e.home_station || '-',
+        count: 0
+      });
+    }
+    empStatMap.get(e.emp_id).count++;
+  });
+
+  const sortedTopEmps = [...empStatMap.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ko-KR'));
+  const topMaxCnt = sortedTopEmps.length > 0 ? sortedTopEmps[0].count : 1;
+
+  const topEmpBody = document.getElementById('topEmpTableBody');
+  const topEmpTotalCountEl = document.getElementById('topEmpTotalCount');
+  if(topEmpTotalCountEl){
+    topEmpTotalCountEl.textContent = `총 ${fmtNum(sortedTopEmps.length)}명 지원`;
+  }
+
+  if(topEmpBody){
+    if(sortedTopEmps.length === 0){
+      topEmpBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-faint); padding:16px;">해당 기간 내 지원근무 내역이 없습니다.</td></tr>';
+    } else {
+      topEmpBody.innerHTML = sortedTopEmps.map((p, idx) => {
+        const rankNum = idx + 1;
+        const badgeClass = rankNum === 1 ? 'mini-rank-1' : rankNum === 2 ? 'mini-rank-2' : rankNum === 3 ? 'mini-rank-3' : 'mini-rank-other';
+        const barWidth = Math.round((p.count / topMaxCnt) * 100);
+
+        return `<tr>
+          <td style="text-align:center;"><span class="mini-rank-badge ${badgeClass}">${rankNum}</span></td>
+          <td>${esc(p.mgmt_station)}</td>
+          <td>${esc(p.home_station)}</td>
+          <td class="rank" style="font-size:10px;">${esc(p.rank)}</td>
+          <td class="name" style="font-size:10.5px;">${esc(p.name)}</td>
+          <td class="mono" style="text-align:right; font-weight:700; color:var(--line-2); padding-right:8px;">${p.count}건</td>
+          <td>
+            <div class="bar-track" style="height:7px;">
+              <div class="bar-fill" style="width:${barWidth}%;"></div>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // Canonical 43 stations aggregate map
+  const stationAgg = new Map();
+  CANONICAL_LINE2_STATIONS.forEach(st => {
+    stationAgg.set(st.name, {
+      station_no: st.no,
+      station_name: st.name,
+      station_type: st.type,
+      mgmt_name: st.mgmt,
+      mismatch_cnt: 0,
+      sub_support_cnt: 0,
+      master_cnt: 0,
+      total_cnt: 0
+    });
+  });
+
+  mainList.forEach(e => {
+    const canon = getCanonicalStation(e.work_station);
+    const item = stationAgg.get(canon.name);
+    if(item){
+      item.mismatch_cnt++;
+      if(!e.same_station) item.sub_support_cnt++;
+      item.total_cnt++;
+    }
+  });
+
+  masterList.forEach(e => {
+    const canon = getCanonicalStation(e.work_station);
+    const item = stationAgg.get(canon.name);
+    if(item){
+      item.master_cnt++;
+      item.total_cnt++;
+    }
+  });
+
+  let totMismatch = 0;
+  let totSub = 0;
+  let totMaster = 0;
+  let totGrand = 0;
+
+  stationAgg.forEach(item => {
+    totMismatch += item.mismatch_cnt;
+    totSub += item.sub_support_cnt;
+    totMaster += item.master_cnt;
+    totGrand += item.total_cnt;
+  });
+
+  setTxt('sumTotalMismatch', fmtNum(totMismatch));
+  setTxt('sumTotalSub', fmtNum(totSub));
+  setTxt('sumTotalMaster', fmtNum(totMaster));
+  setTxt('sumTotalGrand', fmtNum(totGrand));
+
+  const sumRows = [...stationAgg.values()].sort((a, b) => {
+    if(summarySort.k === 'station_name'){
+      if(summarySort.stationSortMode === 'stno') return (a.station_no - b.station_no) * summarySort.dir;
+      return a.station_name.localeCompare(b.station_name, 'ko-KR') * summarySort.dir;
+    }
+    const va = a[summarySort.k] ?? 0;
+    const vb = b[summarySort.k] ?? 0;
+    return va < vb ? -1 * summarySort.dir : va > vb ? 1 * summarySort.dir : 0;
+  });
+
+  const sumBody = document.getElementById('summaryTableBody');
+  if(sumBody){
+    sumBody.innerHTML = sumRows.map(r => `<tr>
+      <td class="mono">${r.station_no !== 999 ? r.station_no : '-'}</td>
+      <td class="name">${esc(r.station_name)}</td>
+      <td><span class="tag ${r.station_type==='관리역'?'tag-diff':r.station_type==='환승역'?'tag-same':r.station_type==='독립역'?'tag-twoperson':''}">${esc(r.station_type)}</span></td>
+      <td class="mono">${fmtNum(r.mismatch_cnt)}</td>
+      <td class="mono">${fmtNum(r.sub_support_cnt)}</td>
+      <td class="mono">${fmtNum(r.master_cnt)}</td>
+      <td class="mono" style="font-weight:700; color:var(--amber);">${fmtNum(r.total_cnt)}</td>
+    </tr>`).join('');
+  }
+}
+
+function s2ab(s){
+  const buf = new ArrayBuffer(s.length);
+  const view = new Uint8Array(buf);
+  for(let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+  return buf;
+}
+
+function downloadWorkbook(wb, filename){
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+  const blob = new Blob([s2ab(wbout)], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportAllExcel(){
+  if(!DATA.all_raw_events.length){
+    showToast('다운로드할 데이터가 없습니다. 먼저 엑셀을 분석해 주세요.', 'warn');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  const { start, end } = currentRange();
+  const mainList = DATA.main_events.filter(e => inRange(e, start, end));
+  const masterList = DATA.master_events.filter(e => inRange(e, start, end));
+
+  // 1. [시트 1] 역사별 종합 지원 집계표
+  const summaryRows = [];
+  let totMis = 0, totSub = 0, totMas = 0, totGrd = 0;
+
+  CANONICAL_LINE2_STATIONS.forEach(st => {
+    const misCnt = mainList.filter(e => isSameStation(e.work_station, st.name)).length;
+    const subCnt = mainList.filter(e => isSameStation(e.work_station, st.name) && !e.same_station).length;
+    const masCnt = masterList.filter(e => isSameStation(e.work_station, st.name)).length;
+    const totCnt = misCnt + masCnt;
+
+    totMis += misCnt;
+    totSub += subCnt;
+    totMas += masCnt;
+    totGrd += totCnt;
+
+    summaryRows.push({
+      '역번호': st.no,
+      '역명': st.name,
+      '역 구분': st.type,
+      '소속 관리역': st.mgmt,
+      '[대항목] 교대자 순수지원(건)': misCnt,
+      '[소항목] ↳ 타역 지원근무(건)': subCnt,
+      '[대항목] 역장 지원(건)': masCnt,
+      '[종합] 총 지원 건수(건)': totCnt
+    });
+  });
+
+  const summarySheetData = [
+    {
+      '역번호': '-',
+      '역명': '합계',
+      '역 구분': '43개역',
+      '소속 관리역': '-',
+      '[대항목] 교대자 순수지원(건)': totMis,
+      '[소항목] ↳ 타역 지원근무(건)': totSub,
+      '[대항목] 역장 지원(건)': totMas,
+      '[종합] 총 지원 건수(건)': totGrd
+    },
+    ...summaryRows
+  ];
+
+  const wsSummary = XLSX.utils.json_to_sheet(summarySheetData);
+  wsSummary['!cols'] = [
+    { wch: 8 },  { wch: 18 }, { wch: 10 }, { wch: 16 },
+    { wch: 24 }, { wch: 24 }, { wch: 18 }, { wch: 20 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsSummary, '역사별_종합지원_집계표');
+
+  // 2. [시트 2] 교대자 순수지원 상세명단
+  const mainTableData = mainList.map(e => ({
+    '소속 관리역': e.mgmt_station,
+    '소속 근무역': e.home_station,
+    '사번': e.emp_id,
+    '직급': e.rank_full || e.rank || '-',
+    '이름': e.name,
+    '해당일': e.date,
+    '요일': fmtDate(e.date).replace(/.*\((.+)\).*/, '$1'),
+    '근무구분': e.slot,
+    '당시 유효조': e.current_active_group,
+    '그날 본인조 일정': e.own_shift_that_day,
+    '실제 근무 역': e.work_station,
+    '지원 구분': e.same_station ? '소속역' : '관리역내 타역지원',
+    '야-야 연속 여부': e.hasNightNight ? '야-야 연속' : '정상',
+    '24시간 연속 여부': e.has24hConsec ? '24시간 철야연속' : '정상',
+    '역무일지 기재 내용': e.note || ''
+  }));
+  const wsMain = XLSX.utils.json_to_sheet(mainTableData);
+  wsMain['!cols'] = [
+    { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+    { wch: 12 }, { wch: 6 },  { wch: 10 }, { wch: 12 }, { wch: 14 },
+    { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 36 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsMain, '교대자_순수지원_상세명단');
+
+  // 3. [시트 3] 일근 역장 지원근무 현황
+  const masterTableData = masterList.map(e => ({
+    '소속 관리역(소속역)': e.home_station,
+    '역장 구분': e.master_type,
+    'I열 직책명': e.title || '-',
+    '사번': e.emp_id,
+    '역장 성명': e.name,
+    '해당일': e.date,
+    '요일': fmtDate(e.date).replace(/.*\((.+)\).*/, '$1'),
+    '근무구분': e.slot,
+    '실제 근무 역': e.work_station,
+    '당일 주간총인원': e.station_day_count || '-',
+    '지원 구분': e.support_type_desc,
+    '역무일지 기재 내용': e.note || ''
+  }));
+  const wsMaster = XLSX.utils.json_to_sheet(masterTableData);
+  wsMaster['!cols'] = [
+    { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 12 },
+    { wch: 12 }, { wch: 6 },  { wch: 10 }, { wch: 14 }, { wch: 14 },
+    { wch: 16 }, { wch: 36 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsMaster, '일근역장_지원근무_현황');
+
+  // 4. [시트 4] 근무조 변경 감지 현황
+  const switchTableData = DATA.switch_events.map(r => ({
+    '소속 관리역': getStationMgmt(r.home_station),
+    '소속 근무역': r.home_station,
+    '사번': r.emp_id,
+    '이름': r.name,
+    '명부상 조': r.roster_group,
+    '직전 근무조': r.prev_group,
+    '변경된 실제 조': r.active_group,
+    '변경 구분': r.transition_desc,
+    '변경 시작일': r.switch_date,
+    '순환 일치 검증 근거': r.reason
+  }));
+  const wsSwitch = XLSX.utils.json_to_sheet(switchTableData);
+  wsSwitch['!cols'] = [
+    { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 12 },
+    { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 24 },
+    { wch: 16 }, { wch: 44 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsSwitch, '근무조_변경감지_명단');
+
+  downloadWorkbook(wb, `2호선_지원근무_종합보고서_${DATA.meta.log_range[0]}_${DATA.meta.log_range[1]}.xlsx`);
+  showToast('종합 엑셀 보고서 다운로드가 완료되었습니다.');
+}
+
+function exportMainExcel(){
+  if(!mainFiltered.length){ showToast('출력할 불일치 명단이 없습니다.', 'warn'); return; }
+  const wb = XLSX.utils.book_new();
+  const data = mainFiltered.map(e => ({
+    '소속 관리역': e.mgmt_station,
+    '소속 근무역': e.home_station,
+    '사번': e.emp_id,
+    '직급': e.rank_full || e.rank || '-',
+    '이름': e.name,
+    '해당일': e.date,
+    '요일': fmtDate(e.date).replace(/.*\((.+)\).*/, '$1'),
+    '근무구분': e.slot,
+    '당시 유효조': e.current_active_group,
+    '그날 본인조 일정': e.own_shift_that_day,
+    '실제 근무 역': e.work_station,
+    '지원 구분': e.same_station ? '소속역' : '타역지원',
+    '야-야 연속 여부': e.hasNightNight ? '야-야 연속' : '정상',
+    '24시간 연속 여부': e.has24hConsec ? '24시간 철야' : '정상',
+    '역무일지 기재 내용': e.note || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+    { wch: 12 }, { wch: 6 },  { wch: 10 }, { wch: 12 }, { wch: 14 },
+    { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 36 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, '순수지원_불일치명단');
+  downloadWorkbook(wb, `불일치_순수지원명단_${mainFiltered.length}건.xlsx`);
+  showToast('불일치 명단 엑셀 다운로드가 완료되었습니다.');
+}
+
+function exportMasterExcel(){
+  if(!masterFiltered.length){ showToast('출력할 역장 지원근무 내역이 없습니다.', 'warn'); return; }
+  const wb = XLSX.utils.book_new();
+  const data = masterFiltered.map(e => ({
+    '소속 관리역(소속역)': e.home_station,
+    '역장 구분': e.master_type,
+    'I열 직책명': e.title || '-',
+    '사번': e.emp_id,
+    '역장 성명': e.name,
+    '해당일': e.date,
+    '요일': fmtDate(e.date).replace(/.*\((.+)\).*/, '$1'),
+    '근무구분': e.slot,
+    '실제 근무 역': e.work_station,
+    '당일 주간총인원': e.station_day_count || '-',
+    '지원 구분': e.support_type_desc,
+    '역무일지 기재 내용': e.note || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 12 },
+    { wch: 12 }, { wch: 6 },  { wch: 10 }, { wch: 14 }, { wch: 14 },
+    { wch: 16 }, { wch: 36 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, '역장_지원근무');
+  downloadWorkbook(wb, `역장_지원근무_${masterFiltered.length}건.xlsx`);
+  showToast('역장 지원 엑셀 다운로드가 완료되었습니다.');
+}
+
+function exportSwitchExcel(){
+  if(!DATA.switch_events.length){ showToast('출력할 조변경 내역이 없습니다.', 'warn'); return; }
+  const wb = XLSX.utils.book_new();
+  const data = DATA.switch_events.map(r => ({
+    '소속 관리역': getStationMgmt(r.home_station),
+    '소속 근무역': r.home_station,
+    '사번': r.emp_id,
+    '이름': r.name,
+    '명부상 조': r.roster_group,
+    '직전 근무조': r.prev_group,
+    '변경된 실제 조': r.active_group,
+    '변경 구분': r.transition_desc,
+    '변경 시작일': r.switch_date,
+    '순환 일치 검증 근거': r.reason
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 12 },
+    { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 24 },
+    { wch: 16 }, { wch: 44 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, '근무조_변경자');
+  downloadWorkbook(wb, `근무조_변경자_${DATA.switch_events.length}건.xlsx`);
+  showToast('근무조 변경자 엑셀 다운로드가 완료되었습니다.');
+}
+
+function populateFilters(){
+  const mgmtSel = document.getElementById('fMgmt');
+  if(mgmtSel){
+    const keep = mgmtSel.value;
+    mgmtSel.innerHTML = '<option value="">전체 관리역</option>';
+    [...new Set(DATA.main_events.map(e => e.mgmt_station))].filter(Boolean).sort().forEach(st => {
+      const o = document.createElement('option'); o.value = st; o.textContent = st; mgmtSel.appendChild(o);
+    });
+    if([...mgmtSel.options].some(o => o.value === keep)) mgmtSel.value = keep;
+  }
+
+  const stSel = document.getElementById('fStation');
+  if(stSel){
+    const keep = stSel.value;
+    stSel.innerHTML = '<option value="">전체 근무역</option>';
+    [...new Set(DATA.main_events.map(e => e.home_station))].filter(Boolean).sort().forEach(st => {
+      const o = document.createElement('option'); o.value = st; o.textContent = st; stSel.appendChild(o);
+    });
+    if([...stSel.options].some(o => o.value === keep)) stSel.value = keep;
+  }
+
+  const mMgmtSel = document.getElementById('fMasterMgmt');
+  if(mMgmtSel){
+    const keep = mMgmtSel.value;
+    mMgmtSel.innerHTML = '<option value="">전체 소속역</option>';
+    [...new Set(DATA.master_events.map(e => e.home_station))].filter(Boolean).sort().forEach(st => {
+      const o = document.createElement('option'); o.value = st; o.textContent = st; mMgmtSel.appendChild(o);
+    });
+    if([...mMgmtSel.options].some(o => o.value === keep)) mMgmtSel.value = keep;
+  }
+
+  const mStSel = document.getElementById('fMasterStation');
+  if(mStSel){
+    const keep = mStSel.value;
+    mStSel.innerHTML = '<option value="">전체 근무역</option>';
+    [...new Set(DATA.master_events.map(e => e.work_station))].filter(Boolean).sort().forEach(st => {
+      const o = document.createElement('option'); o.value = st; o.textContent = st; mStSel.appendChild(o);
+    });
+    if([...mStSel.options].some(o => o.value === keep)) mStSel.value = keep;
+  }
+}
+
+function initPeriod(){
+  const allDates = [...DATA.main_events, ...DATA.master_events].map(e => e.date).filter(Boolean).sort();
+  const fStart = document.getElementById('fStart');
+  const fEnd = document.getElementById('fEnd');
+  if(fStart) fStart.value = allDates[0] || '';
+  if(fEnd) fEnd.value = allDates.at(-1) || '';
+}
+
+function resetAllUI(){
+  populateFilters();
+  initPeriod();
+  initMonthModalPicker();
+
+  const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
+  setVal('fMgmt', '');
+  setVal('fStation', '');
+  setVal('fRiskType', '');
+  setVal('fSearch', '');
+  setVal('masterTypeFilter', '');
+  setVal('masterWorkFilter', '');
+  setVal('fMasterMgmt', '');
+  setVal('fMasterStation', '');
+  setVal('fMasterSearch', '');
+
+  renderSwitch();
+  applyMainFilters();
+  applyMasterFilters();
+}
+
+function addSafeListener(id, evt, fn){
+  const el = document.getElementById(id);
+  if(el) el.addEventListener(evt, fn);
+}
+
+function initTheme(){
+  const saved = localStorage.getItem('subway-dashboard-theme');
+  let currentTheme = saved;
+  if(!currentTheme){
+    currentTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  applyTheme(currentTheme);
+}
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('subway-dashboard-theme', theme);
+  const emojiEl = document.getElementById('themeEmoji');
+  const btnEl = document.getElementById('themeToggleBtn');
+  if(emojiEl){
+    emojiEl.textContent = (theme === 'light') ? '🌙' : '☀️';
+  }
+  if(btnEl){
+    btnEl.title = (theme === 'light') ? '밤 모드(다크)로 전환' : '낮 모드(라이트)로 전환';
+  }
+}
+
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = (current === 'light') ? 'dark' : 'light';
+  applyTheme(next);
+  showToast(next === 'light' ? '☀️ 낮 모드로 전환되었습니다.' : '🌙 밤 모드로 전환되었습니다.');
+}
+
+addSafeListener('themeToggleBtn', 'click', toggleTheme);
+
+addSafeListener('loadExcelBtn', 'click', loadExcelData);
+addSafeListener('exportJsonBtn', 'click', exportDataToJson);
+
+const jsonBtn = document.getElementById('importJsonBtn');
+const jsonInput = document.getElementById('jsonFileInput');
+if(jsonBtn && jsonInput){
+  jsonBtn.addEventListener('click', () => jsonInput.click());
+  jsonInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if(file) importDataFromJson(file);
+    e.target.value = '';
+  });
+}
+
+addSafeListener('exportAllExcelBtn', 'click', exportAllExcel);
+addSafeListener('exportMainExcelBtn', 'click', exportMainExcel);
+addSafeListener('exportMasterExcelBtn', 'click', exportMasterExcel);
+addSafeListener('exportSwitchExcelBtn', 'click', exportSwitchExcel);
+
+function setupStationSort(th, sortObj, renderFn, tableId){
+  th.addEventListener('click', () => {
+    const k = th.dataset.k;
+    if(!k) return;
+
+    if(k === 'home_station' || k === 'work_station' || k === 'mgmt_station' || k === 'station_name'){
+      if(sortObj.k === k){
+        if(sortObj.stationSortMode === 'stno'){
+          sortObj.stationSortMode = 'name';
+          sortObj.dir = 1;
+        } else {
+          sortObj.stationSortMode = 'stno';
+          sortObj.dir = 1;
+        }
+      } else {
+        sortObj.k = k;
+        sortObj.stationSortMode = 'stno';
+        sortObj.dir = 1;
+      }
+    } else {
+      sortObj.stationSortMode = 'none';
+      if(sortObj.k === k) sortObj.dir *= -1;
+      else { sortObj.k = k; sortObj.dir = 1; }
+    }
+
+    document.querySelectorAll(`#${tableId} thead th .arrow`).forEach(a => a.textContent = '');
+    const a = th.querySelector('.arrow');
+    if(a){
+      if(sortObj.stationSortMode === 'stno') a.textContent = '(역번호순)';
+      else if(sortObj.stationSortMode === 'name') a.textContent = '(가나다순)';
+      else a.textContent = sortObj.dir === 1 ? '▲' : '▼';
+    }
+    renderFn();
+  });
+}
+
+document.querySelectorAll('#mainTable thead th').forEach(th => {
+  setupStationSort(th, mainSort, renderMain, 'mainTable');
+});
+document.querySelectorAll('#masterTable thead th').forEach(th => {
+  setupStationSort(th, masterSort, renderMaster, 'masterTable');
+});
+document.querySelectorAll('#summaryTable thead th').forEach(th => {
+  setupStationSort(th, summarySort, renderDashboardAndCharts, 'summaryTable');
+});
+
+['fStart', 'fEnd', 'fMgmt', 'fStation', 'fRiskType'].forEach(id => {
+  addSafeListener(id, 'change', () => {
+    applyMainFilters();
+    applyMasterFilters();
+  });
+});
+
+addSafeListener('fSearch', 'input', applyMainFilters);
+
+['masterTypeFilter', 'masterWorkFilter', 'fMasterMgmt', 'fMasterStation'].forEach(id => {
+  addSafeListener(id, 'change', applyMasterFilters);
+});
+addSafeListener('fMasterSearch', 'input', applyMasterFilters);
+
+initTheme();
+resetAllUI();
+</script>
+</body>
+</html>
