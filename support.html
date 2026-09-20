@@ -19,7 +19,6 @@
   --rule:#1e293b; --rule-strong:#334155;
   --mono:'IBM Plex Mono', ui-monospace, monospace; --sans:'Noto Sans KR', -apple-system, sans-serif;
 }
-/* 명시적 라이트/다크 테마 오버라이드 지원 */
 [data-theme="light"] {
   --bg:#f8fafc; --bg-panel:#ffffff; --bg-panel-raised:#f1f5f9;
   --ink:#0f172a; --ink-dim:#475569; --ink-faint:#94a3b8;
@@ -62,16 +61,13 @@ header.top{ display:flex; justify-content:space-between; align-items:center; gap
 .action-btn.slate:hover{ background:#475569; }
 .action-btn.sm{ padding:4px 9px; font-size:11px; min-height:28px; }
 
-/* 낮/밤 모드 토글 버튼 */
 .theme-toggle-btn{
   background:var(--bg-panel-raised); border:1px solid var(--rule-strong);
   color:var(--ink); width:32px; height:31px; border-radius:4px;
   display:inline-flex; align-items:center; justify-content:center;
   font-size:16px; cursor:pointer; transition:all .15s ease; user-select:none;
 }
-.theme-toggle-btn:hover{
-  background:var(--rule); transform:scale(1.06);
-}
+.theme-toggle-btn:hover{ background:var(--rule); transform:scale(1.06); }
 
 .panel{ background:var(--bg-panel); border:1px solid var(--rule); border-radius:8px; padding:14px 16px; margin-bottom:14px; }
 .panel-head{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
@@ -83,13 +79,8 @@ header.top{ display:flex; justify-content:space-between; align-items:center; gap
 .callout-blue{ border-left:4px solid var(--blue); }
 .callout-amber{ border-left:4px solid var(--amber); }
 
-.upload-row-grid{
-  display:grid; grid-template-columns: 1fr 1fr auto;
-  gap:10px; align-items:flex-end;
-}
-@media (max-width:1100px){
-  .upload-row-grid{ grid-template-columns: 1fr 1fr; }
-}
+.upload-row-grid{ display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; align-items:flex-end; }
+@media (max-width:1100px){ .upload-row-grid{ grid-template-columns: 1fr 1fr; } }
 .file-box{ display:flex; flex-direction:column; gap:4px; }
 .file-box label{ font-size:11px; color:var(--ink-dim); font-weight:700; }
 .file-box input[type="file"]{
@@ -100,7 +91,6 @@ header.top{ display:flex; justify-content:space-between; align-items:center; gap
 .upload-status.ok{ border-color:var(--line-2-dim); color:var(--line-2); font-weight:600; }
 .upload-status.err{ border-color:var(--red-dim); color:var(--red); }
 
-/* Modal and KPI row styles */
 .kpi-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
 @media (max-width:1100px){ .kpi-row{ grid-template-columns:repeat(3,1fr); } }
 @media (max-width:700px){ .kpi-row{ grid-template-columns:repeat(1,1fr); } }
@@ -114,20 +104,9 @@ header.top{ display:flex; justify-content:space-between; align-items:center; gap
 .kpi.blue{ --accent:var(--blue); }
 .kpi.purple{ --accent:var(--purple); }
 
-/* 소항목(하위 항목) 전용 차별화 스타일 */
-.kpi.kpi-sub{
-  background:rgba(21, 34, 42, 0.45);
-  border:1px dashed var(--rule-strong);
-}
-.kpi.kpi-sub::before{
-  background:var(--accent, var(--ink-dim));
-  opacity:0.6;
-  width:3px;
-}
-[data-theme="light"] .kpi.kpi-sub{
-  background:#f1f5f9;
-  border:1px dashed #cbd5e1;
-}
+.kpi.kpi-sub{ background:rgba(21, 34, 42, 0.45); border:1px dashed var(--rule-strong); }
+.kpi.kpi-sub::before{ background:var(--accent, var(--ink-dim)); opacity:0.6; width:3px; }
+[data-theme="light"] .kpi.kpi-sub{ background:#f1f5f9; border:1px dashed #cbd5e1; }
 
 .filters-row{
   display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end;
@@ -193,7 +172,6 @@ td.mono, th.mono{ font-family:var(--mono); }
 .count-tag{ font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); font-weight:600; white-space:nowrap; margin-left:auto; }
 .empty-row td{ text-align:center; color:var(--ink-faint); padding:20px; }
 
-/* Sticky summary total row */
 .sticky-total-row td{
   position:sticky !important;
   top:38px !important;
@@ -223,6 +201,7 @@ td.mono, th.mono{ font-family:var(--mono); }
 .p-day.night{ color:var(--red); font-weight:700; }
 .p-day.daytime{ color:var(--blue); font-weight:700; }
 .p-day.off{ color:var(--ink-faint); opacity:0.85; }
+.p-day.care{ color:#c084fc; border:1px dashed #a855f7; font-weight:700; background:rgba(168, 85, 247, 0.12); }
 
 .dash-grid-5{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:12px; }
 @media (max-width:1250px){ .dash-grid-5{ grid-template-columns:repeat(3,1fr); } }
@@ -249,7 +228,6 @@ td.mono, th.mono{ font-family:var(--mono); }
 .bar-fill{ height:100%; background:var(--line-2); border-radius:3px; }
 .bar-val{ font-family:var(--mono); width:32px; text-align:right; font-size:10px; color:var(--ink); font-weight:700; }
 
-/* Ranking mini table styles */
 .mini-rank-table{ width:100%; border-collapse:collapse; font-size:10.5px; }
 .mini-rank-table th{ position:sticky; top:0; z-index:10; background:var(--bg-panel); color:var(--ink-faint); padding:5px 6px; border-bottom:1px solid var(--rule-strong); font-size:10px; text-align:left; }
 .mini-rank-table td{ padding:4px 6px; border-bottom:1px solid var(--rule); white-space:nowrap; }
@@ -260,7 +238,6 @@ td.mono, th.mono{ font-family:var(--mono); }
 .mini-rank-3{ background:#b45309; color:#fff; }
 .mini-rank-other{ color:var(--ink-faint); }
 
-/* Modal and toast */
 .modal-overlay{ position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.72); backdrop-filter:blur(3px); z-index:99999; display:none; align-items:center; justify-content:center; }
 .modal-overlay.active{ display:flex; }
 .month-dialog{ background:var(--bg-panel); border:1px solid var(--rule-strong); border-top:4px solid var(--line-2); border-radius:10px; width:92%; max-width:440px; box-shadow:0 24px 48px rgba(0,0,0,0.6); animation:popIn .18s ease-out; overflow:hidden; }
@@ -288,16 +265,11 @@ td.mono, th.mono{ font-family:var(--mono); }
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <div class="brand-top">
-        <span class="badge">2호선 · 역무</span>
-      </div>
+      <div class="brand-top"><span class="badge">2호선 · 역무</span></div>
       <h1>지원근무 현황 및 분석</h1>
     </div>
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
-      <div class="top-meta" id="topMeta">
-        데이터 기간 -- ~ --<br>
-        명부 기준 -
-      </div>
+      <div class="top-meta" id="topMeta">데이터 기간 -- ~ --<br>명부 기준 -</div>
       <div style="display:flex; gap:6px; align-items:center;">
         <button class="action-btn secondary" id="exportJsonBtn" type="button" style="min-height:31px;">💾 JSON 저장</button>
         <button class="action-btn slate" id="importJsonBtn" type="button" style="min-height:31px;">📂 JSON 불러오기</button>
@@ -309,7 +281,6 @@ td.mono, th.mono{ font-family:var(--mono); }
     </div>
   </header>
 
-  <!-- 엑셀 데이터 불러오기 패널 -->
   <div class="panel" style="border-top:3px solid var(--line-2); margin-bottom:14px;">
     <div style="margin-bottom:8px;">
       <div style="font-weight:800; font-size:13.5px; color:var(--ink);">
@@ -337,7 +308,6 @@ td.mono, th.mono{ font-family:var(--mono); }
     </div>
   </div>
 
-  <!-- Excel Report Downloader Bar -->
   <div class="panel" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; background:var(--bg-panel-raised);">
     <div>
       <div style="font-weight:700; font-size:12.5px;">📑 지원 근무 현황 종합 엑셀 보고서 추출 (다중 탭/시트)</div>
@@ -347,35 +317,30 @@ td.mono, th.mono{ font-family:var(--mono); }
   </div>
 
   <div class="kpi-row">
-    <!-- 1. 대항목 ① -->
     <div class="kpi">
       <span class="badge-cat badge-dae" style="margin-bottom:4px;">대항목 ①</span>
       <div class="n" id="kpiMain">0</div>
       <div class="l">교대자 순수지원 (건)</div>
       <div class="s">비번·휴무일 출근 및 타조 대근</div>
     </div>
-    <!-- 2. 대항목 ② (3번째에서 2번째로 위치 이동) -->
     <div class="kpi blue">
       <span class="badge-cat badge-dae-blue" style="margin-bottom:4px;">대항목 ②</span>
       <div class="n" id="kpiMaster">0</div>
       <div class="l">역장 지원 근무 (건)</div>
       <div class="s" id="kpiMasterSub">일근 관리·환승·독립역장</div>
     </div>
-    <!-- 3. 하위 항목 1 (소항목 구분 스타일 적용) -->
     <div class="kpi kpi-sub">
       <span class="badge-cat badge-so" style="margin-bottom:4px;">소항목 (교대자 세부)</span>
       <div class="n" id="kpiEmp">0</div>
       <div class="l">↳ 해당 직원 수 (명)</div>
       <div class="s">순수 지원근무를 수행한 인원</div>
     </div>
-    <!-- 4. 하위 항목 2 (소항목 구분 스타일 적용) -->
     <div class="kpi purple kpi-sub">
       <span class="badge-cat badge-so" style="margin-bottom:4px;">소항목 (교대자 세부)</span>
       <div class="n" id="kpiRisk">0</div>
       <div class="l">↳ 연속근무 주의 (건)</div>
       <div class="s">24h 철야연속 + 야-야 연속 투입 건수</div>
     </div>
-    <!-- 5. 하위 항목 3 (소항목 구분 스타일 적용) -->
     <div class="kpi amber kpi-sub">
       <span class="badge-cat badge-so" style="margin-bottom:4px;">소항목 (편성 검증)</span>
       <div class="n" id="kpiSwitch">0</div>
@@ -384,13 +349,12 @@ td.mono, th.mono{ font-family:var(--mono); }
     </div>
   </div>
 
-  <!-- Master Support Panel -->
   <div class="panel callout-blue">
     <div class="panel-head">
       <h2>일근 역장(관리역장 · 환승역장 · 독립역장) 교대 및 지원 근무 현황 <span class="cnt" id="masterHeaderCnt"></span></h2>
       <button class="action-btn sm secondary" id="exportMasterExcelBtn" type="button">📥 역장 지원 엑셀 다운로드</button>
     </div>
-    <div class="sub">근무조가 없는 일근 역장(I열: 관리역장, 환승역장, 역장)이 역사 <b>2명 근무 지원</b> 또는 <b>지정 7개 거점역(덕천·사상·수영·장산·양산·경성대부경대·센텀시티) 3명 근무 지원</b>, 산하·타역 지원, 일지에 명시된 지원 등에 투입된 내역입니다.</div>
+    <div class="sub">근무조가 없는 일근 역장(관리역장, 환승역장, 독립역장)이 월~금 평일 주간에 <b>2명 근무(장산·양산·수영·경성대부경대·센텀시티·사상)</b> 또는 <b>3명 근무(덕천역)</b>에 투입되었거나, 주말·공휴일 출근, 야간 투입, 산하·타역 지원을 수행한 내역입니다.</div>
 
     <div class="filters-row">
       <div class="f-item">
@@ -407,8 +371,8 @@ td.mono, th.mono{ font-family:var(--mono); }
         <select id="masterWorkFilter">
           <option value="">전체 지원 근무 보기</option>
           <option value="집중지원">2·3인 집중지원 전체</option>
-          <option value="2명근무">2명 근무 지원만 보기</option>
-          <option value="3명근무">3명 근무 지원만 보기 (7개 거점역)</option>
+          <option value="2명근무">2명 근무 지원 (6개 지정역)</option>
+          <option value="3명근무">3명 근무 지원 (덕천역)</option>
           <option value="주간">주간 근무만</option>
           <option value="야간">야간 근무만</option>
           <option value="타역">산하·타역 지원만</option>
@@ -526,41 +490,40 @@ td.mono, th.mono{ font-family:var(--mono); }
       <div style="font-size:11px; color:var(--ink-faint);">* 상단의 월별 / 기간 필터와 실시간 연동됩니다.</div>
     </div>
 
-    <!-- 5 KPI Cards (종합 합계 + 대항목 ① + 소항목 ①-1 + 소항목 ①-2 + 대항목 ②) -->
     <div class="dash-grid-5">
       <div class="dash-card is-tot">
         <span class="badge-cat badge-tot">종합 합계</span>
         <div class="val" id="statGrandTotal" style="color:var(--amber);">0건</div>
         <div class="lbl">총 지원 건수</div>
-        <div class="sub-lbl">교대자(261) + 역장(10) 합계</div>
+        <div class="sub-lbl">교대자 + 역장 합계</div>
       </div>
 
       <div class="dash-card is-dae">
         <span class="badge-cat badge-dae">대항목 ①</span>
         <div class="val" id="statMismatchCnt">0건</div>
         <div class="lbl">교대자 순수지원 건수</div>
-        <div class="sub-lbl" id="statAvgDailySub">소항목 합계(186+75)=261건</div>
+        <div class="sub-lbl" id="statAvgDailySub">소항목 합계</div>
       </div>
 
       <div class="dash-card is-so">
         <span class="badge-cat badge-so">소항목 ①-1</span>
         <div class="val" id="statHomeSupportCnt">0건</div>
         <div class="lbl">↳ 소속역 자체 지원 건수</div>
-        <div class="sub-lbl" id="statHomeSupportSub">전체 순수지원의 0%</div>
+        <div class="sub-lbl" id="statHomeSupportSub">소속역 지원 비율</div>
       </div>
 
       <div class="dash-card is-so">
         <span class="badge-cat badge-so">소항목 ①-2</span>
         <div class="val" id="statSubSupportCnt">0건</div>
         <div class="lbl">↳ 관할 내 타역 지원 건수</div>
-        <div class="sub-lbl" id="statSubSupportSub">전체 순수지원의 0%</div>
+        <div class="sub-lbl" id="statSubSupportSub">타역 지원 비율</div>
       </div>
 
       <div class="dash-card is-dae-blue">
         <span class="badge-cat badge-dae-blue">대항목 ②</span>
         <div class="val" id="statMasterCnt" style="color:var(--blue);">0건</div>
         <div class="lbl">역장 지원 건수</div>
-        <div class="sub-lbl">관리·환승·독립역장 일근 투입</div>
+        <div class="sub-lbl">관리·환승·독립역장 투입</div>
       </div>
     </div>
 
@@ -640,7 +603,6 @@ td.mono, th.mono{ font-family:var(--mono); }
     </div>
   </div>
 
-  <!-- Shift Change Panel -->
   <div class="panel callout-amber" style="margin-top:20px;">
     <div class="panel-head">
       <h2>근무조 변경 감지 현황 <span class="cnt" id="switchCnt"></span></h2>
@@ -670,7 +632,7 @@ td.mono, th.mono{ font-family:var(--mono); }
 
 </div>
 
-<!-- Dedicated Month Modal -->
+<!-- Modal and Toast -->
 <div class="modal-overlay" id="monthModalOverlay">
   <div class="month-dialog">
     <div class="month-dialog-head">
@@ -681,12 +643,8 @@ td.mono, th.mono{ font-family:var(--mono); }
       <button type="button" class="month-dialog-close" id="closeMonthModalBtn" title="닫기">&times;</button>
     </div>
     <div class="month-dialog-body">
-      <div style="font-size:11px; color:var(--ink-dim); margin-bottom:6px;">
-        조회하고 싶은 월 버튼을 클릭하여 자유롭게 복수 선택할 수 있습니다.
-      </div>
-      
+      <div style="font-size:11px; color:var(--ink-dim); margin-bottom:6px;">조회하고 싶은 월 버튼을 클릭하여 자유롭게 복수 선택할 수 있습니다.</div>
       <div class="month-tiles-grid" id="modalMonthTilesGrid"></div>
-
       <div class="month-dialog-actions">
         <div class="month-dialog-tools">
           <button type="button" id="btnModalSelectAll">전체 선택</button>
@@ -700,11 +658,9 @@ td.mono, th.mono{ font-family:var(--mono); }
 
 <div id="toastNotification" class="toast-box" style="display:none;"></div>
 
-<!-- XLSX Library -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-// Canonical 43 stations of Line 2 (201 to 243)
 const CANONICAL_LINE2_STATIONS = [
   { no: 201, name: '장산역', mgmt: '장산관리역', type: '관리역' },
   { no: 202, name: '중동역', mgmt: '장산관리역', type: '일반역' },
@@ -763,12 +719,40 @@ function getCanonicalStation(rawName){
   return partial || { no: 999, name: String(rawName || '-'), mgmt: '-', type: '일반역' };
 }
 
-function isSameStation(a, b){
-  return normStName(a) === normStName(b);
-}
-
+function isSameStation(a, b){ return normStName(a) === normStName(b); }
 function getStationNumber(st){ return getCanonicalStation(st).no; }
 function getStationMgmt(st){ return getCanonicalStation(st).mgmt; }
+
+const HOLIDAYS_2026 = new Set([
+  '2026-01-01', '2026-02-16', '2026-02-17', '2026-02-18', '2026-03-01',
+  '2026-03-02', '2026-05-01', '2026-05-05', '2026-05-24', '2026-05-25',
+  '2026-06-06', '2026-08-15', '2026-08-17', '2026-09-24', '2026-09-25',
+  '2026-09-26', '2026-10-03', '2026-10-05', '2026-10-09', '2026-12-25'
+]);
+
+function isHoliday(dateStr){ return HOLIDAYS_2026.has(dateStr); }
+function isWeekendOrHoliday(dateStr){
+  if(!dateStr) return false;
+  if(isHoliday(dateStr)) return true;
+  const dt = new Date(dateStr + 'T00:00:00');
+  const day = dt.getDay();
+  return day === 0 || day === 6;
+}
+function isDayWorkerOffDay(dateStr){ return isWeekendOrHoliday(dateStr); }
+
+function isKimTaeYong(empId, name){
+  const n = String(name || '').trim();
+  const id = String(empId || '').trim();
+  return n === '김태용' || id === '113235';
+}
+
+function isDayWorkerEmployee(empId, name, rosterGroup, title){
+  if(isKimTaeYong(empId, name)) return true;
+  const g = String(rosterGroup || '').trim();
+  const t = String(title || '').trim();
+  if(g === '일근' || t.includes('일근') || t.includes('노동이사') || t.includes('임신') || t.includes('모성')) return true;
+  return false;
+}
 
 let DATA = {
   meta: { roster_date: '-', log_range: ['-', '-'] },
@@ -785,7 +769,6 @@ let summarySort = { k: 'station_no', dir: 1, stationSortMode: 'none' };
 
 let mainFiltered = [];
 let masterFiltered = [];
-
 let selectedMonths = new Set();
 let availableMonthsList = [];
 
@@ -853,6 +836,17 @@ function getGroupOfSlot(dateStr, slot){
   return '';
 }
 
+function addDaysSafe(ymdStr, days){
+  if(!ymdStr) return '';
+  const [y, m, d] = String(ymdStr).trim().split('-').map(Number);
+  if(!y || !m || !d) return ymdStr;
+  const dt = new Date(y, m - 1, d + days);
+  const ry = dt.getFullYear();
+  const rm = String(dt.getMonth() + 1).padStart(2, '0');
+  const rd = String(dt.getDate()).padStart(2, '0');
+  return `${ry}-${rm}-${rd}`;
+}
+
 function determineStationMaster(rawTitle, rawStation, rawDept, rawRank, rawGroup){
   if(rawGroup) return null;
   const title = String(rawTitle || '').trim();
@@ -871,15 +865,18 @@ function determineStationMaster(rawTitle, rawStation, rawDept, rawRank, rawGroup
   return null;
 }
 
-const THREE_PERSON_TARGET_STATIONS = [
-  '덕천역', '사상역', '수영역', '장산역', '양산역', '경성대ㆍ부경대역', '센텀시티역'
+const TWO_PERSON_TARGET_STATIONS = [
+  '장산역', '양산역', '수영역', '경성대ㆍ부경대역', '센텀시티역', '사상역'
 ];
 
+function isTwoPersonTargetStation(rawStationName){
+  const clean = normStName(rawStationName);
+  return TWO_PERSON_TARGET_STATIONS.some(target => normStName(target) === clean);
+}
+
 function isThreePersonTargetStation(rawStationName){
-  const clean = normStName(rawStationName).replace(/관리역$/, '역');
-  return THREE_PERSON_TARGET_STATIONS.some(target => {
-    return normStName(target).replace(/관리역$/, '역') === clean;
-  });
+  const clean = normStName(rawStationName);
+  return clean === normStName('덕천역');
 }
 
 function cleanCellText(v){ return String(v??'').replace(/\r/g,'').trim(); }
@@ -896,18 +893,13 @@ function findHeaderIndex(headers, names){
 
 function extractDateFromFilenameOrSheet(filename, rows){
   const cleanName = String(filename || '').trim();
-
-  // 1. 파일명에서 완전한 일자(YYYY-MM-DD, YYYY.MM.DD, YYYY_MM_DD, YYYYMMDD 등 연-월-일 8자리) 탐색
   const regex3Part = /(?:20\d{2})[-_./년\s]?\d{1,2}[-_./월\s]?\d{1,2}/g;
   const matches3 = cleanName.match(regex3Part);
   if(matches3 && matches3.length > 0){
-    // 파일명 뒤쪽(버전/추출일)부터 역순 탐색
     for(let i = matches3.length - 1; i >= 0; i--){
       const m = matches3[i].match(/(20\d{2})[-_./년\s]?(\d{1,2})[-_./월\s]?(\d{1,2})/);
       if(m){
-        const y = m[1];
-        const mon = Number(m[2]);
-        const day = Number(m[3]);
+        const y = m[1]; const mon = Number(m[2]); const day = Number(m[3]);
         if(mon >= 1 && mon <= 12 && day >= 1 && day <= 31){
           return `${y}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         }
@@ -915,15 +907,13 @@ function extractDateFromFilenameOrSheet(filename, rows){
     }
   }
 
-  // 2. 파일명에서 연-월 (YYYYMM, YYYY-MM 등 6자리) 탐색
   const regex2Part = /(?:20\d{2})[-_./년\s]?\d{1,2}/g;
   const matches2 = cleanName.match(regex2Part);
   if(matches2 && matches2.length > 0){
     for(let i = matches2.length - 1; i >= 0; i--){
       const m = matches2[i].match(/(20\d{2})[-_./년\s]?(\d{1,2})/);
       if(m){
-        const y = m[1];
-        const mon = Number(m[2]);
+        const y = m[1]; const mon = Number(m[2]);
         if(mon >= 1 && mon <= 12){
           return `${y}-${String(mon).padStart(2,'0')}-01`;
         }
@@ -931,13 +921,11 @@ function extractDateFromFilenameOrSheet(filename, rows){
     }
   }
 
-  // 3. 시트 상단 5행 이내에서 일자 텍스트 스캔
   for(let r = 0; r < Math.min(5, rows.length); r++){
     const line = (rows[r] || []).join(' ');
     const lm = line.match(/(20\d{2})[-_./년\s]+(\d{1,2})[-_./월\s]+(\d{1,2})/);
     if(lm){
-      const mon = Number(lm[2]);
-      const day = Number(lm[3]);
+      const mon = Number(lm[2]); const day = Number(lm[3]);
       if(mon >= 1 && mon <= 12 && day >= 1 && day <= 31){
         return `${lm[1]}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       }
@@ -989,7 +977,7 @@ function extractSingleRoster(rows, sourceDate){
       effective_date: sourceDate,
       home_station: canon.name,
       mgmt_station: canon.mgmt,
-      reference_group: rawGroup, // 명부 조는 단순 참고값
+      reference_group: rawGroup,
       rank: rawRank,
       rank_full: rankFull,
       title: chosenTitle,
@@ -1000,61 +988,42 @@ function extractSingleRoster(rows, sourceDate){
   return out;
 }
 
-// 다중 명부 통합 및 전보 이력 관리 데이터베이스 생성
 function buildUnifiedRosterDatabase(rosterFileList){
-  // rosterFileList: [{ filename, rows }]
   const records = [];
   const rosterSummaries = [];
   rosterFileList.forEach(rf => {
     const sDate = extractDateFromFilenameOrSheet(rf.filename, rf.rows);
     const list = extractSingleRoster(rf.rows, sDate);
     list.forEach(item => records.push(item));
-    rosterSummaries.push({
-      filename: rf.filename,
-      date: sDate,
-      count: list.length
-    });
+    rosterSummaries.push({ filename: rf.filename, date: sDate, count: list.length });
   });
 
   if(!records.length) throw new Error('제공된 명부 파일들에서 유효한 사번·성명 명단을 추출하지 못했습니다.');
 
-  // 일자순 정렬
   records.sort((a,b) => a.effective_date.localeCompare(b.effective_date));
   rosterSummaries.sort((a,b) => a.date.localeCompare(b.date));
 
-  // 사번별 이력(History) 및 직원 기본 프로필 맵 구축
   const empHistoryMap = new Map();
   records.forEach(r => {
     if(!empHistoryMap.has(r.emp_id)) empHistoryMap.set(r.emp_id, []);
     empHistoryMap.get(r.emp_id).push(r);
   });
 
-  // 최종/최신 기준 프로필 목록 생성
   const consolidated = [];
   empHistoryMap.forEach((history, empId) => {
     const latest = history[history.length - 1];
-    consolidated.push({
-      ...latest,
-      history: history // 전보 및 소속역 변경 이력
-    });
+    consolidated.push({ ...latest, history });
   });
 
   return { consolidated, empHistoryMap, rosterSummaries };
 }
 
-// 특정 일자(date) 시점의 직원 소속역 및 직급 조회 (전보 반영)
 function getEmployeeProfileAtDate(empId, date, empHistoryMap, defaultProfile){
   const history = empHistoryMap.get(empId);
   if(!history || !history.length) return defaultProfile;
-
-  // 해당 일자 이전 중 가장 최신의 명부 기록 탐색
   let target = history[0];
   for(let i = 0; i < history.length; i++){
-    if(history[i].effective_date <= date){
-      target = history[i];
-    } else {
-      break;
-    }
+    if(history[i].effective_date <= date){ target = history[i]; } else { break; }
   }
   return target;
 }
@@ -1072,18 +1041,13 @@ function matchRosterNamesWithTransfers(text, consolidatedRoster, nameMap, curren
         const profile = getEmployeeProfileAtDate(p.emp_id, date, empHistoryMap, p);
         found.push({ ...p, ...profile });
       } else {
-        // 동명이인이 존재하는 경우:
-        // 1순위: 해당 일자 시점의 소속 근무역이 현재 역무일지 작성역과 일치하는 직원
         const profileList = candidates.map(c => ({
-          ...c,
-          ...getEmployeeProfileAtDate(c.emp_id, date, empHistoryMap, c)
+          ...c, ...getEmployeeProfileAtDate(c.emp_id, date, empHistoryMap, c)
         }));
-
         const exactHome = currentStationName ? profileList.filter(p => isSameStation(p.home_station, currentStationName)) : [];
         if(exactHome.length > 0){
           found.push(...exactHome);
         } else {
-          // 2순위: 관할 관리역 일치자
           const matchedMgmt = profileList.filter(p => isSameStation(p.mgmt_station, currentStationMgmt));
           if(matchedMgmt.length > 0) found.push(...matchedMgmt);
           else found.push(profileList[0]);
@@ -1103,6 +1067,7 @@ function extractActualEvents(rows, consolidatedRoster, empHistoryMap){
     nameMap.get(p.name).push(p);
   });
 
+  // 역무일지의 정규 근무자 열: 주간(8~13열), 야간(14~19열)
   const dayCols = [8, 9, 10, 11, 12, 13];
   const nightCols = [14, 15, 16, 17, 18, 19];
 
@@ -1154,18 +1119,7 @@ function extractActualEvents(rows, consolidatedRoster, empHistoryMap){
   return events;
 }
 
-function addDaysSafe(ymdStr, days){
-  if(!ymdStr) return '';
-  const [y, m, d] = String(ymdStr).trim().split('-').map(Number);
-  if(!y || !m || !d) return ymdStr;
-  const dt = new Date(y, m - 1, d + days);
-  const ry = dt.getFullYear();
-  const rm = String(dt.getMonth() + 1).padStart(2, '0');
-  const rd = String(dt.getDate()).padStart(2, '0');
-  return `${ry}-${rm}-${rd}`;
-}
-
-function computeSequencePattern(targetEvent, allEmpEvents){
+function computeSequencePattern(targetEvent, allEmpEvents, isDayWorker = false){
   const offsets = [-2, -1, 0, 1, 2];
   const daysInfo = [];
   const activeGroup = targetEvent.current_active_group || targetEvent.reference_group;
@@ -1177,12 +1131,13 @@ function computeSequencePattern(targetEvent, allEmpEvents){
     const matchLogs = (allEmpEvents || []).filter(x => x.date === ymdStr);
     const hasActualDay = matchLogs.some(x => x.slot === '주간');
     const hasActualNight = matchLogs.some(x => x.slot === '야간');
-    const regularShift = activeGroup ? ownShift(activeGroup, ymdStr) : '';
+    const regularShift = (!isDayWorker && activeGroup) ? ownShift(activeGroup, ymdStr) : '';
 
     let label = '';
     let isDay = false;
     let isNight = false;
     let isOff = false;
+    let isCare = false;
     let desc = '';
 
     if(offset === 0){
@@ -1191,23 +1146,38 @@ function computeSequencePattern(targetEvent, allEmpEvents){
       if(isCurDay && isCurNight){
         label = '주야'; isDay = true; isNight = true; desc = '당일 [주야간 연속지원]';
       } else if(isCurNight){
-        label = '야'; isNight = true; desc = `당일 [야간 지원근무] (당시 본인조: ${regularShift || '-'})`;
+        label = '야'; isNight = true; desc = `당일 [야간 지원근무] (본인 일정: ${targetEvent.own_shift_that_day || '-'})`;
       } else {
-        label = '주'; isDay = true; desc = `당일 [주간 지원근무] (당시 본인조: ${regularShift || '-'})`;
+        label = '주'; isDay = true; desc = `당일 [주간 지원근무] (본인 일정: ${targetEvent.own_shift_that_day || '-'})`;
       }
     } else {
       if(hasActualDay && hasActualNight){
         label = '주야'; isDay = true; isNight = true; desc = '일지: 주야간 출근';
       } else if(hasActualDay){
-        label = '주'; isDay = true; desc = (regularShift === '주간') ? '정규 주간근무' : '타조 주간지원';
+        label = '주'; isDay = true; desc = isDayWorker ? '정규 일근근무' : ((regularShift === '주간') ? '정규 주간근무' : '타조 주간지원');
       } else if(hasActualNight){
         label = '야'; isNight = true; desc = (regularShift === '야간') ? '정규 야간근무' : '타조 야간지원';
       } else {
-        if(regularShift === '주간'){ label = '주'; isDay = true; desc = '정규 주간근무'; }
-        else if(regularShift === '야간'){ label = '야'; isNight = true; desc = '정규 야간근무'; }
-        else if(regularShift === '비번'){ label = '비'; isOff = true; desc = '정규 비번'; }
-        else if(regularShift === '휴무'){ label = '휴'; isOff = true; desc = '정규 휴무'; }
-        else { label = '-'; isOff = true; desc = '근무 없음'; }
+        if(isDayWorker){
+          const isWeekend = isWeekendOrHoliday(ymdStr);
+          if(isWeekend){
+            label = '휴'; isOff = true; desc = '정규 주말/공휴일 휴무';
+          } else {
+            label = '주'; isDay = true; isNight = false; desc = '정규 일근근무';
+          }
+        } else {
+          if(regularShift === '주간'){
+            label = '주(근)'; isOff = true; isCare = true; desc = '정규 주간 (근무배려 미출근)';
+          } else if(regularShift === '야간'){
+            label = '야(근)'; isOff = true; isCare = true; desc = '정규 야간 (근무배려 미출근)';
+          } else if(regularShift === '비번'){
+            label = '비'; isOff = true; desc = '정규 비번';
+          } else if(regularShift === '휴무'){
+            label = '휴'; isOff = true; desc = '정규 휴무';
+          } else {
+            label = '-'; isOff = true; desc = '근무 없음';
+          }
+        }
       }
     }
 
@@ -1219,6 +1189,7 @@ function computeSequencePattern(targetEvent, allEmpEvents){
       isDay,
       isNight,
       isOff,
+      isCare,
       desc: `${ymdStr ? ymdStr.slice(5) : ''}(${dayOfWeek}): ${label} (${desc})`,
       isCurr: offset === 0
     });
@@ -1236,13 +1207,6 @@ function computeSequencePattern(targetEvent, allEmpEvents){
   return { daysInfo, hasNightNight: !!hasNightNight, has24hConsec: !!has24hConsec };
 }
 
-/**
- * 역무일지 데이터 주도(Data-Driven) 근무조 추적 엔진
- * - 명부의 근무조는 단순 참고값으로만 취급
- * - 직원의 초기 출근 패턴을 4조 2교대 순환주기와 대조하여 실제 초기 조를 자율 판정(Self-Discovery)
- * - 3연속 이상 근무는 거의 없다는 철도 교대근무 특성을 반영하여 주-야(2연속) 외의 지원과 정규 로테이션을 분리
- * - 새 조로 3회 이상(4일 이상) 순환 주기가 일치하면 '조 이동'으로 확정하고 복귀 시 '원복' 동기화
- */
 function resolveDynamicShiftSchedules(allEvents, roster){
   const byEmp = new Map();
   allEvents.forEach(e => {
@@ -1256,39 +1220,30 @@ function resolveDynamicShiftSchedules(allEvents, roster){
   byEmp.forEach((events, empId) => {
     const p = roster.find(r => r.emp_id === empId);
     if(!p || p.is_master) return;
+    if(isDayWorkerEmployee(p.emp_id, p.name, p.reference_group, p.title)) return;
 
-    // 일자 순 정렬 및 중복 슬롯 정제
     events.sort((a, b) => a.date.localeCompare(b.date) || (a.slot === '주간' ? -1 : 1));
 
     const seen = new Set();
     const uniqueEvents = [];
     events.forEach(e => {
       const k = `${e.date}_${e.slot}`;
-      if(!seen.has(k)){
-        seen.add(k);
-        uniqueEvents.push(e);
-      }
+      if(!seen.has(k)){ seen.add(k); uniqueEvents.push(e); }
     });
 
     if(uniqueEvents.length < 2) return;
 
-    // 1. 역무일지 초기 출근 데이터를 기반으로 실제 초기 근무조 자율 판정 (Self-Discovery)
-    // 명부 조(p.reference_group)는 가중치 1점만 부여, 역무일지 출근 패턴에 가장 부합하는 조를 채택
-    const initialSample = uniqueEvents.slice(0, Math.min(8, uniqueEvents.length));
-    const groupScores = { 'A조': 0, 'B조': 0, 'C조': 0, 'D조': 0 };
-    if(p.reference_group && groupScores[p.reference_group] !== undefined){
-      groupScores[p.reference_group] += 1.5; // 참고값
-    }
-
-    initialSample.forEach(ev => {
-      for(const g of ['A조','B조','C조','D조']){
-        if(ownShift(g, ev.date) === ev.slot){
-          groupScores[g] += 2;
+    let primaryInitialGroup = p.reference_group;
+    if(!primaryInitialGroup){
+      const initialSample = uniqueEvents.slice(0, Math.min(8, uniqueEvents.length));
+      const groupScores = { 'A조': 0, 'B조': 0, 'C조': 0, 'D조': 0 };
+      initialSample.forEach(ev => {
+        for(const g of ['A조','B조','C조','D조']){
+          if(ownShift(g, ev.date) === ev.slot) groupScores[g] += 2;
         }
-      }
-    });
-
-    let primaryInitialGroup = Object.entries(groupScores).sort((a,b) => b[1] - a[1])[0][0];
+      });
+      primaryInitialGroup = Object.entries(groupScores).sort((a,b) => b[1] - a[1])[0][0];
+    }
 
     const evList = uniqueEvents.map(e => ({
       ...e,
@@ -1303,14 +1258,13 @@ function resolveDynamicShiftSchedules(allEvents, roster){
     while(i < evList.length){
       const curEv = evList[i];
 
-      // 현재 유효조와 다른 조의 근무가 발생했을 때
       if(curEv.dutyGroup && curEv.dutyGroup !== curGroup){
         const candGroup = curEv.dutyGroup;
         const candStart = curEv.date;
         let j = i;
         let candCount = 0;
         let lastCandDate = candStart;
-        let tolerance = 1; // 1개월 파견 중 발생한 단 1회의 타조 비번 대근 허용
+        let tolerance = 1;
 
         while(j < evList.length){
           const nextEv = evList[j];
@@ -1319,19 +1273,17 @@ function resolveDynamicShiftSchedules(allEvents, roster){
             lastCandDate = nextEv.date;
             j++;
           } else {
-            // 새 조(candGroup)가 바로 다음 근무에서 재개되는 경우 1회 허용
             if(tolerance > 0 && j + 1 < evList.length && evList[j + 1].dutyGroup === candGroup){
               tolerance--;
               j++;
             } else {
-              break; // 새 조의 연속 구간 종료
+              break;
             }
           }
         }
 
         const spanDays = Math.round((new Date(lastCandDate) - new Date(candStart)) / 86400000);
 
-        // 공식 조변경 인정 기준: 최소 3회 이상 근무 및 4일 이상 지속 (1주기 이상)
         if(candCount >= 3 && spanDays >= 4){
           intervals.push({
             start: curStart,
@@ -1373,7 +1325,6 @@ function resolveDynamicShiftSchedules(allEvents, roster){
       group: curGroup
     });
 
-    // 각 이벤트 일자별 확정된 유효 근무조 부여
     events.forEach(e => {
       let eff = curGroup;
       for(const inv of intervals){
@@ -1411,7 +1362,6 @@ function analyze(rosterData, actual, empHistoryMap){
   const master_events = [];
 
   actual.forEach(e => {
-    // 해당 시점 직원의 전보 이력 반영
     const currentProfile = getEmployeeProfileAtDate(e.emp_id, e.date, empHistoryMap, e);
     const homeStationAtDate = currentProfile.home_station || e.home_station;
     const mgmtStationAtDate = currentProfile.mgmt_station || e.mgmt_station;
@@ -1421,15 +1371,18 @@ function analyze(rosterData, actual, empHistoryMap){
     const hasSupportNote = /지원|대체|파견/.test(e.note || '');
 
     if(e.is_master){
-      const isTwoPersonSupport = (e.slot === '주간' && stationDayCount === 2);
-      const isThreePersonSupport = (e.slot === '주간' && stationDayCount === 3 && isThreePersonTargetStation(e.work_station));
+      const isWeekday = !isWeekendOrHoliday(e.date);
+      const isTwoPersonSupport = (e.slot === '주간' && isWeekday && stationDayCount === 2 && isTwoPersonTargetStation(e.work_station));
+      const isThreePersonSupport = (e.slot === '주간' && isWeekday && stationDayCount === 3 && isThreePersonTargetStation(e.work_station));
+      const isWeekendSupport = isWeekendOrHoliday(e.date);
 
-      if(isTwoPersonSupport || isThreePersonSupport || isSubSupport || hasSupportNote || e.slot === '야간'){
+      if(isTwoPersonSupport || isThreePersonSupport || isWeekendSupport || isSubSupport || hasSupportNote || e.slot === '야간'){
         let supportDesc = '';
-        if(isTwoPersonSupport) supportDesc = '2인근무 지원';
-        else if(isThreePersonSupport) supportDesc = '3인근무 지원(거점역)';
+        if(isTwoPersonSupport) supportDesc = '2명근무 지원 (6개 지정역)';
+        else if(isThreePersonSupport) supportDesc = '3명근무 지원 (덕천역)';
+        else if(isWeekendSupport) supportDesc = '주말/공휴일 지원';
         else if(isSubSupport) supportDesc = '산하·타역 지원';
-        else if(e.slot === '야간') supportDesc = '야간 근무';
+        else if(e.slot === '야간') supportDesc = '야간 투입';
         else supportDesc = '일지명시 지원';
 
         master_events.push({
@@ -1444,33 +1397,74 @@ function analyze(rosterData, actual, empHistoryMap){
         });
       }
     } else {
-      const activeGroup = activeSchedules.get(`${e.emp_id}_${e.date}`) || e.reference_group;
-      if(!activeGroup) return;
+      const isDayWorker = isDayWorkerEmployee(e.emp_id, e.name, e.reference_group, e.title);
 
-      const own = ownShift(activeGroup, e.date);
-      const isMismatch = (own !== e.slot);
+      if(isDayWorker){
+        const isWeekend = isWeekendOrHoliday(e.date);
+        let ownShiftThatDay = '일근';
+        let offDayFlag = false;
 
-      if(isMismatch){
+        if(isWeekend){
+          ownShiftThatDay = '휴무';
+          offDayFlag = true;
+        } else if(e.slot === '야간'){
+          ownShiftThatDay = '비번';
+          offDayFlag = true;
+        } else {
+          ownShiftThatDay = '일근 (교대 주간지원)';
+          offDayFlag = false;
+        }
+
         const allEmpEvents = empEventMap.get(e.emp_id) || [];
         const { daysInfo, hasNightNight, has24hConsec } = computeSequencePattern({
           ...e,
           home_station: homeStationAtDate,
           mgmt_station: mgmtStationAtDate,
-          current_active_group: activeGroup
-        }, allEmpEvents);
+          current_active_group: '일근',
+          own_shift_that_day: ownShiftThatDay
+        }, allEmpEvents, true);
 
         main_events.push({
           ...e,
           home_station: homeStationAtDate,
           mgmt_station: mgmtStationAtDate,
-          current_active_group: activeGroup,
-          own_shift_that_day: own,
-          off_day_flag: ['비번','휴무'].includes(own),
+          current_active_group: '일근',
+          own_shift_that_day: ownShiftThatDay,
+          off_day_flag: offDayFlag,
           same_station: isSameStation(homeStationAtDate, e.work_station),
           daysInfo,
           hasNightNight,
           has24hConsec
         });
+      } else {
+        const activeGroup = activeSchedules.get(`${e.emp_id}_${e.date}`) || e.reference_group;
+        if(!activeGroup) return;
+
+        const own = ownShift(activeGroup, e.date);
+        const isMismatch = (own !== e.slot);
+
+        if(isMismatch){
+          const allEmpEvents = empEventMap.get(e.emp_id) || [];
+          const { daysInfo, hasNightNight, has24hConsec } = computeSequencePattern({
+            ...e,
+            home_station: homeStationAtDate,
+            mgmt_station: mgmtStationAtDate,
+            current_active_group: activeGroup
+          }, allEmpEvents, false);
+
+          main_events.push({
+            ...e,
+            home_station: homeStationAtDate,
+            mgmt_station: mgmtStationAtDate,
+            current_active_group: activeGroup,
+            own_shift_that_day: own,
+            off_day_flag: ['비번','휴무'].includes(own),
+            same_station: isSameStation(homeStationAtDate, e.work_station),
+            daysInfo,
+            hasNightNight,
+            has24hConsec
+          });
+        }
       }
     }
   });
@@ -1491,10 +1485,6 @@ function analyze(rosterData, actual, empHistoryMap){
 async function readWorkbook(file){
   const ab = await file.arrayBuffer();
   return XLSX.read(ab, { type: 'array', cellDates: true, cellText: false });
-}
-function workbookRows(wb, preferred){
-  const name = preferred && wb.SheetNames.includes(preferred) ? preferred : wb.SheetNames[0];
-  return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
 }
 
 function hasRosterHeader(rows){
@@ -1540,7 +1530,6 @@ async function loadExcelData(){
   setStatus(`전직원명부 ${rosterFiles.length}개 파일 및 역무일지 로데이터를 분석 중입니다. 잠시만 기다려 주세요…`);
 
   try{
-    // 1. 다중 명부 파일 병렬 파싱 (지능형 시트 자동 탐색)
     const rosterWorkbooks = await Promise.all(rosterFiles.map(async file => {
       const wb = await readWorkbook(file);
       const rows = findRosterRows(wb);
@@ -1549,11 +1538,9 @@ async function loadExcelData(){
 
     const { consolidated, empHistoryMap, rosterSummaries } = buildUnifiedRosterDatabase(rosterWorkbooks);
 
-    // 2. 역무일지 파싱 (지능형 시트 자동 탐색)
     const lwb = await readWorkbook(lf);
     const actual = extractActualEvents(findLogRows(lwb), consolidated, empHistoryMap);
 
-    // 3. 역무일지 데이터 주도 분석 엔진 가동
     DATA = analyze({ consolidated }, actual, empHistoryMap);
     DATA.meta.roster_files = rosterSummaries;
     DATA.meta.roster_date = rosterSummaries.map(s => s.date).join(', ');
@@ -1566,8 +1553,8 @@ async function loadExcelData(){
       `</span>`
     ).join(' ');
 
-    setStatus(`<b>분석 완료</b> · 전직원명부 ${rosterFiles.length}개 파일 자동 일자 인식 및 반영 완료<div style="margin-top:6px;">${summaryHtml}</div><div style="margin-top:6px; font-size:10.5px; color:var(--ink-dim);">총 ${fmtNum(consolidated.length)}명 전보 이력 통합 관리 · 유효 근무 ${fmtNum(actual.length)}건 매칭 · 조변경 ${fmtNum(DATA.switch_events.length)}건 감지</div>`, 'ok');
-    showToast(`엑셀 분석 완료: 명부 ${rosterFiles.length}개 파일(${rosterSummaries.map(s=>s.date).join(', ')}) 통합 반영`);
+    setStatus(`<b>분석 완료</b> · 전직원명부 ${rosterFiles.length}개 파일 자동 일자 인식 및 반영 완료<div style="margin-top:6px;">${summaryHtml}</div><div style="margin-top:6px; font-size:10.5px; color:var(--ink-dim);">총 ${fmtNum(consolidated.length)}명 전보 이력 통합 관리 · 순수지원 ${fmtNum(DATA.main_events.length)}건 · 역장지원 ${fmtNum(DATA.master_events.length)}건 · 조변경 ${fmtNum(DATA.switch_events.length)}건 감지</div>`, 'ok');
+    showToast(`엑셀 분석 완료: 순수지원 ${DATA.main_events.length}건, 역장지원 ${DATA.master_events.length}건 반영`);
   } catch(err){
     console.error(err);
     setStatus(`<b>분석 실패</b> · ${esc(err.message || err)}`, 'err');
@@ -1606,7 +1593,7 @@ function importDataFromJson(file){
       }
       DATA = imported;
       resetAllUI();
-      setStatus(`JSON 데이터 불러오기 성공: 순수지원 ${DATA.main_events.length}건, 조변경 ${DATA.switch_events.length}건 반영됨`, 'ok');
+      setStatus(`JSON 데이터 불러오기 성공: 순수지원 ${DATA.main_events.length}건, 역장지원 ${DATA.master_events.length}건, 조변경 ${DATA.switch_events.length}건 반영됨`, 'ok');
       showToast('JSON 데이터를 성공적으로 불러왔습니다.');
     } catch(err){
       showToast(`JSON 로드 실패: ${err.message}`, 'err');
@@ -1706,12 +1693,8 @@ const openMonthModalBtn = document.getElementById('openMonthModalBtn');
 const closeMonthModalBtn = document.getElementById('closeMonthModalBtn');
 const btnModalApplyClose = document.getElementById('btnModalApplyClose');
 
-function openMonthModal(){
-  if(monthModalOverlay) monthModalOverlay.classList.add('active');
-}
-function closeMonthModal(){
-  if(monthModalOverlay) monthModalOverlay.classList.remove('active');
-}
+function openMonthModal(){ if(monthModalOverlay) monthModalOverlay.classList.add('active'); }
+function closeMonthModal(){ if(monthModalOverlay) monthModalOverlay.classList.remove('active'); }
 
 if(openMonthModalBtn) openMonthModalBtn.addEventListener('click', openMonthModal);
 if(closeMonthModalBtn) closeMonthModalBtn.addEventListener('click', closeMonthModal);
@@ -1857,7 +1840,8 @@ function renderMain(){
           d.isCurr ? 'curr' : '',
           d.isNight ? 'night' : '',
           d.isDay && !d.isNight ? 'daytime' : '',
-          d.isOff ? 'off' : ''
+          d.isOff ? 'off' : '',
+          d.isCare ? 'care' : ''
         ].filter(Boolean).join(' ');
         return `<span class="${cls}">${esc(d.label)}</span>`;
       }).join('') + '</span>';
@@ -1920,16 +1904,18 @@ function renderMaster(){
     const isThree = e.is_threeperson;
     let badgeTwo = `${e.station_day_count || '-'}명`;
     if(isTwo){
-      badgeTwo = '<span class="tag tag-twoperson">2명 (2인근무 지원)</span>';
+      badgeTwo = '<span class="tag tag-twoperson">2명 (지정역 지원)</span>';
     } else if(isThree){
-      badgeTwo = '<span class="tag tag-risk-purple">3명 (3인근무 지원)</span>';
+      badgeTwo = '<span class="tag tag-risk-purple">3명 (덕천역 지원)</span>';
     }
 
     let supportBadge = '';
     if(isTwo){
       supportBadge = '<span class="tag tag-twoperson">2인근무 지원</span>';
     } else if(isThree){
-      supportBadge = '<span class="tag tag-risk-purple">3인근무 지원(거점역)</span>';
+      supportBadge = '<span class="tag tag-risk-purple">3인근무 지원(덕천)</span>';
+    } else if(isWeekendOrHoliday(e.date)){
+      supportBadge = '<span class="tag tag-same">주말/공휴일 지원</span>';
     } else if(e.is_sub_support){
       supportBadge = '<span class="tag tag-diff">산하역 지원</span>';
     } else if(e.slot === '야간'){
@@ -2007,7 +1993,6 @@ function updateTopAndKpi(){
   setTxt('kpiMasterSub', `2·3인근무 지원 ${intensiveMaster}건 (전체 ${filteredMaster.length}건 중)`);
   setTxt('kpiSwitch', fmtNum(DATA.switch_events.length));
   setTxt('kpiRisk', fmtNum(riskCount));
-
   setTxt('mainCnt', `(${filteredMain.length}건 / 전체 ${DATA.main_events.length}건)`);
 }
 
@@ -2037,19 +2022,10 @@ function renderDashboardAndCharts(){
     periodLbl.textContent = periodDesc;
   }
 
-  let daysCount = 1;
-  if(start && end){
-    daysCount = Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
-  } else if(DATA.meta.log_range[0] !== '-' && DATA.meta.log_range[1] !== '-'){
-    daysCount = Math.max(1, Math.round((new Date(DATA.meta.log_range[1]) - new Date(DATA.meta.log_range[0])) / 86400000) + 1);
-  }
-
-  const avgDaily = (mainList.length / daysCount).toFixed(1);
   const homeSupportCnt = mainList.filter(e => e.same_station).length;
   const subSupportCnt = mainList.filter(e => !e.same_station).length;
   const subRate = mainList.length ? Math.round((subSupportCnt / mainList.length) * 100) : 0;
   const homeRate = mainList.length ? (100 - subRate) : 0;
-  const riskCnt = mainList.filter(e => e.hasNightNight || e.has24hConsec).length;
   const grandTotalCnt = mainList.length + masterList.length;
 
   const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
@@ -2063,7 +2039,6 @@ function renderDashboardAndCharts(){
   setTxt('statSubSupportSub', `전체 순수지원의 ${subRate}% (타역 지원)`);
   setTxt('statMasterCnt', `${fmtNum(masterList.length)}건`);
 
-  // Hub stations ranking chart
   const ALL_HUB_STATIONS = [
     '장산관리역', '센텀시티관리역', '수영역', '광안관리역', '경성대ㆍ부경대관리역',
     '문현관리역', '전포관리역', '동의대관리역', '냉정관리역', '사상역',
@@ -2097,7 +2072,6 @@ function renderDashboardAndCharts(){
     `).join('');
   }
 
-  // Top Supporting Employees Table - 전체 지원근무 직원 표기
   const empStatMap = new Map();
   mainList.forEach(e => {
     if(!empStatMap.has(e.emp_id)){
@@ -2148,7 +2122,6 @@ function renderDashboardAndCharts(){
     }
   }
 
-  // Canonical 43 stations aggregate map
   const stationAgg = new Map();
   CANONICAL_LINE2_STATIONS.forEach(st => {
     stationAgg.set(st.name, {
@@ -2184,12 +2157,7 @@ function renderDashboardAndCharts(){
     }
   });
 
-  let totMismatch = 0;
-  let totHome = 0;
-  let totSub = 0;
-  let totMaster = 0;
-  let totGrand = 0;
-
+  let totMismatch = 0, totHome = 0, totSub = 0, totMaster = 0, totGrand = 0;
   stationAgg.forEach(item => {
     totMismatch += item.mismatch_cnt;
     totHome += item.home_support_cnt;
@@ -2257,7 +2225,6 @@ function exportAllExcel(){
   const mainList = DATA.main_events.filter(e => inRange(e, start, end));
   const masterList = DATA.master_events.filter(e => inRange(e, start, end));
 
-  // 1. [시트 1] 역사별 종합 지원 집계표
   const summaryRows = [];
   let totMis = 0, totHm = 0, totSub = 0, totMas = 0, totGrd = 0;
 
@@ -2268,11 +2235,7 @@ function exportAllExcel(){
     const masCnt = masterList.filter(e => isSameStation(e.work_station, st.name)).length;
     const totCnt = misCnt + masCnt;
 
-    totMis += misCnt;
-    totHm += hmCnt;
-    totSub += subCnt;
-    totMas += masCnt;
-    totGrd += totCnt;
+    totMis += misCnt; totHm += hmCnt; totSub += subCnt; totMas += masCnt; totGrd += totCnt;
 
     summaryRows.push({
       '역번호': st.no,
@@ -2309,7 +2272,6 @@ function exportAllExcel(){
   ];
   XLSX.utils.book_append_sheet(wb, wsSummary, '역사별_종합지원_집계표');
 
-  // 2. [시트 2] 교대자 순수지원 상세명단
   const mainTableData = mainList.map(e => ({
     '소속 관리역': e.mgmt_station,
     '소속 근무역': e.home_station,
@@ -2335,7 +2297,6 @@ function exportAllExcel(){
   ];
   XLSX.utils.book_append_sheet(wb, wsMain, '교대자_순수지원_상세명단');
 
-  // 3. [시트 3] 일근 역장 지원근무 현황
   const masterTableData = masterList.map(e => ({
     '소속 관리역(소속역)': e.home_station,
     '역장 구분': e.master_type,
@@ -2358,7 +2319,6 @@ function exportAllExcel(){
   ];
   XLSX.utils.book_append_sheet(wb, wsMaster, '일근역장_지원근무_현황');
 
-  // 4. [시트 4] 근무조 변경 감지 현황
   const switchTableData = DATA.switch_events.map(r => ({
     '소속 관리역': getStationMgmt(r.home_station),
     '소속 근무역': r.home_station,
@@ -2558,12 +2518,8 @@ function applyTheme(theme){
   localStorage.setItem('subway-dashboard-theme', theme);
   const emojiEl = document.getElementById('themeEmoji');
   const btnEl = document.getElementById('themeToggleBtn');
-  if(emojiEl){
-    emojiEl.textContent = (theme === 'light') ? '🌙' : '☀️';
-  }
-  if(btnEl){
-    btnEl.title = (theme === 'light') ? '밤 모드(다크)로 전환' : '낮 모드(라이트)로 전환';
-  }
+  if(emojiEl){ emojiEl.textContent = (theme === 'light') ? '🌙' : '☀️'; }
+  if(btnEl){ btnEl.title = (theme === 'light') ? '밤 모드(다크)로 전환' : '낮 모드(라이트)로 전환'; }
 }
 
 function toggleTheme(){
@@ -2574,7 +2530,6 @@ function toggleTheme(){
 }
 
 addSafeListener('themeToggleBtn', 'click', toggleTheme);
-
 addSafeListener('loadExcelBtn', 'click', loadExcelData);
 addSafeListener('exportJsonBtn', 'click', exportDataToJson);
 
