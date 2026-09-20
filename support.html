@@ -313,17 +313,17 @@ td.mono, th.mono{ font-family:var(--mono); }
   <div class="panel" style="border-top:3px solid var(--line-2); margin-bottom:14px;">
     <div style="margin-bottom:8px;">
       <div style="font-weight:800; font-size:13.5px; color:var(--ink);">
-        엑셀 데이터 불러오기 <span class="badge-cat badge-dae" style="font-size:9.5px; margin:0 0 0 4px;">붙임1 + 붙임2</span>
+        엑셀 데이터 불러오기 <span class="badge-cat badge-dae" style="font-size:9.5px; margin:0 0 0 4px;">다중 명부(전보 반영) + 붙임2 역무일지</span>
       </div>
       <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">
-        붙임1 전직원명부와 붙임2 역무일지 로데이터를 선택하면, 브라우저 내에서 직접 분석하여 대시보드 데이터를 산출합니다.
+        호선 간/호선 내 전보를 반영할 수 있도록 <b>분기별·반기별·수시 전직원명부 파일들을 한 번에 여러 개 선택</b>할 수 있습니다. 명부상 근무조는 참고만 하며, <b>역무일지 실제 출근 로테이션을 최우선</b>으로 근무조 이동과 지원근무를 정밀 판정합니다.
       </div>
     </div>
     
     <div class="upload-row-grid">
       <div class="file-box">
-        <label>붙임1 · 전직원명부 (.xlsx / .xls)</label>
-        <input type="file" id="rosterFile" accept=".xlsx,.xls,.xlsm,.xlsb">
+        <label>붙임1 · 전직원명부 (복수 선택 가능, Ctrl/Shift 클릭으로 여러 개 선택)</label>
+        <input type="file" id="rosterFile" accept=".xlsx,.xls,.xlsm,.xlsb" multiple>
       </div>
       <div class="file-box">
         <label>붙임2 · 근무자현황 역무일지 로데이터 (.xls / .xlsx)</label>
@@ -333,7 +333,7 @@ td.mono, th.mono{ font-family:var(--mono); }
     </div>
 
     <div class="upload-status" id="uploadStatus">
-      두 엑셀 파일을 선택한 후 <b>엑셀 분석 · 반영</b>을 누르거나 <b>JSON 불러오기</b>를 클릭해 주세요.
+      전직원명부(단일 또는 여러 개)와 역무일지 파일을 선택한 후 <b>엑셀 분석 · 반영</b>을 누르거나 <b>JSON 불러오기</b>를 클릭해 주세요.
     </div>
   </div>
 
@@ -894,21 +894,75 @@ function findHeaderIndex(headers, names){
   return -1;
 }
 
-function extractRoster(rows){
+function extractDateFromFilenameOrSheet(filename, rows){
+  const cleanName = String(filename || '').trim();
+
+  // 1. 파일명에서 완전한 일자(YYYY-MM-DD, YYYY.MM.DD, YYYY_MM_DD, YYYYMMDD 등 연-월-일 8자리) 탐색
+  const regex3Part = /(?:20\d{2})[-_./년\s]?\d{1,2}[-_./월\s]?\d{1,2}/g;
+  const matches3 = cleanName.match(regex3Part);
+  if(matches3 && matches3.length > 0){
+    // 파일명 뒤쪽(버전/추출일)부터 역순 탐색
+    for(let i = matches3.length - 1; i >= 0; i--){
+      const m = matches3[i].match(/(20\d{2})[-_./년\s]?(\d{1,2})[-_./월\s]?(\d{1,2})/);
+      if(m){
+        const y = m[1];
+        const mon = Number(m[2]);
+        const day = Number(m[3]);
+        if(mon >= 1 && mon <= 12 && day >= 1 && day <= 31){
+          return `${y}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        }
+      }
+    }
+  }
+
+  // 2. 파일명에서 연-월 (YYYYMM, YYYY-MM 등 6자리) 탐색
+  const regex2Part = /(?:20\d{2})[-_./년\s]?\d{1,2}/g;
+  const matches2 = cleanName.match(regex2Part);
+  if(matches2 && matches2.length > 0){
+    for(let i = matches2.length - 1; i >= 0; i--){
+      const m = matches2[i].match(/(20\d{2})[-_./년\s]?(\d{1,2})/);
+      if(m){
+        const y = m[1];
+        const mon = Number(m[2]);
+        if(mon >= 1 && mon <= 12){
+          return `${y}-${String(mon).padStart(2,'0')}-01`;
+        }
+      }
+    }
+  }
+
+  // 3. 시트 상단 5행 이내에서 일자 텍스트 스캔
+  for(let r = 0; r < Math.min(5, rows.length); r++){
+    const line = (rows[r] || []).join(' ');
+    const lm = line.match(/(20\d{2})[-_./년\s]+(\d{1,2})[-_./월\s]+(\d{1,2})/);
+    if(lm){
+      const mon = Number(lm[2]);
+      const day = Number(lm[3]);
+      if(mon >= 1 && mon <= 12 && day >= 1 && day <= 31){
+        return `${lm[1]}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      }
+    }
+  }
+  return '2026-01-01';
+}
+
+function extractSingleRoster(rows, sourceDate){
   let hr = rows.findIndex(r=>Array.isArray(r) && r.some(v=>String(v).trim()==='사번') && r.some(v=>String(v).trim()==='성명'));
-  if(hr<0) throw new Error('붙임1에서 사번/성명 헤더를 찾지 못했습니다.');
+  if(hr<0) hr = rows.findIndex(r=>Array.isArray(r) && r.some(v=>String(v).includes('사번')) && r.some(v=>String(v).includes('성명')));
+  if(hr<0) return [];
+
   const h = rows[hr];
   const ci = {
     id: findHeaderIndex(h, ['사번']),
     name: findHeaderIndex(h, ['성명', '이름']),
-    station: findHeaderIndex(h, ['팀,역,분소', '역,분소', '소속역']),
+    station: findHeaderIndex(h, ['팀,역,분소', '역,분소', '소속역', '부서', '팀']),
     lineage: findHeaderIndex(h, ['직렬']),
     rank: findHeaderIndex(h, ['직급']),
     title_i: (h.length > 8) ? 8 : -1,
     title: findHeaderIndex(h, ['직위', '직책명', '보임현황']),
     group: findHeaderIndex(h, ['근무조'])
   };
-  if(ci.id<0 || ci.name<0) throw new Error('붙임1 필수 열(사번·성명)을 확인할 수 없습니다.');
+  if(ci.id<0 || ci.name<0) return [];
 
   const out = [];
   for(let r = hr+1; r < rows.length; r++){
@@ -932,9 +986,10 @@ function extractRoster(rows){
     out.push({
       emp_id: id,
       name,
+      effective_date: sourceDate,
       home_station: canon.name,
       mgmt_station: canon.mgmt,
-      group: rawGroup,
+      reference_group: rawGroup, // 명부 조는 단순 참고값
       rank: rawRank,
       rank_full: rankFull,
       title: chosenTitle,
@@ -945,25 +1000,93 @@ function extractRoster(rows){
   return out;
 }
 
-function matchRosterNames(text, roster, nameMap, currentStationMgmt, currentStationName){
+// 다중 명부 통합 및 전보 이력 관리 데이터베이스 생성
+function buildUnifiedRosterDatabase(rosterFileList){
+  // rosterFileList: [{ filename, rows }]
+  const records = [];
+  const rosterSummaries = [];
+  rosterFileList.forEach(rf => {
+    const sDate = extractDateFromFilenameOrSheet(rf.filename, rf.rows);
+    const list = extractSingleRoster(rf.rows, sDate);
+    list.forEach(item => records.push(item));
+    rosterSummaries.push({
+      filename: rf.filename,
+      date: sDate,
+      count: list.length
+    });
+  });
+
+  if(!records.length) throw new Error('제공된 명부 파일들에서 유효한 사번·성명 명단을 추출하지 못했습니다.');
+
+  // 일자순 정렬
+  records.sort((a,b) => a.effective_date.localeCompare(b.effective_date));
+  rosterSummaries.sort((a,b) => a.date.localeCompare(b.date));
+
+  // 사번별 이력(History) 및 직원 기본 프로필 맵 구축
+  const empHistoryMap = new Map();
+  records.forEach(r => {
+    if(!empHistoryMap.has(r.emp_id)) empHistoryMap.set(r.emp_id, []);
+    empHistoryMap.get(r.emp_id).push(r);
+  });
+
+  // 최종/최신 기준 프로필 목록 생성
+  const consolidated = [];
+  empHistoryMap.forEach((history, empId) => {
+    const latest = history[history.length - 1];
+    consolidated.push({
+      ...latest,
+      history: history // 전보 및 소속역 변경 이력
+    });
+  });
+
+  return { consolidated, empHistoryMap, rosterSummaries };
+}
+
+// 특정 일자(date) 시점의 직원 소속역 및 직급 조회 (전보 반영)
+function getEmployeeProfileAtDate(empId, date, empHistoryMap, defaultProfile){
+  const history = empHistoryMap.get(empId);
+  if(!history || !history.length) return defaultProfile;
+
+  // 해당 일자 이전 중 가장 최신의 명부 기록 탐색
+  let target = history[0];
+  for(let i = 0; i < history.length; i++){
+    if(history[i].effective_date <= date){
+      target = history[i];
+    } else {
+      break;
+    }
+  }
+  return target;
+}
+
+function matchRosterNamesWithTransfers(text, consolidatedRoster, nameMap, currentStationMgmt, currentStationName, date, empHistoryMap){
   const t = cleanCellText(text);
   if(!t) return [];
   const found = [];
+
   for(const name of nameMap.keys()){
     if(t.includes(name)){
       const candidates = nameMap.get(name);
       if(candidates.length === 1){
-        found.push(candidates[0]);
+        const p = candidates[0];
+        const profile = getEmployeeProfileAtDate(p.emp_id, date, empHistoryMap, p);
+        found.push({ ...p, ...profile });
       } else {
-        // 1순위: 소속 근무역(home_station) 일치자 우선 매칭
-        const homeMatched = currentStationName ? candidates.filter(p => isSameStation(p.home_station, currentStationName)) : [];
-        if(homeMatched.length > 0){
-          found.push(...homeMatched);
+        // 동명이인이 존재하는 경우:
+        // 1순위: 해당 일자 시점의 소속 근무역이 현재 역무일지 작성역과 일치하는 직원
+        const profileList = candidates.map(c => ({
+          ...c,
+          ...getEmployeeProfileAtDate(c.emp_id, date, empHistoryMap, c)
+        }));
+
+        const exactHome = currentStationName ? profileList.filter(p => isSameStation(p.home_station, currentStationName)) : [];
+        if(exactHome.length > 0){
+          found.push(...exactHome);
         } else {
-          // 2순위: 관할 관리역(mgmt_station) 매칭
-          const matched = candidates.filter(p => isSameStation(p.mgmt_station, currentStationMgmt));
-          if(matched.length > 0) found.push(...matched);
-          else found.push(candidates[0]);
+          // 2순위: 관할 관리역 일치자
+          const matchedMgmt = profileList.filter(p => isSameStation(p.mgmt_station, currentStationMgmt));
+          if(matchedMgmt.length > 0) found.push(...matchedMgmt);
+          else found.push(profileList[0]);
         }
       }
     }
@@ -973,9 +1096,9 @@ function matchRosterNames(text, roster, nameMap, currentStationMgmt, currentStat
   return [...uniq.values()];
 }
 
-function extractActualEvents(rows, roster){
+function extractActualEvents(rows, consolidatedRoster, empHistoryMap){
   const nameMap = new Map();
-  roster.forEach(p => {
+  consolidatedRoster.forEach(p => {
     if(!nameMap.has(p.name)) nameMap.set(p.name, []);
     nameMap.get(p.name).push(p);
   });
@@ -1000,7 +1123,7 @@ function extractActualEvents(rows, roster){
         const note = cleanCellText(row?.[c]);
         if(!note) return;
 
-        const people = matchRosterNames(note, roster, nameMap, currentStationMgmt, station);
+        const people = matchRosterNamesWithTransfers(note, consolidatedRoster, nameMap, currentStationMgmt, station, date, empHistoryMap);
         people.forEach(p => {
           const key = `${p.emp_id}_${date}_${slot}`;
           const currentEvent = { date, work_station: station, slot, note, ...p };
@@ -1027,144 +1150,14 @@ function extractActualEvents(rows, roster){
 
   const events = Array.from(shiftMap.values());
   if(!datedRows) throw new Error('붙임2에서 역명/일자 데이터 행을 찾지 못했습니다.');
-  if(!events.length) throw new Error('붙임2 근무자 이름과 붙임1 명부가 매칭되지 않았습니다.');
+  if(!events.length) throw new Error('붙임2 근무자 이름과 전직원명부 매칭 데이터가 없습니다.');
   return events;
 }
 
-/**
- * 정밀 구간 확정형 근무조 편성 및 복귀 추적 알고리즘 (Segment-based Shift State Machine)
- * - 3회 이상(4일 이상) 새 조의 순환주기로 지속 근무한 구간을 독립 조변경 구간으로 100% 확정
- * - 본래 조로 복귀한 시점 또한 '본래 조 복귀'로 기록하여 C ➔ B ➔ C ➔ B ➔ C 순환 흐름 완벽 동기화
- * - 박기윤, 이지수, 허의전 등 파견 후 복귀자의 정상 로테이션 근무를 지원근무에서 100% 완전 제외
- */
-function resolveDynamicShiftSchedules(allEvents, roster){
-  const byEmp = new Map();
-  allEvents.forEach(e => {
-    if(!byEmp.has(e.emp_id)) byEmp.set(e.emp_id, []);
-    byEmp.get(e.emp_id).push(e);
-  });
-
-  const switchEvents = [];
-  const activeSchedules = new Map();
-
-  byEmp.forEach((events, empId) => {
-    const p = roster.find(r => r.emp_id === empId);
-    if(!p || !p.group) return;
-
-    // 일자 및 근무슬롯 순 정렬 및 동일일자 중복 정제
-    events.sort((a, b) => a.date.localeCompare(b.date) || (a.slot === '주간' ? -1 : 1));
-
-    const seen = new Set();
-    const uniqueEvents = [];
-    events.forEach(e => {
-      const k = `${e.date}_${e.slot}`;
-      if(!seen.has(k)){
-        seen.add(k);
-        uniqueEvents.push(e);
-      }
-    });
-
-    const evList = uniqueEvents.map(e => ({
-      ...e,
-      dutyGroup: getGroupOfSlot(e.date, e.slot)
-    }));
-
-    const intervals = [];
-    let curGroup = p.group;
-    let curStart = evList[0] ? evList[0].date : '2026-01-01';
-
-    let i = 0;
-    while(i < evList.length){
-      const curEv = evList[i];
-
-      // 현재 유효조와 다른 조의 근무가 발생했을 때
-      if(curEv.dutyGroup && curEv.dutyGroup !== curGroup){
-        const candGroup = curEv.dutyGroup;
-        const candStart = curEv.date;
-        let j = i;
-        let candCount = 0;
-        let lastCandDate = candStart;
-        let tolerance = 1; // 1개월 파견 중 발생한 단 1회의 타조 비번 대근 허용
-
-        while(j < evList.length){
-          const nextEv = evList[j];
-          if(nextEv.dutyGroup === candGroup){
-            candCount++;
-            lastCandDate = nextEv.date;
-            j++;
-          } else {
-            // 새 조(candGroup)가 바로 다음 근무에서 재개되는 경우 1회 허용
-            if(tolerance > 0 && j + 1 < evList.length && evList[j + 1].dutyGroup === candGroup){
-              tolerance--;
-              j++;
-            } else {
-              break; // 새 조의 연속 구간 종료 (복귀 또는 타 조 전환)
-            }
-          }
-        }
-
-        const spanDays = Math.round((new Date(lastCandDate) - new Date(candStart)) / 86400000);
-
-        // 공식 조변경 인정 기준: 최소 3회 이상 근무 및 4일 이상 지속 (1주기 이상)
-        if(candCount >= 3 && spanDays >= 4){
-          intervals.push({
-            start: curStart,
-            end: addDaysSafe(candStart, -1),
-            group: curGroup
-          });
-
-          const isReturn = (candGroup === p.group);
-          const transitionDesc = isReturn 
-            ? `${curGroup} ➔ ${candGroup} (본래 조 복귀)` 
-            : `${curGroup} ➔ ${candGroup}`;
-
-          switchEvents.push({
-            emp_id: p.emp_id,
-            name: p.name,
-            home_station: p.home_station,
-            work_station: curEv.work_station,
-            roster_group: p.group,
-            prev_group: curGroup,
-            active_group: candGroup,
-            transition_desc: transitionDesc,
-            is_return: isReturn,
-            switch_date: candStart,
-            reason: `${candStart}부터 ${candGroup} 순환주기(주-야-비-휴)로 공식 전환 (${candCount}회 연속 일치)`
-          });
-
-          curGroup = candGroup;
-          curStart = candStart;
-          i = j;
-          continue;
-        }
-      }
-      i++;
-    }
-
-    intervals.push({
-      start: curStart,
-      end: '2099-12-31',
-      group: curGroup
-    });
-
-    // 각 이벤트 일자별 확정된 유효 근무조 부여
-    events.forEach(e => {
-      let eff = p.group;
-      for(const inv of intervals){
-        if(e.date >= inv.start && e.date <= inv.end){
-          eff = inv.group;
-          break;
-        }
-      }
-      activeSchedules.set(`${empId}_${e.date}`, eff);
-    });
-  });
-
-  return { switchEvents, activeSchedules };
-}
-
 function addDaysSafe(ymdStr, days){
-  const [y, m, d] = ymdStr.split('-').map(Number);
+  if(!ymdStr) return '';
+  const [y, m, d] = String(ymdStr).trim().split('-').map(Number);
+  if(!y || !m || !d) return ymdStr;
   const dt = new Date(y, m - 1, d + days);
   const ry = dt.getFullYear();
   const rm = String(dt.getMonth() + 1).padStart(2, '0');
@@ -1175,13 +1168,13 @@ function addDaysSafe(ymdStr, days){
 function computeSequencePattern(targetEvent, allEmpEvents){
   const offsets = [-2, -1, 0, 1, 2];
   const daysInfo = [];
-  const activeGroup = targetEvent.current_active_group || targetEvent.group;
+  const activeGroup = targetEvent.current_active_group || targetEvent.reference_group;
 
   offsets.forEach(offset => {
     const ymdStr = addDaysSafe(targetEvent.date, offset);
     const dayOfWeek = ['일','월','화','수','목','금','토'][new Date(ymdStr + 'T00:00:00').getDay()];
 
-    const matchLogs = allEmpEvents.filter(x => x.date === ymdStr);
+    const matchLogs = (allEmpEvents || []).filter(x => x.date === ymdStr);
     const hasActualDay = matchLogs.some(x => x.slot === '주간');
     const hasActualNight = matchLogs.some(x => x.slot === '야간');
     const regularShift = activeGroup ? ownShift(activeGroup, ymdStr) : '';
@@ -1226,7 +1219,7 @@ function computeSequencePattern(targetEvent, allEmpEvents){
       isDay,
       isNight,
       isOff,
-      desc: `${ymdStr.slice(5)}(${dayOfWeek}): ${label} (${desc})`,
+      desc: `${ymdStr ? ymdStr.slice(5) : ''}(${dayOfWeek}): ${label} (${desc})`,
       isCurr: offset === 0
     });
   });
@@ -1235,16 +1228,170 @@ function computeSequencePattern(targetEvent, allEmpEvents){
   const curr = daysInfo[2];
   const next = daysInfo[3];
 
-  const hasNightNight = curr.isNight && (prev.isNight || next.isNight);
-  const has24hConsec = (curr.isDay && curr.isNight) ||
-                       (prev.isNight && curr.isDay) ||
-                       (curr.isNight && next.isDay);
+  const hasNightNight = curr && curr.isNight && (prev?.isNight || next?.isNight);
+  const has24hConsec = curr && ((curr.isDay && curr.isNight) ||
+                       (prev?.isNight && curr.isDay) ||
+                       (curr.isNight && next?.isDay));
 
-  return { daysInfo, hasNightNight, has24hConsec };
+  return { daysInfo, hasNightNight: !!hasNightNight, has24hConsec: !!has24hConsec };
 }
 
-function analyze(roster, actual){
-  const { switchEvents, activeSchedules } = resolveDynamicShiftSchedules(actual, roster);
+/**
+ * 역무일지 데이터 주도(Data-Driven) 근무조 추적 엔진
+ * - 명부의 근무조는 단순 참고값으로만 취급
+ * - 직원의 초기 출근 패턴을 4조 2교대 순환주기와 대조하여 실제 초기 조를 자율 판정(Self-Discovery)
+ * - 3연속 이상 근무는 거의 없다는 철도 교대근무 특성을 반영하여 주-야(2연속) 외의 지원과 정규 로테이션을 분리
+ * - 새 조로 3회 이상(4일 이상) 순환 주기가 일치하면 '조 이동'으로 확정하고 복귀 시 '원복' 동기화
+ */
+function resolveDynamicShiftSchedules(allEvents, roster){
+  const byEmp = new Map();
+  allEvents.forEach(e => {
+    if(!byEmp.has(e.emp_id)) byEmp.set(e.emp_id, []);
+    byEmp.get(e.emp_id).push(e);
+  });
+
+  const switchEvents = [];
+  const activeSchedules = new Map();
+
+  byEmp.forEach((events, empId) => {
+    const p = roster.find(r => r.emp_id === empId);
+    if(!p || p.is_master) return;
+
+    // 일자 순 정렬 및 중복 슬롯 정제
+    events.sort((a, b) => a.date.localeCompare(b.date) || (a.slot === '주간' ? -1 : 1));
+
+    const seen = new Set();
+    const uniqueEvents = [];
+    events.forEach(e => {
+      const k = `${e.date}_${e.slot}`;
+      if(!seen.has(k)){
+        seen.add(k);
+        uniqueEvents.push(e);
+      }
+    });
+
+    if(uniqueEvents.length < 2) return;
+
+    // 1. 역무일지 초기 출근 데이터를 기반으로 실제 초기 근무조 자율 판정 (Self-Discovery)
+    // 명부 조(p.reference_group)는 가중치 1점만 부여, 역무일지 출근 패턴에 가장 부합하는 조를 채택
+    const initialSample = uniqueEvents.slice(0, Math.min(8, uniqueEvents.length));
+    const groupScores = { 'A조': 0, 'B조': 0, 'C조': 0, 'D조': 0 };
+    if(p.reference_group && groupScores[p.reference_group] !== undefined){
+      groupScores[p.reference_group] += 1.5; // 참고값
+    }
+
+    initialSample.forEach(ev => {
+      for(const g of ['A조','B조','C조','D조']){
+        if(ownShift(g, ev.date) === ev.slot){
+          groupScores[g] += 2;
+        }
+      }
+    });
+
+    let primaryInitialGroup = Object.entries(groupScores).sort((a,b) => b[1] - a[1])[0][0];
+
+    const evList = uniqueEvents.map(e => ({
+      ...e,
+      dutyGroup: getGroupOfSlot(e.date, e.slot)
+    }));
+
+    const intervals = [];
+    let curGroup = primaryInitialGroup;
+    let curStart = evList[0].date;
+
+    let i = 0;
+    while(i < evList.length){
+      const curEv = evList[i];
+
+      // 현재 유효조와 다른 조의 근무가 발생했을 때
+      if(curEv.dutyGroup && curEv.dutyGroup !== curGroup){
+        const candGroup = curEv.dutyGroup;
+        const candStart = curEv.date;
+        let j = i;
+        let candCount = 0;
+        let lastCandDate = candStart;
+        let tolerance = 1; // 1개월 파견 중 발생한 단 1회의 타조 비번 대근 허용
+
+        while(j < evList.length){
+          const nextEv = evList[j];
+          if(nextEv.dutyGroup === candGroup){
+            candCount++;
+            lastCandDate = nextEv.date;
+            j++;
+          } else {
+            // 새 조(candGroup)가 바로 다음 근무에서 재개되는 경우 1회 허용
+            if(tolerance > 0 && j + 1 < evList.length && evList[j + 1].dutyGroup === candGroup){
+              tolerance--;
+              j++;
+            } else {
+              break; // 새 조의 연속 구간 종료
+            }
+          }
+        }
+
+        const spanDays = Math.round((new Date(lastCandDate) - new Date(candStart)) / 86400000);
+
+        // 공식 조변경 인정 기준: 최소 3회 이상 근무 및 4일 이상 지속 (1주기 이상)
+        if(candCount >= 3 && spanDays >= 4){
+          intervals.push({
+            start: curStart,
+            end: addDaysSafe(candStart, -1),
+            group: curGroup
+          });
+
+          const isReturn = (candGroup === primaryInitialGroup);
+          const transitionDesc = isReturn 
+            ? `${curGroup} ➔ ${candGroup} (본래 조 복귀)` 
+            : `${curGroup} ➔ ${candGroup}`;
+
+          switchEvents.push({
+            emp_id: p.emp_id,
+            name: p.name,
+            home_station: p.home_station,
+            work_station: curEv.work_station,
+            roster_group: p.reference_group || primaryInitialGroup,
+            prev_group: curGroup,
+            active_group: candGroup,
+            transition_desc: transitionDesc,
+            is_return: isReturn,
+            switch_date: candStart,
+            reason: `${candStart}부터 ${candGroup} 순환주기(주-야-비-휴)로 공식 전환 (${candCount}회 연속 일치)`
+          });
+
+          curGroup = candGroup;
+          curStart = candStart;
+          i = j;
+          continue;
+        }
+      }
+      i++;
+    }
+
+    intervals.push({
+      start: curStart,
+      end: '2099-12-31',
+      group: curGroup
+    });
+
+    // 각 이벤트 일자별 확정된 유효 근무조 부여
+    events.forEach(e => {
+      let eff = curGroup;
+      for(const inv of intervals){
+        if(e.date >= inv.start && e.date <= inv.end){
+          eff = inv.group;
+          break;
+        }
+      }
+      activeSchedules.set(`${empId}_${e.date}`, eff);
+    });
+  });
+
+  return { switchEvents, activeSchedules };
+}
+
+function analyze(rosterData, actual, empHistoryMap){
+  const { consolidated } = rosterData;
+  const { switchEvents, activeSchedules } = resolveDynamicShiftSchedules(actual, consolidated);
 
   const dayStationCounts = new Map();
   actual.forEach(e => {
@@ -1264,8 +1411,13 @@ function analyze(roster, actual){
   const master_events = [];
 
   actual.forEach(e => {
+    // 해당 시점 직원의 전보 이력 반영
+    const currentProfile = getEmployeeProfileAtDate(e.emp_id, e.date, empHistoryMap, e);
+    const homeStationAtDate = currentProfile.home_station || e.home_station;
+    const mgmtStationAtDate = currentProfile.mgmt_station || e.mgmt_station;
+
     const stationDayCount = (e.slot === '주간') ? (dayStationCounts.get(`${e.date}_${e.work_station}`) || 0) : 0;
-    const isSubSupport = !isSameStation(e.home_station, e.work_station);
+    const isSubSupport = !isSameStation(homeStationAtDate, e.work_station);
     const hasSupportNote = /지원|대체|파견/.test(e.note || '');
 
     if(e.is_master){
@@ -1282,6 +1434,8 @@ function analyze(roster, actual){
 
         master_events.push({
           ...e,
+          home_station: homeStationAtDate,
+          mgmt_station: mgmtStationAtDate,
           station_day_count: stationDayCount,
           is_twoperson: isTwoPersonSupport,
           is_threeperson: isThreePersonSupport,
@@ -1289,8 +1443,10 @@ function analyze(roster, actual){
           support_type_desc: supportDesc
         });
       }
-    } else if(e.group){
-      const activeGroup = activeSchedules.get(`${e.emp_id}_${e.date}`) || e.group;
+    } else {
+      const activeGroup = activeSchedules.get(`${e.emp_id}_${e.date}`) || e.reference_group;
+      if(!activeGroup) return;
+
       const own = ownShift(activeGroup, e.date);
       const isMismatch = (own !== e.slot);
 
@@ -1298,15 +1454,19 @@ function analyze(roster, actual){
         const allEmpEvents = empEventMap.get(e.emp_id) || [];
         const { daysInfo, hasNightNight, has24hConsec } = computeSequencePattern({
           ...e,
+          home_station: homeStationAtDate,
+          mgmt_station: mgmtStationAtDate,
           current_active_group: activeGroup
         }, allEmpEvents);
 
         main_events.push({
           ...e,
+          home_station: homeStationAtDate,
+          mgmt_station: mgmtStationAtDate,
           current_active_group: activeGroup,
           own_shift_that_day: own,
           off_day_flag: ['비번','휴무'].includes(own),
-          same_station: isSameStation(e.home_station, e.work_station),
+          same_station: isSameStation(homeStationAtDate, e.work_station),
           daysInfo,
           hasNightNight,
           has24hConsec
@@ -1317,7 +1477,10 @@ function analyze(roster, actual){
 
   const dates = actual.map(e => e.date).filter(Boolean).sort();
   return {
-    meta: { roster_date: '업로드 명부', log_range: [dates[0] || '-', dates.at(-1) || '-'] },
+    meta: { 
+      roster_date: `명부 ${consolidated.length}명(다중 명부 통합)`, 
+      log_range: [dates[0] || '-', dates.at(-1) || '-'] 
+    },
     main_events,
     master_events,
     switch_events: switchEvents,
@@ -1334,29 +1497,77 @@ function workbookRows(wb, preferred){
   return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
 }
 
+function hasRosterHeader(rows){
+  return Array.isArray(rows) && rows.some(r => Array.isArray(r) && r.some(v=>String(v).includes('사번')) && r.some(v=>String(v).includes('성명')));
+}
+
+function findRosterRows(wb){
+  const preferred = wb.SheetNames.find(s => s.includes('전직원명부') || s.includes('명부') || s.includes('직원'));
+  if(preferred){
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[preferred], { header: 1, raw: true, defval: '' });
+    if(hasRosterHeader(rows)) return rows;
+  }
+  for(const name of wb.SheetNames){
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+    if(hasRosterHeader(rows)) return rows;
+  }
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+}
+
+function findLogRows(wb){
+  const preferred = wb.SheetNames.find(s => s.includes('Data Exporting') || s.includes('근무자') || s.includes('역무일지') || s.includes('일지'));
+  if(preferred){
+    return XLSX.utils.sheet_to_json(wb.Sheets[preferred], { header: 1, raw: true, defval: '' });
+  }
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+}
+
 async function loadExcelData(){
   if(typeof XLSX === 'undefined'){
     setStatus('엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.', 'err');
     return;
   }
-  const rf = document.getElementById('rosterFile')?.files[0];
+  const rosterFileInput = document.getElementById('rosterFile');
+  const rosterFiles = rosterFileInput ? Array.from(rosterFileInput.files) : [];
   const lf = document.getElementById('logFile')?.files[0];
-  if(!rf || !lf){
-    setStatus('붙임1 전직원명부와 붙임2 역무일지 파일을 모두 선택해 주세요.', 'err');
+
+  if(!rosterFiles.length || !lf){
+    setStatus('붙임1 전직원명부(1개 이상)와 붙임2 역무일지 파일을 모두 선택해 주세요.', 'err');
     return;
   }
   const btn = document.getElementById('loadExcelBtn');
   if(btn) btn.disabled = true;
-  setStatus('두 엑셀 파일을 정밀 분석 중입니다. 잠시만 기다려 주세요…');
+  setStatus(`전직원명부 ${rosterFiles.length}개 파일 및 역무일지 로데이터를 분석 중입니다. 잠시만 기다려 주세요…`);
 
   try{
-    const [rwb, lwb] = await Promise.all([readWorkbook(rf), readWorkbook(lf)]);
-    const roster = extractRoster(workbookRows(rwb, '전직원명부'));
-    const actual = extractActualEvents(workbookRows(lwb, 'Data Exporting...'), roster);
-    DATA = analyze(roster, actual);
+    // 1. 다중 명부 파일 병렬 파싱 (지능형 시트 자동 탐색)
+    const rosterWorkbooks = await Promise.all(rosterFiles.map(async file => {
+      const wb = await readWorkbook(file);
+      const rows = findRosterRows(wb);
+      return { filename: file.name, rows };
+    }));
+
+    const { consolidated, empHistoryMap, rosterSummaries } = buildUnifiedRosterDatabase(rosterWorkbooks);
+
+    // 2. 역무일지 파싱 (지능형 시트 자동 탐색)
+    const lwb = await readWorkbook(lf);
+    const actual = extractActualEvents(findLogRows(lwb), consolidated, empHistoryMap);
+
+    // 3. 역무일지 데이터 주도 분석 엔진 가동
+    DATA = analyze({ consolidated }, actual, empHistoryMap);
+    DATA.meta.roster_files = rosterSummaries;
+    DATA.meta.roster_date = rosterSummaries.map(s => s.date).join(', ');
+
     resetAllUI();
-    setStatus(`<b>분석 완료</b> · 명부 ${fmtNum(roster.length)}명 · 유효 근무 ${fmtNum(actual.length)}건 매칭 · 조변경 ${fmtNum(DATA.switch_events.length)}건 감지 (정규 전환 및 복귀 반영) · 순수 지원근무 정밀 산출 완료`, 'ok');
-    showToast('엑셀 데이터 분석이 완료되었습니다.');
+
+    const summaryHtml = rosterSummaries.map(s => 
+      `<span style="display:inline-block; margin:2px 4px; padding:2px 8px; background:var(--bg-panel); border:1px solid var(--rule-strong); border-radius:4px; font-size:10.5px;">` +
+      `📄 <b>${esc(s.filename)}</b> ➔ 추출일: <b style="color:var(--line-2); font-family:var(--mono);">${s.date}</b> (${fmtNum(s.count)}명)` +
+      `</span>`
+    ).join(' ');
+
+    setStatus(`<b>분석 완료</b> · 전직원명부 ${rosterFiles.length}개 파일 자동 일자 인식 및 반영 완료<div style="margin-top:6px;">${summaryHtml}</div><div style="margin-top:6px; font-size:10.5px; color:var(--ink-dim);">총 ${fmtNum(consolidated.length)}명 전보 이력 통합 관리 · 유효 근무 ${fmtNum(actual.length)}건 매칭 · 조변경 ${fmtNum(DATA.switch_events.length)}건 감지</div>`, 'ok');
+    showToast(`엑셀 분석 완료: 명부 ${rosterFiles.length}개 파일(${rosterSummaries.map(s=>s.date).join(', ')}) 통합 반영`);
   } catch(err){
     console.error(err);
     setStatus(`<b>분석 실패</b> · ${esc(err.message || err)}`, 'err');
@@ -1783,7 +1994,10 @@ function updateTopAndKpi(){
 
   const topMetaEl = document.getElementById('topMeta');
   if(topMetaEl){
-    topMetaEl.innerHTML = `데이터 기간 ${esc(DATA.meta.log_range[0])} ~ ${esc(DATA.meta.log_range[1])}<br>명부 기준 ${esc(DATA.meta.roster_date)}`;
+    const metaRosterText = (DATA.meta.roster_files && DATA.meta.roster_files.length)
+      ? DATA.meta.roster_files.map(f => f.date).join(', ')
+      : (DATA.meta.roster_date || '-');
+    topMetaEl.innerHTML = `데이터 기간 ${esc(DATA.meta.log_range[0])} ~ ${esc(DATA.meta.log_range[1])}<br>명부 기준 ${esc(metaRosterText)}`;
   }
   const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
 
