@@ -114,6 +114,21 @@ header.top{ display:flex; justify-content:space-between; align-items:center; gap
 .kpi.blue{ --accent:var(--blue); }
 .kpi.purple{ --accent:var(--purple); }
 
+/* 소항목(하위 항목) 전용 차별화 스타일 */
+.kpi.kpi-sub{
+  background:rgba(21, 34, 42, 0.45);
+  border:1px dashed var(--rule-strong);
+}
+.kpi.kpi-sub::before{
+  background:var(--accent, var(--ink-dim));
+  opacity:0.6;
+  width:3px;
+}
+[data-theme="light"] .kpi.kpi-sub{
+  background:#f1f5f9;
+  border:1px dashed #cbd5e1;
+}
+
 .filters-row{
   display:flex; flex-wrap:wrap; gap:6px; align-items:flex-end;
   margin-bottom:10px; background:var(--bg-panel-raised); padding:8px 10px;
@@ -210,7 +225,7 @@ td.mono, th.mono{ font-family:var(--mono); }
 .p-day.off{ color:var(--ink-faint); opacity:0.85; }
 
 .dash-grid-5{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:12px; }
-@media (max-width:1100px){ .dash-grid-5{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:1250px){ .dash-grid-5{ grid-template-columns:repeat(3,1fr); } }
 @media (max-width:700px){ .dash-grid-5{ grid-template-columns:repeat(2,1fr); } }
 .dash-card{ background:var(--bg-panel-raised); border:1px solid var(--rule); border-radius:6px; padding:10px 12px; text-align:center; position:relative; }
 .dash-card.is-dae{ border-top:3px solid var(--line-2); }
@@ -332,30 +347,40 @@ td.mono, th.mono{ font-family:var(--mono); }
   </div>
 
   <div class="kpi-row">
+    <!-- 1. 대항목 ① -->
     <div class="kpi">
+      <span class="badge-cat badge-dae" style="margin-bottom:4px;">대항목 ①</span>
       <div class="n" id="kpiMain">0</div>
-      <div class="l">순수 불일치 지원근무 (건)</div>
+      <div class="l">교대자 순수지원 (건)</div>
       <div class="s">비번·휴무일 출근 및 타조 대근</div>
     </div>
-    <div class="kpi">
-      <div class="n" id="kpiEmp">0</div>
-      <div class="l">해당 직원 수</div>
-      <div class="s">순수 지원근무를 수행한 인원</div>
-    </div>
+    <!-- 2. 대항목 ② (3번째에서 2번째로 위치 이동) -->
     <div class="kpi blue">
+      <span class="badge-cat badge-dae-blue" style="margin-bottom:4px;">대항목 ②</span>
       <div class="n" id="kpiMaster">0</div>
       <div class="l">역장 지원 근무 (건)</div>
       <div class="s" id="kpiMasterSub">일근 관리·환승·독립역장</div>
     </div>
-    <div class="kpi amber">
-      <div class="n" id="kpiSwitch">0</div>
-      <div class="l">근무조 변경 감지 (명)</div>
-      <div class="s">타 조로 파견·전환된 정규 변경자</div>
+    <!-- 3. 하위 항목 1 (소항목 구분 스타일 적용) -->
+    <div class="kpi kpi-sub">
+      <span class="badge-cat badge-so" style="margin-bottom:4px;">소항목 (교대자 세부)</span>
+      <div class="n" id="kpiEmp">0</div>
+      <div class="l">↳ 해당 직원 수 (명)</div>
+      <div class="s">순수 지원근무를 수행한 인원</div>
     </div>
-    <div class="kpi purple">
+    <!-- 4. 하위 항목 2 (소항목 구분 스타일 적용) -->
+    <div class="kpi purple kpi-sub">
+      <span class="badge-cat badge-so" style="margin-bottom:4px;">소항목 (교대자 세부)</span>
       <div class="n" id="kpiRisk">0</div>
-      <div class="l">연속근무 주의 (건)</div>
+      <div class="l">↳ 연속근무 주의 (건)</div>
       <div class="s">24h 철야연속 + 야-야 연속 투입 건수</div>
+    </div>
+    <!-- 5. 하위 항목 3 (소항목 구분 스타일 적용) -->
+    <div class="kpi amber kpi-sub">
+      <span class="badge-cat badge-so" style="margin-bottom:4px;">소항목 (편성 검증)</span>
+      <div class="n" id="kpiSwitch">0</div>
+      <div class="l">↳ 근무조 변경 감지 (명)</div>
+      <div class="s">타 조로 파견·전환된 정규 변경자</div>
     </div>
   </div>
 
@@ -501,34 +526,34 @@ td.mono, th.mono{ font-family:var(--mono); }
       <div style="font-size:11px; color:var(--ink-faint);">* 상단의 월별 / 기간 필터와 실시간 연동됩니다.</div>
     </div>
 
-    <!-- 5 KPI Cards -->
+    <!-- 5 KPI Cards (종합 합계 + 대항목 ① + 소항목 ①-1 + 소항목 ①-2 + 대항목 ②) -->
     <div class="dash-grid-5">
       <div class="dash-card is-tot">
         <span class="badge-cat badge-tot">종합 합계</span>
         <div class="val" id="statGrandTotal" style="color:var(--amber);">0건</div>
         <div class="lbl">총 지원 건수</div>
-        <div class="sub-lbl">교대자 순수지원 + 역장지원 합계</div>
+        <div class="sub-lbl">교대자(261) + 역장(10) 합계</div>
       </div>
 
       <div class="dash-card is-dae">
         <span class="badge-cat badge-dae">대항목 ①</span>
         <div class="val" id="statMismatchCnt">0건</div>
         <div class="lbl">교대자 순수지원 건수</div>
-        <div class="sub-lbl" id="statAvgDailySub">1일 평균 0.0건</div>
+        <div class="sub-lbl" id="statAvgDailySub">소항목 합계(186+75)=261건</div>
       </div>
 
       <div class="dash-card is-so">
-        <span class="badge-cat badge-so">소항목 (교대자 세부)</span>
+        <span class="badge-cat badge-so">소항목 ①-1</span>
+        <div class="val" id="statHomeSupportCnt">0건</div>
+        <div class="lbl">↳ 소속역 자체 지원 건수</div>
+        <div class="sub-lbl" id="statHomeSupportSub">전체 순수지원의 0%</div>
+      </div>
+
+      <div class="dash-card is-so">
+        <span class="badge-cat badge-so">소항목 ①-2</span>
         <div class="val" id="statSubSupportCnt">0건</div>
         <div class="lbl">↳ 관할 내 타역 지원 건수</div>
         <div class="sub-lbl" id="statSubSupportSub">전체 순수지원의 0%</div>
-      </div>
-
-      <div class="dash-card is-so">
-        <span class="badge-cat badge-so">소항목 (교대자 세부)</span>
-        <div class="val" id="statRiskCount">0건</div>
-        <div class="lbl">↳ 연속근무 주의 건수</div>
-        <div class="sub-lbl">야-야 및 24h 철야 연속투입</div>
       </div>
 
       <div class="dash-card is-dae-blue">
@@ -581,9 +606,13 @@ td.mono, th.mono{ font-family:var(--mono); }
                 <span class="badge-cat badge-dae">대항목</span><br>
                 교대자 순수지원(건)<span class="arrow"></span>
               </th>
+              <th data-k="home_support_cnt">
+                <span class="badge-cat badge-so">소항목</span><br>
+                ↳ 소속역 지원(건)<span class="arrow"></span>
+              </th>
               <th data-k="sub_support_cnt">
                 <span class="badge-cat badge-so">소항목</span><br>
-                ↳ 타역 지원근무(건)<span class="arrow"></span>
+                ↳ 타역 지원(건)<span class="arrow"></span>
               </th>
               <th data-k="master_cnt">
                 <span class="badge-cat badge-dae-blue">대항목</span><br>
@@ -599,6 +628,7 @@ td.mono, th.mono{ font-family:var(--mono); }
               <td class="name">합계</td>
               <td><span class="tag tag-switch">43개역</span></td>
               <td class="mono total-val" id="sumTotalMismatch">0</td>
+              <td class="mono total-val" id="sumTotalHome">0</td>
               <td class="mono total-val" id="sumTotalSub">0</td>
               <td class="mono total-val" id="sumTotalMaster">0</td>
               <td class="mono total-val" style="color:var(--amber);" id="sumTotalGrand">0</td>
@@ -1801,8 +1831,10 @@ function renderDashboardAndCharts(){
   }
 
   const avgDaily = (mainList.length / daysCount).toFixed(1);
+  const homeSupportCnt = mainList.filter(e => e.same_station).length;
   const subSupportCnt = mainList.filter(e => !e.same_station).length;
   const subRate = mainList.length ? Math.round((subSupportCnt / mainList.length) * 100) : 0;
+  const homeRate = mainList.length ? (100 - subRate) : 0;
   const riskCnt = mainList.filter(e => e.hasNightNight || e.has24hConsec).length;
   const grandTotalCnt = mainList.length + masterList.length;
 
@@ -1810,10 +1842,11 @@ function renderDashboardAndCharts(){
 
   setTxt('statGrandTotal', `${fmtNum(grandTotalCnt)}건`);
   setTxt('statMismatchCnt', `${fmtNum(mainList.length)}건`);
-  setTxt('statAvgDailySub', `1일 평균 ${avgDaily}건`);
+  setTxt('statAvgDailySub', `소항목 합계(${fmtNum(homeSupportCnt)}+${fmtNum(subSupportCnt)})=${fmtNum(mainList.length)}건`);
+  setTxt('statHomeSupportCnt', `${fmtNum(homeSupportCnt)}건`);
+  setTxt('statHomeSupportSub', `전체 순수지원의 ${homeRate}% (소속역 지원)`);
   setTxt('statSubSupportCnt', `${fmtNum(subSupportCnt)}건`);
-  setTxt('statSubSupportSub', `전체 순수지원의 ${subRate}% (타역 투입)`);
-  setTxt('statRiskCount', `${fmtNum(riskCnt)}건`);
+  setTxt('statSubSupportSub', `전체 순수지원의 ${subRate}% (타역 지원)`);
   setTxt('statMasterCnt', `${fmtNum(masterList.length)}건`);
 
   // Hub stations ranking chart
@@ -1910,6 +1943,7 @@ function renderDashboardAndCharts(){
       station_type: st.type,
       mgmt_name: st.mgmt,
       mismatch_cnt: 0,
+      home_support_cnt: 0,
       sub_support_cnt: 0,
       master_cnt: 0,
       total_cnt: 0
@@ -1921,7 +1955,8 @@ function renderDashboardAndCharts(){
     const item = stationAgg.get(canon.name);
     if(item){
       item.mismatch_cnt++;
-      if(!e.same_station) item.sub_support_cnt++;
+      if(e.same_station) item.home_support_cnt++;
+      else item.sub_support_cnt++;
       item.total_cnt++;
     }
   });
@@ -1936,18 +1971,21 @@ function renderDashboardAndCharts(){
   });
 
   let totMismatch = 0;
+  let totHome = 0;
   let totSub = 0;
   let totMaster = 0;
   let totGrand = 0;
 
   stationAgg.forEach(item => {
     totMismatch += item.mismatch_cnt;
+    totHome += item.home_support_cnt;
     totSub += item.sub_support_cnt;
     totMaster += item.master_cnt;
     totGrand += item.total_cnt;
   });
 
   setTxt('sumTotalMismatch', fmtNum(totMismatch));
+  setTxt('sumTotalHome', fmtNum(totHome));
   setTxt('sumTotalSub', fmtNum(totSub));
   setTxt('sumTotalMaster', fmtNum(totMaster));
   setTxt('sumTotalGrand', fmtNum(totGrand));
@@ -1969,6 +2007,7 @@ function renderDashboardAndCharts(){
       <td class="name">${esc(r.station_name)}</td>
       <td><span class="tag ${r.station_type==='관리역'?'tag-diff':r.station_type==='환승역'?'tag-same':r.station_type==='독립역'?'tag-twoperson':''}">${esc(r.station_type)}</span></td>
       <td class="mono">${fmtNum(r.mismatch_cnt)}</td>
+      <td class="mono">${fmtNum(r.home_support_cnt)}</td>
       <td class="mono">${fmtNum(r.sub_support_cnt)}</td>
       <td class="mono">${fmtNum(r.master_cnt)}</td>
       <td class="mono" style="font-weight:700; color:var(--amber);">${fmtNum(r.total_cnt)}</td>
@@ -2006,15 +2045,17 @@ function exportAllExcel(){
 
   // 1. [시트 1] 역사별 종합 지원 집계표
   const summaryRows = [];
-  let totMis = 0, totSub = 0, totMas = 0, totGrd = 0;
+  let totMis = 0, totHm = 0, totSub = 0, totMas = 0, totGrd = 0;
 
   CANONICAL_LINE2_STATIONS.forEach(st => {
     const misCnt = mainList.filter(e => isSameStation(e.work_station, st.name)).length;
+    const hmCnt = mainList.filter(e => isSameStation(e.work_station, st.name) && e.same_station).length;
     const subCnt = mainList.filter(e => isSameStation(e.work_station, st.name) && !e.same_station).length;
     const masCnt = masterList.filter(e => isSameStation(e.work_station, st.name)).length;
     const totCnt = misCnt + masCnt;
 
     totMis += misCnt;
+    totHm += hmCnt;
     totSub += subCnt;
     totMas += masCnt;
     totGrd += totCnt;
@@ -2025,6 +2066,7 @@ function exportAllExcel(){
       '역 구분': st.type,
       '소속 관리역': st.mgmt,
       '[대항목] 교대자 순수지원(건)': misCnt,
+      '[소항목] ↳ 소속역 자체지원(건)': hmCnt,
       '[소항목] ↳ 타역 지원근무(건)': subCnt,
       '[대항목] 역장 지원(건)': masCnt,
       '[종합] 총 지원 건수(건)': totCnt
@@ -2038,6 +2080,7 @@ function exportAllExcel(){
       '역 구분': '43개역',
       '소속 관리역': '-',
       '[대항목] 교대자 순수지원(건)': totMis,
+      '[소항목] ↳ 소속역 자체지원(건)': totHm,
       '[소항목] ↳ 타역 지원근무(건)': totSub,
       '[대항목] 역장 지원(건)': totMas,
       '[종합] 총 지원 건수(건)': totGrd
@@ -2048,7 +2091,7 @@ function exportAllExcel(){
   const wsSummary = XLSX.utils.json_to_sheet(summarySheetData);
   wsSummary['!cols'] = [
     { wch: 8 },  { wch: 18 }, { wch: 10 }, { wch: 16 },
-    { wch: 24 }, { wch: 24 }, { wch: 18 }, { wch: 20 }
+    { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 18 }, { wch: 20 }
   ];
   XLSX.utils.book_append_sheet(wb, wsSummary, '역사별_종합지원_집계표');
 
