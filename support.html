@@ -275,13 +275,7 @@ td.mono, th.mono{ font-family:var(--mono); }
   <div class="panel" style="border-top:3px solid var(--line-2); margin-bottom:14px;">
     <div style="margin-bottom:8px;">
       <div style="font-weight:800; font-size:13.5px; color:var(--ink);">
-        엑셀 데이터 불러오기 <span class="badge-cat badge-dae" style="font-size:9.5px; margin:0 0 0 4px;">7.1자 발령 반영 + 동명이인 정밀 매칭 + 연속 3일 조교정(통합 최적화)</span>
-      </div>
-      <div style="font-size:11px; color:var(--ink-dim); margin-top:2px; line-height:1.55;">
-        • <b>관리역 내 지원 원칙</b>: 일반 역무원은 소속 관리역 산하 역으로만 지원근무를 수행하며 타 관리역으로 넘어가지 않습니다.<br>
-        • <b>본부 '지원'·'운영' 부서 파견 원칙</b>: 부서가 역이 아닌 '지원팀', '운영팀' 등 본부 직원의 역 파견은 타 관리역 제한 없이 정상 `[본부지원]`으로 판별합니다. 단, 역에서 연속 3근무 이상 근무 주기를 수행하는 인원은 '역 발령 교대근무자'로 우선 자동 전환합니다.<br>
-        • <b>동명이인(김지현, 박소영 등) 기준 정밀 매칭</b>: 7월 1일자 발령일 전후 이력과 당일 역무일지 작성역의 관리역 소속 일치자를 최우선 매칭합니다.<br>
-        • <b>연속 3일 근무조 오류 즉각 교정</b>: "연속하여 3근무 이상 지원근무 하는 경우는 없음" 원칙에 따라, 본인 조와 다른 로테이션으로 3일(3회) 이상 근무한 기록이 발견되면 즉시 실제 근무조로 재파악 및 자동 교정하여 지원근무 허수를 100% 배제합니다.
+        엑셀 데이터 불러오기
       </div>
     </div>
     
@@ -1055,7 +1049,6 @@ function getEmployeeProfileAtDate(empId, date, empHistoryMap, defaultProfile){
   const history = empHistoryMap.get(id);
   if(!history || !history.length) return defaultProfile;
 
-  // 7월 1일자 발령 소급 적용
   if(date >= '2026-07-01'){
     const postJuly = history.filter(h => h.effective_date >= '2026-07-01' || h.effective_date.startsWith('2026-09'));
     if(postJuly.length > 0) return postJuly[0];
@@ -1091,12 +1084,10 @@ function matchRosterNamesWithTransfers(text, consolidatedRoster, nameMap, curren
 
     if(profileList.length === 1){
       const p = profileList[0];
-      // 일반 역무원은 본인 관리역 산하 역으로만 지원을 가며, 타 관리역을 넘어서 지원근무를 안감
       if(!p.is_master && !p.is_hq){
         const isSameMgmt = isSameStation(p.mgmt_station, currentStationMgmt);
         const isSameSt = isSameStation(p.home_station, currentStationName);
         if(!isSameMgmt && !isSameSt && currentStationMgmt !== '-'){
-          // 타 관리역 오매칭 제외
           continue;
         }
       }
@@ -1104,7 +1095,6 @@ function matchRosterNamesWithTransfers(text, consolidatedRoster, nameMap, curren
       continue;
     }
 
-    // 동명이인 정밀 점수 판별 (김지현, 박소영 등)
     const curNo = getStationNumber(currentStationName);
     const scored = profileList.map(p => {
       let score = 0;
@@ -1116,11 +1106,9 @@ function matchRosterNamesWithTransfers(text, consolidatedRoster, nameMap, curren
       if(mgmtExact) score += 1500;
       if(stationKeyword) score += 500;
 
-      // 본부 지원팀, 운영팀 키워드 우대 (김영희 등)
       if(p.is_hq && (t.includes('지원') || t.includes('운영') || t.includes('본부'))) score += 3500;
       if(p.emp_id && t.includes(String(p.emp_id))) score += 5000;
 
-      // 일반 역무원 타 관리역 강력 페널티
       if(!p.is_master && !p.is_hq && !mgmtExact && !homeExact){
         score -= 5000;
       }
@@ -1135,7 +1123,6 @@ function matchRosterNamesWithTransfers(text, consolidatedRoster, nameMap, curren
       String(a.p.emp_id).localeCompare(String(b.p.emp_id))
     );
 
-    // 타 관리역 페널티로 음수인 경우 배제
     if(scored[0].score >= 0){
       found.push(scored[0].p);
     }
@@ -1301,12 +1288,6 @@ function computeSequencePattern(targetEvent, allEmpEvents, isDayWorker = false){
   return { daysInfo, hasNightNight: !!hasNightNight, has24hConsec: !!has24hConsec };
 }
 
-/**
- * [통합 최적화 근무조 교정 엔진]
- * - 연속하여 3근무 이상 지원근무 하는 경우는 절대 없음 원칙 적용
- * - 지원/운영팀 직원이더라도 역에서 3근무 이상 순환 주기로 출근하면 '역 발령 교대근무자'로 우선 전환
- * - 본부 지원 직원의 월 1~2회 단발성 출근은 일근 지원근무로 정확히 집계
- */
 function resolveDynamicShiftSchedules(allEvents, roster){
   const byEmp = new Map();
   allEvents.forEach(e => {
@@ -1337,17 +1318,14 @@ function resolveDynamicShiftSchedules(allEvents, roster){
       dutyGroup: getGroupOfSlot(e.date, e.slot)
     }));
 
-    // 지원팀/운영팀 직원의 연속 주기 출근 여부 검증
     const isHQ = p.is_hq || isHQDepartment(p.home_station);
     if(isHQ){
-      // 월별 출근 횟수 계산
       const monthlyCount = new Map();
       evList.forEach(e => {
         const ym = e.date.slice(0, 7);
         monthlyCount.set(ym, (monthlyCount.get(ym) || 0) + 1);
       });
 
-      // 특정 월에 3근무 이상이고 순환주기가 일치하면 역 발령 교대근무자로 분류
       let hasStationShiftTransfer = false;
       for(const [ym, cnt] of monthlyCount.entries()){
         if(cnt >= 3){
@@ -1356,7 +1334,6 @@ function resolveDynamicShiftSchedules(allEvents, roster){
         }
       }
 
-      // 월 1~2회 단발성 지원이면 일근자 지원근무로 유지
       if(!hasStationShiftTransfer){
         return;
       }
@@ -1364,7 +1341,6 @@ function resolveDynamicShiftSchedules(allEvents, roster){
       if(isDayWorkerEmployee(p.emp_id, p.name, p.reference_group, p.title, p.home_station)) return;
     }
 
-    // 연속 3근무 이상 순환 주기 일치 즉각 감지 엔진 ((84)번의 핵심 로직)
     let curGroup = p.reference_group || evList[0].dutyGroup || 'A조';
     if(!['A조','B조','C조','D조'].includes(curGroup)) curGroup = 'A조';
 
@@ -1380,7 +1356,6 @@ function resolveDynamicShiftSchedules(allEvents, roster){
           if(evList[j].dutyGroup === cand) matchCount++;
         }
 
-        // 연속 3근무 이상 일치 시 즉각 근무조 교정
         if(matchCount >= 3){
           intervals.push({
             start: curStart,
@@ -1487,12 +1462,9 @@ function analyze(rosterData, actual, empHistoryMap){
       }
     } else {
       const isDayWorker = isDayWorkerEmployee(empId, e.name, e.reference_group, e.title, homeStationAtDate);
-
-      // 교대조 스케줄이 배정된 경우 (역 발령자 또는 교대근무자)
       const scheduledGroup = activeSchedules.get(`${empId}_${e.date}`);
 
       if(isDayWorker && !scheduledGroup){
-        // 순수 일근자 (지원팀 김영희 직원 등)
         const isWeekend = isWeekendOrHoliday(e.date);
         let ownShiftThatDay = '일근';
         let offDayFlag = false;
@@ -1533,7 +1505,6 @@ function analyze(rosterData, actual, empHistoryMap){
           has24hConsec
         });
       } else {
-        // 교대근무자 (연속 3일 교정 결과 우선 적용)
         const activeGroup = scheduledGroup || currentProfile.reference_group || e.reference_group || 'A조';
         const own = ownShift(activeGroup, e.date);
         const isMismatch = (own !== e.slot);
@@ -1652,7 +1623,7 @@ async function loadExcelData(){
       `</span>`
     ).join(' ');
 
-    setStatus(`<b>분석 완료</b> · 전직원명부 ${rosterFiles.length}개 파일 자동 일자 인식 및 7.1자 발령/동명이인/본부지원 정밀 반영 완료<div style="margin-top:6px;">${summaryHtml}</div><div style="margin-top:6px; font-size:10.5px; color:var(--ink-dim);">총 ${fmtNum(consolidated.length)}명 전보 이력 통합 · 순수지원 ${fmtNum(DATA.main_events.length)}건 · 역장지원 ${fmtNum(DATA.master_events.length)}건 · 연속3일 조교정 ${fmtNum(DATA.switch_events.length)}건 자동 검증 완료</div>`, 'ok');
+    setStatus(`<b>분석 완료</b> · 전직원명부 ${rosterFiles.length}개 파일 자동 일자 인식 및 정밀 반영 완료<div style="margin-top:6px;">${summaryHtml}</div><div style="margin-top:6px; font-size:10.5px; color:var(--ink-dim);">총 ${fmtNum(consolidated.length)}명 전보 이력 통합 · 순수지원 ${fmtNum(DATA.main_events.length)}건 · 역장지원 ${fmtNum(DATA.master_events.length)}건 · 연속3일 조교정 ${fmtNum(DATA.switch_events.length)}건 자동 검증 완료</div>`, 'ok');
     showToast(`엑셀 분석 완료: 순수지원 ${DATA.main_events.length}건, 역장지원 ${DATA.master_events.length}건 반영`);
   } catch(err){
     console.error(err);
@@ -2443,7 +2414,7 @@ function exportAllExcel(){
   ];
   XLSX.utils.book_append_sheet(wb, wsSwitch, '근무조_변경감지_명단');
 
-  downloadWorkbook(wb, `2호선_지원근무_종합보고서_${DATA.meta.log_range[0]}_${DATA.meta.log_range[1]}.xlsx`);
+  downloadWorkbook(wb, `제2여객사업소_지원근무_종합보고서_${DATA.meta.log_range[0]}_${DATA.meta.log_range[1]}.xlsx`);
   showToast('종합 엑셀 보고서 다운로드가 완료되었습니다.');
 }
 
