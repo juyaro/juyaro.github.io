@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>지원근무 현황 및 분석</title>
+<title>지원근무 현황 및 근무조 정밀 분석기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -28,16 +28,6 @@
   --red:#dc2626; --red-dim:#fee2e2;
   --blue:#2563eb; --blue-dim:#dbeafe;
   --purple:#7c3aed; --purple-dim:#ede9fe;
-}
-[data-theme="dark"] {
-  --bg:#0a1216; --bg-panel:#0f181e; --bg-panel-raised:#15222a;
-  --line-2:#10b981; --line-2-dim:rgba(16, 185, 129, 0.18);
-  --amber:#f59e0b; --amber-dim:rgba(245, 158, 11, 0.18);
-  --red:#ef4444; --red-dim:rgba(239, 68, 68, 0.18);
-  --blue:#3b82f6; --blue-dim:rgba(59, 130, 246, 0.18);
-  --purple:#8b5cf6; --purple-dim:rgba(139, 92, 246, 0.18);
-  --ink:#f1f5f9; --ink-dim:#94a3b8; --ink-faint:#64748b;
-  --rule:#1e293b; --rule-strong:#334155;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
@@ -156,6 +146,7 @@ td.mono, th.mono{ font-family:var(--mono); }
 .tag-same{ background:var(--amber-dim); color:var(--amber); }
 .tag-diff{ background:var(--line-2-dim); color:var(--line-2); }
 .tag-twoperson{ background:var(--blue-dim); color:#fff; }
+.tag-hq{ background:rgba(59, 130, 246, 0.25); color:var(--blue); border:1px solid var(--blue); }
 .tag-risk-red{ background:rgba(217, 97, 79, 0.2); color:var(--red); border:1px solid var(--red); }
 .tag-risk-purple{ background:rgba(168, 85, 247, 0.2); color:var(--purple); border:1px solid var(--purple); }
 .tag-switch{ background:rgba(224, 165, 68, 0.2); color:var(--amber); border:1px solid var(--amber); }
@@ -266,7 +257,7 @@ td.mono, th.mono{ font-family:var(--mono); }
   <header class="top">
     <div class="brand">
       <div class="brand-top"><span class="badge">2호선 · 역무</span></div>
-      <h1>지원근무 현황 및 분석</h1>
+      <h1>지원근무 현황 및 근무조 정밀 분석기</h1>
     </div>
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;">
       <div class="top-meta" id="topMeta">데이터 기간 -- ~ --<br>명부 기준 -</div>
@@ -284,10 +275,13 @@ td.mono, th.mono{ font-family:var(--mono); }
   <div class="panel" style="border-top:3px solid var(--line-2); margin-bottom:14px;">
     <div style="margin-bottom:8px;">
       <div style="font-weight:800; font-size:13.5px; color:var(--ink);">
-        엑셀 데이터 불러오기 <span class="badge-cat badge-dae" style="font-size:9.5px; margin:0 0 0 4px;">다중 명부(전보 반영) + 붙임2 역무일지</span>
+        엑셀 데이터 불러오기 <span class="badge-cat badge-dae" style="font-size:9.5px; margin:0 0 0 4px;">7.1자 발령 반영 + 동명이인 정밀 매칭 + 연속 3일 조교정(통합 최적화)</span>
       </div>
-      <div style="font-size:11px; color:var(--ink-dim); margin-top:2px;">
-        호선 간/호선 내 전보를 반영할 수 있도록 <b>분기별·반기별·수시 전직원명부 파일들을 한 번에 여러 개 선택</b>할 수 있습니다. 명부상 근무조는 참고만 하며, <b>역무일지 실제 출근 로테이션을 최우선</b>으로 근무조 이동과 지원근무를 정밀 판정합니다.
+      <div style="font-size:11px; color:var(--ink-dim); margin-top:2px; line-height:1.55;">
+        • <b>관리역 내 지원 원칙</b>: 일반 역무원은 소속 관리역 산하 역으로만 지원근무를 수행하며 타 관리역으로 넘어가지 않습니다.<br>
+        • <b>본부 '지원'·'운영' 부서 파견 원칙</b>: 부서가 역이 아닌 '지원팀', '운영팀' 등 본부 직원의 역 파견은 타 관리역 제한 없이 정상 `[본부지원]`으로 판별합니다. 단, 역에서 연속 3근무 이상 근무 주기를 수행하는 인원은 '역 발령 교대근무자'로 우선 자동 전환합니다.<br>
+        • <b>동명이인(김지현, 박소영 등) 기준 정밀 매칭</b>: 7월 1일자 발령일 전후 이력과 당일 역무일지 작성역의 관리역 소속 일치자를 최우선 매칭합니다.<br>
+        • <b>연속 3일 근무조 오류 즉각 교정</b>: "연속하여 3근무 이상 지원근무 하는 경우는 없음" 원칙에 따라, 본인 조와 다른 로테이션으로 3일(3회) 이상 근무한 기록이 발견되면 즉시 실제 근무조로 재파악 및 자동 교정하여 지원근무 허수를 100% 배제합니다.
       </div>
     </div>
     
@@ -344,8 +338,8 @@ td.mono, th.mono{ font-family:var(--mono); }
     <div class="kpi amber kpi-sub">
       <span class="badge-cat badge-so" style="margin-bottom:4px;">소항목 (편성 검증)</span>
       <div class="n" id="kpiSwitch">0</div>
-      <div class="l">↳ 근무조 변경 감지 (명)</div>
-      <div class="s">타 조로 파견·전환된 정규 변경자</div>
+      <div class="l">↳ 근무조 자동교정 (건)</div>
+      <div class="s">연속 3일 이상 감지되어 교정된 조</div>
     </div>
   </div>
 
@@ -354,7 +348,7 @@ td.mono, th.mono{ font-family:var(--mono); }
       <h2>일근 역장(관리역장 · 환승역장 · 독립역장) 교대 및 지원 근무 현황 <span class="cnt" id="masterHeaderCnt"></span></h2>
       <button class="action-btn sm secondary" id="exportMasterExcelBtn" type="button">📥 역장 지원 엑셀 다운로드</button>
     </div>
-    <div class="sub">근무조가 없는 일근 역장(관리역장, 환승역장, 독립역장)이 월~금 평일 주간에 <b>2명 근무(장산·양산·수영·경성대부경대·센텀시티·사상)</b> 또는 <b>3명 근무(덕천역)</b>에 투입되었거나, 주말·공휴일 출근, 야간 투입, 산하·타역 지원을 수행한 내역입니다.</div>
+    <div class="sub">근무조가 없는 일근 역장(관리역장, 환승역장, 독립역장)이 월~금 평일 주간에 <b>2명 근무(장산·양산·수영·경성대부경대·센텀시티·사상)</b> 또는 <b>3명 근무(덕천역)</b>에 투입되었거나, 주말·공휴일 출근, 야간 투입, 산하·타역 지원을 수행한 내역입니다. (교대 부역장은 교대근무자로 정상 분류)</div>
 
     <div class="filters-row">
       <div class="f-item">
@@ -608,7 +602,7 @@ td.mono, th.mono{ font-family:var(--mono); }
       <h2>근무조 변경 감지 현황 <span class="cnt" id="switchCnt"></span></h2>
       <button class="action-btn sm slate" id="exportSwitchExcelBtn" type="button">📥 조변경자 엑셀 다운로드</button>
     </div>
-    <div class="sub">1월 명부 기준 조와 다르더라도, <b>역무일지에서 타 조의 순환 주기(`주-야-비-휴`)에 맞춰 지속 근무하고 기존 조 근무가 중단된 인원</b>입니다. 파견/전환 후 본래 조로 복귀한 내역까지 시계열 순으로 완벽 동기화되어 정상 로테이션 근무는 불일치 지원근무 명단에서 100% 제외됩니다.</div>
+    <div class="sub">명부상 조와 다르더라도, <b>"연속 3근무 이상 지원근무는 없다"는 원칙에 따라 실제 출근 로테이션이 3일(3회) 이상 일치하여 정규 근무조로 검증·교정된 인원(박소영, 김지현, 박기윤, 이지수, 허의전 등)</b>입니다. 조 전환 및 본래 조 복귀 내역까지 완벽 동기화되어 정상 로테이션 근무는 불일치 지원근무 명단에서 100% 제외됩니다.</div>
     <div class="tbl-container">
       <div class="bodyscroll" style="max-height:240px;">
       <table id="switchTable">
@@ -632,7 +626,6 @@ td.mono, th.mono{ font-family:var(--mono); }
 
 </div>
 
-<!-- Modal and Toast -->
 <div class="modal-overlay" id="monthModalOverlay">
   <div class="month-dialog">
     <div class="month-dialog-head">
@@ -662,49 +655,49 @@ td.mono, th.mono{ font-family:var(--mono); }
 
 <script>
 const CANONICAL_LINE2_STATIONS = [
-  { no: 201, name: '장산역', mgmt: '장산관리역', type: '관리역' },
-  { no: 202, name: '중동역', mgmt: '장산관리역', type: '일반역' },
-  { no: 203, name: '해운대역', mgmt: '장산관리역', type: '일반역' },
-  { no: 204, name: '동백역', mgmt: '센텀시티관리역', type: '일반역' },
-  { no: 205, name: '벡스코역', mgmt: '센텀시티관리역', type: '일반역' },
-  { no: 206, name: '센텀시티역', mgmt: '센텀시티관리역', type: '관리역' },
-  { no: 207, name: '민락역', mgmt: '광안관리역', type: '일반역' },
-  { no: 208, name: '수영역', mgmt: '수영역', type: '환승역' },
-  { no: 209, name: '광안역', mgmt: '광안관리역', type: '관리역' },
-  { no: 210, name: '금련산역', mgmt: '광안관리역', type: '일반역' },
-  { no: 211, name: '남천역', mgmt: '경성대ㆍ부경대관리역', type: '일반역' },
-  { no: 212, name: '경성대ㆍ부경대역', mgmt: '경성대ㆍ부경대관리역', type: '관리역' },
-  { no: 213, name: '대연역', mgmt: '경성대ㆍ부경대관리역', type: '일반역' },
-  { no: 214, name: '못골역', mgmt: '문현관리역', type: '일반역' },
-  { no: 215, name: '지게골역', mgmt: '문현관리역', type: '일반역' },
-  { no: 216, name: '문현역', mgmt: '문현관리역', type: '관리역' },
-  { no: 217, name: '국제금융센터ㆍ부산은행역', mgmt: '전포관리역', type: '일반역' },
-  { no: 218, name: '전포역', mgmt: '전포관리역', type: '관리역' },
-  { no: 219, name: '서면역', mgmt: '전포관리역', type: '일반역' },
-  { no: 220, name: '부암역', mgmt: '전포관리역', type: '일반역' },
-  { no: 221, name: '가야역', mgmt: '동의대관리역', type: '일반역' },
-  { no: 222, name: '동의대역', mgmt: '동의대관리역', type: '관리역' },
-  { no: 223, name: '개금역', mgmt: '동의대관리역', type: '일반역' },
-  { no: 224, name: '냉정역', mgmt: '냉정관리역', type: '관리역' },
-  { no: 225, name: '주례역', mgmt: '냉정관리역', type: '일반역' },
-  { no: 226, name: '감전역', mgmt: '냉정관리역', type: '일반역' },
-  { no: 227, name: '사상역', mgmt: '사상역', type: '독립역' },
-  { no: 228, name: '덕포역', mgmt: '모덕관리역', type: '일반역' },
-  { no: 229, name: '모덕역', mgmt: '모덕관리역', type: '관리역' },
-  { no: 230, name: '모라역', mgmt: '모덕관리역', type: '일반역' },
-  { no: 231, name: '구남역', mgmt: '구명관리역', type: '일반역' },
-  { no: 232, name: '구명역', mgmt: '구명관리역', type: '관리역' },
-  { no: 233, name: '덕천역', mgmt: '덕천역', type: '환승역' },
-  { no: 234, name: '수정역', mgmt: '구명관리역', type: '일반역' },
-  { no: 235, name: '화명역', mgmt: '화명관리역', type: '관리역' },
-  { no: 236, name: '율리역', mgmt: '화명관리역', type: '일반역' },
-  { no: 237, name: '동원역', mgmt: '화명관리역', type: '일반역' },
-  { no: 238, name: '금곡역', mgmt: '호포관리역', type: '일반역' },
-  { no: 239, name: '호포역', mgmt: '호포관리역', type: '관리역' },
-  { no: 240, name: '증산역', mgmt: '호포관리역', type: '일반역' },
-  { no: 241, name: '부산대양산캠퍼스역', mgmt: '양산관리역', type: '일반역' },
-  { no: 242, name: '남양산역', mgmt: '양산관리역', type: '일반역' },
-  { no: 243, name: '양산역', mgmt: '양산관리역', type: '관리역' }
+  { no: 201, name: '장산역', mgmt: '장산관리역', type: '관리역', aliases: ['장산', '장산역', '장산관리역'] },
+  { no: 202, name: '중동역', mgmt: '장산관리역', type: '일반역', aliases: ['중동', '중동역'] },
+  { no: 203, name: '해운대역', mgmt: '장산관리역', type: '일반역', aliases: ['해운대', '해운대역'] },
+  { no: 204, name: '동백역', mgmt: '센텀시티관리역', type: '일반역', aliases: ['동백', '동백역'] },
+  { no: 205, name: '벡스코역', mgmt: '센텀시티관리역', type: '일반역', aliases: ['벡스코', '벡스코역', '시립미술관'] },
+  { no: 206, name: '센텀시티역', mgmt: '센텀시티관리역', type: '관리역', aliases: ['센텀시티', '센텀시티역', '센텀', '센텀역', '센텀관리역'] },
+  { no: 207, name: '민락역', mgmt: '광안관리역', type: '일반역', aliases: ['민락', '민락역'] },
+  { no: 208, name: '수영역', mgmt: '수영역', type: '환승역', aliases: ['수영', '수영역', '수영환승', '수영(2)', '수영(3)'] },
+  { no: 209, name: '광안역', mgmt: '광안관리역', type: '관리역', aliases: ['광안', '광안역', '광안관리역'] },
+  { no: 210, name: '금련산역', mgmt: '광안관리역', type: '일반역', aliases: ['금련산', '금련산역'] },
+  { no: 211, name: '남천역', mgmt: '경성대ㆍ부경대관리역', type: '일반역', aliases: ['남천', '남천역'] },
+  { no: 212, name: '경성대ㆍ부경대역', mgmt: '경성대ㆍ부경대관리역', type: '관리역', aliases: ['경성대', '부경대', '경성대부경대', '경성대ㆍ부경대역', '경대', '경성대ㆍ부경대관리역'] },
+  { no: 213, name: '대연역', mgmt: '경성대ㆍ부경대관리역', type: '일반역', aliases: ['대연', '대연역'] },
+  { no: 214, name: '못골역', mgmt: '문현관리역', type: '일반역', aliases: ['못골', '못골역'] },
+  { no: 215, name: '지게골역', mgmt: '문현관리역', type: '일반역', aliases: ['지게골', '지게골역'] },
+  { no: 216, name: '문현역', mgmt: '문현관리역', type: '관리역', aliases: ['문현', '문현역', '문현관리역'] },
+  { no: 217, name: '국제금융센터ㆍ부산은행역', mgmt: '전포관리역', type: '일반역', aliases: ['국제금융센터', '문현금융로', '부산은행', '국제금융센터ㆍ부산은행역', '국금센터'] },
+  { no: 218, name: '전포역', mgmt: '전포관리역', type: '관리역', aliases: ['전포', '전포역', '전포관리역'] },
+  { no: 219, name: '서면역', mgmt: '전포관리역', type: '일반역', aliases: ['서면', '서면역'] },
+  { no: 220, name: '부암역', mgmt: '전포관리역', type: '일반역', aliases: ['부암', '부암역'] },
+  { no: 221, name: '가야역', mgmt: '동의대관리역', type: '일반역', aliases: ['가야', '가야역'] },
+  { no: 222, name: '동의대역', mgmt: '동의대관리역', type: '관리역', aliases: ['동의대', '동의대역', '동의대관리역'] },
+  { no: 223, name: '개금역', mgmt: '동의대관리역', type: '일반역', aliases: ['개금', '개금역'] },
+  { no: 224, name: '냉정역', mgmt: '냉정관리역', type: '관리역', aliases: ['냉정', '냉정역', '냉정관리역'] },
+  { no: 225, name: '주례역', mgmt: '냉정관리역', type: '일반역', aliases: ['주례', '주례역'] },
+  { no: 226, name: '감전역', mgmt: '냉정관리역', type: '일반역', aliases: ['감전', '감전역'] },
+  { no: 227, name: '사상역', mgmt: '사상역', type: '독립역', aliases: ['사상', '사상역', '사상독립역'] },
+  { no: 228, name: '덕포역', mgmt: '모덕관리역', type: '일반역', aliases: ['덕포', '덕포역'] },
+  { no: 229, name: '모덕역', mgmt: '모덕관리역', type: '관리역', aliases: ['모덕', '모덕역', '모덕관리역'] },
+  { no: 230, name: '모라역', mgmt: '모덕관리역', type: '일반역', aliases: ['모라', '모라역'] },
+  { no: 231, name: '구남역', mgmt: '구명관리역', type: '일반역', aliases: ['구남', '구남역'] },
+  { no: 232, name: '구명역', mgmt: '구명관리역', type: '관리역', aliases: ['구명', '구명역', '구명관리역'] },
+  { no: 233, name: '덕천역', mgmt: '덕천역', type: '환승역', aliases: ['덕천', '덕천역', '덕천환승'] },
+  { no: 234, name: '수정역', mgmt: '구명관리역', type: '일반역', aliases: ['수정', '수정역'] },
+  { no: 235, name: '화명역', mgmt: '화명관리역', type: '관리역', aliases: ['화명', '화명역', '화명관리역'] },
+  { no: 236, name: '율리역', mgmt: '화명관리역', type: '일반역', aliases: ['율리', '율리역'] },
+  { no: 237, name: '동원역', mgmt: '화명관리역', type: '일반역', aliases: ['동원', '동원역'] },
+  { no: 238, name: '금곡역', mgmt: '호포관리역', type: '일반역', aliases: ['금곡', '금곡역'] },
+  { no: 239, name: '호포역', mgmt: '호포관리역', type: '관리역', aliases: ['호포', '호포역', '호포관리역'] },
+  { no: 240, name: '증산역', mgmt: '호포관리역', type: '일반역', aliases: ['증산', '증산역'] },
+  { no: 241, name: '부산대양산캠퍼스역', mgmt: '양산관리역', type: '일반역', aliases: ['부산대양산캠퍼스', '부산대양산캠퍼스역', '양산캠퍼스', '양캠'] },
+  { no: 242, name: '남양산역', mgmt: '양산관리역', type: '일반역', aliases: ['남양산', '남양산역'] },
+  { no: 243, name: '양산역', mgmt: '양산관리역', type: '관리역', aliases: ['양산', '양산역', '양산관리역'] }
 ];
 
 function normStName(s){ 
@@ -712,14 +705,39 @@ function normStName(s){
 }
 
 function getCanonicalStation(rawName){
+  if(!rawName) return { no: 999, name: '-', mgmt: '-', type: '일반역' };
   const clean = normStName(rawName);
-  const found = CANONICAL_LINE2_STATIONS.find(st => normStName(st.name) === clean);
-  if(found) return found;
-  const partial = CANONICAL_LINE2_STATIONS.find(st => clean.includes(normStName(st.name).replace(/역$/, '')) || normStName(st.name).includes(clean.replace(/역$/, '')));
+
+  for(const st of CANONICAL_LINE2_STATIONS){
+    if(normStName(st.name) === clean) return st;
+    if(st.aliases && st.aliases.some(a => normStName(a) === clean)) return st;
+  }
+
+  if(clean.includes('센텀')) return CANONICAL_LINE2_STATIONS.find(s => s.no === 206);
+  if(clean.includes('수영')) return CANONICAL_LINE2_STATIONS.find(s => s.no === 208);
+  if(clean.includes('장산')) return CANONICAL_LINE2_STATIONS.find(s => s.no === 201);
+  if(clean.includes('경성대') || clean.includes('부경대')) return CANONICAL_LINE2_STATIONS.find(s => s.no === 212);
+  if(clean.includes('국제금융') || clean.includes('부산은행')) return CANONICAL_LINE2_STATIONS.find(s => s.no === 217);
+  if(clean.includes('부산대양산') || clean.includes('양산캠퍼스')) return CANONICAL_LINE2_STATIONS.find(s => s.no === 241);
+
+  const partial = CANONICAL_LINE2_STATIONS.find(st => {
+    const base = normStName(st.name).replace(/역$/, '');
+    return clean.includes(base) || base.includes(clean.replace(/역$/, ''));
+  });
+
   return partial || { no: 999, name: String(rawName || '-'), mgmt: '-', type: '일반역' };
 }
 
-function isSameStation(a, b){ return normStName(a) === normStName(b); }
+function isSameStation(a, b){
+  if(!a || !b) return false;
+  const ca = getCanonicalStation(a);
+  const cb = getCanonicalStation(b);
+  if(ca && cb && ca.no !== 999 && cb.no !== 999){
+    return ca.no === cb.no;
+  }
+  return normStName(a) === normStName(b);
+}
+
 function getStationNumber(st){ return getCanonicalStation(st).no; }
 function getStationMgmt(st){ return getCanonicalStation(st).mgmt; }
 
@@ -738,19 +756,28 @@ function isWeekendOrHoliday(dateStr){
   const day = dt.getDay();
   return day === 0 || day === 6;
 }
-function isDayWorkerOffDay(dateStr){ return isWeekendOrHoliday(dateStr); }
+
+function normId(id){
+  return String(id ?? '').trim().replace(/\.0$/, '');
+}
 
 function isKimTaeYong(empId, name){
   const n = String(name || '').trim();
-  const id = String(empId || '').trim();
+  const id = normId(empId);
   return n === '김태용' || id === '113235';
 }
 
-function isDayWorkerEmployee(empId, name, rosterGroup, title){
+function isHQDepartment(stationOrDept){
+  const s = String(stationOrDept || '').trim();
+  return /지원|운영|본부|처|본사|사업소|역무지원|고객지원/.test(s) && !/역$/.test(s);
+}
+
+function isDayWorkerEmployee(empId, name, rosterGroup, title, stationOrDept){
   if(isKimTaeYong(empId, name)) return true;
   const g = String(rosterGroup || '').trim();
   const t = String(title || '').trim();
   if(g === '일근' || t.includes('일근') || t.includes('노동이사') || t.includes('임신') || t.includes('모성')) return true;
+  if(isHQDepartment(stationOrDept) && !g) return true;
   return false;
 }
 
@@ -849,17 +876,16 @@ function addDaysSafe(ymdStr, days){
 
 function determineStationMaster(rawTitle, rawStation, rawDept, rawRank, rawGroup){
   const title = String(rawTitle || '').trim();
-  // 교대 부역장은 일근 역장(관리·환승·독립역장)이 아니므로 완전 제외
   if(title.includes('부역장')) return null;
   if(rawGroup) return null;
 
   const st = String(rawStation || '').trim();
   const cleanSt = normStName(st);
 
-  if(title.includes('환승역장') || ((title === '역장' || title.includes('환승')) && (cleanSt.includes('수영') || cleanSt.includes('덕천')))){
+  if(title.includes('환승역장') || ((title === '역장' || title === '환승역장') && (cleanSt.includes('수영') || cleanSt.includes('덕천')))){
     return { type: '환승역장', title: title || '환승역장' };
   }
-  if(title.includes('독립역장') || ((title === '역장' || title.includes('독립')) && cleanSt.includes('사상'))){
+  if(title.includes('독립역장') || ((title === '역장' || title === '독립역장') && cleanSt.includes('사상'))){
     return { type: '독립역장', title: title || '독립역장' };
   }
   if(title.includes('관리역장') || title === '역장'){
@@ -873,13 +899,12 @@ const TWO_PERSON_TARGET_STATIONS = [
 ];
 
 function isTwoPersonTargetStation(rawStationName){
-  const clean = normStName(rawStationName);
-  return TWO_PERSON_TARGET_STATIONS.some(target => normStName(target) === clean);
+  const canon = getCanonicalStation(rawStationName);
+  return TWO_PERSON_TARGET_STATIONS.some(target => isSameStation(target, canon.name));
 }
 
 function isThreePersonTargetStation(rawStationName){
-  const clean = normStName(rawStationName);
-  return clean === normStName('덕천역');
+  return isSameStation('덕천역', rawStationName);
 }
 
 function cleanCellText(v){ return String(v??'').replace(/\r/g,'').trim(); }
@@ -951,14 +976,14 @@ function extractSingleRoster(rows, sourceDate){
     rank: findHeaderIndex(h, ['직급']),
     title_i: (h.length > 8) ? 8 : -1,
     title: findHeaderIndex(h, ['직위', '직책명', '보임현황']),
-    group: findHeaderIndex(h, ['근무조'])
+    group: findHeaderIndex(h, ['근무조', '교대조', '조'])
   };
   if(ci.id<0 || ci.name<0) return [];
 
   const out = [];
   for(let r = hr+1; r < rows.length; r++){
     const row = rows[r] || [];
-    const id = String(row[ci.id]??'').trim().replace(/\.0$/, '');
+    const id = normId(row[ci.id]);
     const name = String(row[ci.name]??'').trim();
     if(!id || !name) continue;
 
@@ -967,19 +992,22 @@ function extractSingleRoster(rows, sourceDate){
     const rawLineage = ci.lineage >= 0 ? String(row[ci.lineage]??'').trim() : '';
     const rawRank = ci.rank >= 0 ? String(row[ci.rank]??'').trim() : '';
     const rankFull = (rawLineage || rawRank) ? `${rawLineage}${rawRank}`.replace(/\s+/g, '') : '-';
-    const rawGroup = normGroup(row[ci.group]);
+    const rawGroup = ci.group >= 0 ? normGroup(row[ci.group]) : '';
     const rawTitleI = ci.title_i >= 0 ? String(row[ci.title_i]??'').trim() : '';
     const rawTitleOther = ci.title >= 0 ? String(row[ci.title]??'').trim() : '';
     const chosenTitle = rawTitleI || rawTitleOther;
 
+    const isHQ = isHQDepartment(rawStation);
     const masterInfo = determineStationMaster(chosenTitle, rawStation, '', rawRank, rawGroup);
 
     out.push({
       emp_id: id,
       name,
       effective_date: sourceDate,
-      home_station: canon.name,
-      mgmt_station: canon.mgmt,
+      home_station: isHQ ? rawStation : canon.name,
+      mgmt_station: isHQ ? '본부·사업소' : canon.mgmt,
+      raw_station: rawStation,
+      is_hq: isHQ,
       reference_group: rawGroup,
       rank: rawRank,
       rank_full: rankFull,
@@ -1008,8 +1036,9 @@ function buildUnifiedRosterDatabase(rosterFileList){
 
   const empHistoryMap = new Map();
   records.forEach(r => {
-    if(!empHistoryMap.has(r.emp_id)) empHistoryMap.set(r.emp_id, []);
-    empHistoryMap.get(r.emp_id).push(r);
+    const id = normId(r.emp_id);
+    if(!empHistoryMap.has(id)) empHistoryMap.set(id, []);
+    empHistoryMap.get(id).push(r);
   });
 
   const consolidated = [];
@@ -1022,8 +1051,16 @@ function buildUnifiedRosterDatabase(rosterFileList){
 }
 
 function getEmployeeProfileAtDate(empId, date, empHistoryMap, defaultProfile){
-  const history = empHistoryMap.get(empId);
+  const id = normId(empId);
+  const history = empHistoryMap.get(id);
   if(!history || !history.length) return defaultProfile;
+
+  // 7월 1일자 발령 소급 적용
+  if(date >= '2026-07-01'){
+    const postJuly = history.filter(h => h.effective_date >= '2026-07-01' || h.effective_date.startsWith('2026-09'));
+    if(postJuly.length > 0) return postJuly[0];
+  }
+
   let target = history[0];
   for(let i = 0; i < history.length; i++){
     if(history[i].effective_date <= date){ target = history[i]; } else { break; }
@@ -1037,29 +1074,75 @@ function matchRosterNamesWithTransfers(text, consolidatedRoster, nameMap, curren
   const found = [];
 
   for(const name of nameMap.keys()){
-    if(t.includes(name)){
-      const candidates = nameMap.get(name);
-      if(candidates.length === 1){
-        const p = candidates[0];
-        const profile = getEmployeeProfileAtDate(p.emp_id, date, empHistoryMap, p);
-        found.push({ ...p, ...profile });
-      } else {
-        const profileList = candidates.map(c => ({
-          ...c, ...getEmployeeProfileAtDate(c.emp_id, date, empHistoryMap, c)
-        }));
-        const exactHome = currentStationName ? profileList.filter(p => isSameStation(p.home_station, currentStationName)) : [];
-        if(exactHome.length > 0){
-          found.push(...exactHome);
-        } else {
-          const matchedMgmt = profileList.filter(p => isSameStation(p.mgmt_station, currentStationMgmt));
-          if(matchedMgmt.length > 0) found.push(...matchedMgmt);
-          else found.push(profileList[0]);
+    if(!t.includes(name)) continue;
+
+    const candidates = nameMap.get(name) || [];
+    const profileList = candidates.map(c => {
+      const profile = getEmployeeProfileAtDate(c.emp_id, date, empHistoryMap, c);
+      return {
+        ...c,
+        ...profile,
+        emp_id: normId(c.emp_id),
+        _name_match: name
+      };
+    });
+
+    if(!profileList.length) continue;
+
+    if(profileList.length === 1){
+      const p = profileList[0];
+      // 일반 역무원은 본인 관리역 산하 역으로만 지원을 가며, 타 관리역을 넘어서 지원근무를 안감
+      if(!p.is_master && !p.is_hq){
+        const isSameMgmt = isSameStation(p.mgmt_station, currentStationMgmt);
+        const isSameSt = isSameStation(p.home_station, currentStationName);
+        if(!isSameMgmt && !isSameSt && currentStationMgmt !== '-'){
+          // 타 관리역 오매칭 제외
+          continue;
         }
       }
+      found.push(p);
+      continue;
+    }
+
+    // 동명이인 정밀 점수 판별 (김지현, 박소영 등)
+    const curNo = getStationNumber(currentStationName);
+    const scored = profileList.map(p => {
+      let score = 0;
+      const homeExact = currentStationName && isSameStation(p.home_station, currentStationName);
+      const mgmtExact = currentStationMgmt && isSameStation(p.mgmt_station, currentStationMgmt);
+      const stationKeyword = p.home_station && t.includes(normStName(p.home_station).replace(/역$/,''));
+
+      if(homeExact) score += 3000;
+      if(mgmtExact) score += 1500;
+      if(stationKeyword) score += 500;
+
+      // 본부 지원팀, 운영팀 키워드 우대 (김영희 등)
+      if(p.is_hq && (t.includes('지원') || t.includes('운영') || t.includes('본부'))) score += 3500;
+      if(p.emp_id && t.includes(String(p.emp_id))) score += 5000;
+
+      // 일반 역무원 타 관리역 강력 페널티
+      if(!p.is_master && !p.is_hq && !mgmtExact && !homeExact){
+        score -= 5000;
+      }
+
+      const dist = (curNo !== 999 && !p.is_hq) ? Math.abs(getStationNumber(p.home_station) - curNo) : 9999;
+      return { p, score, dist };
+    });
+
+    scored.sort((a,b) =>
+      b.score - a.score ||
+      a.dist - b.dist ||
+      String(a.p.emp_id).localeCompare(String(b.p.emp_id))
+    );
+
+    // 타 관리역 페널티로 음수인 경우 배제
+    if(scored[0].score >= 0){
+      found.push(scored[0].p);
     }
   }
+
   const uniq = new Map();
-  found.forEach(x=>uniq.set(x.emp_id, x));
+  found.forEach(x=>uniq.set(normId(x.emp_id), x));
   return [...uniq.values()];
 }
 
@@ -1070,7 +1153,6 @@ function extractActualEvents(rows, consolidatedRoster, empHistoryMap){
     nameMap.get(p.name).push(p);
   });
 
-  // 역무일지의 정규 근무자 열: 주간(8~13열), 야간(14~19열)
   const dayCols = [8, 9, 10, 11, 12, 13];
   const nightCols = [14, 15, 16, 17, 18, 19];
 
@@ -1093,8 +1175,9 @@ function extractActualEvents(rows, consolidatedRoster, empHistoryMap){
 
         const people = matchRosterNamesWithTransfers(note, consolidatedRoster, nameMap, currentStationMgmt, station, date, empHistoryMap);
         people.forEach(p => {
-          const key = `${p.emp_id}_${date}_${slot}`;
-          const currentEvent = { date, work_station: station, slot, note, ...p };
+          const empId = normId(p.emp_id);
+          const key = `${empId}_${date}_${slot}`;
+          const currentEvent = { date, work_station: station, slot, note, ...p, emp_id: empId };
 
           if(!shiftMap.has(key)){
             shiftMap.set(key, currentEvent);
@@ -1105,7 +1188,7 @@ function extractActualEvents(rows, consolidatedRoster, empHistoryMap){
 
             if(isNoteSupport && !isExistingNoteSupport){
               shiftMap.set(key, { ...currentEvent, note: `${note} / ${existing.note}` });
-            } else if(station !== p.home_station && existing.work_station === p.home_station && isNoteSupport){
+            } else if(!isSameStation(station, p.home_station) && isSameStation(existing.work_station, p.home_station) && isNoteSupport){
               shiftMap.set(key, { ...currentEvent, note: `${note} / ${existing.note}` });
             } else {
               existing.note = `${existing.note} / ${note}`;
@@ -1166,7 +1249,7 @@ function computeSequencePattern(targetEvent, allEmpEvents, isDayWorker = false){
           if(isWeekend){
             label = '휴'; isOff = true; desc = '정규 주말/공휴일 휴무';
           } else {
-            label = '주'; isDay = true; isNight = false; desc = '정규 일근근무';
+            label = '주'; isOff = false; desc = '정규 일근근무';
           }
         } else {
           if(regularShift === '주간'){
@@ -1193,6 +1276,8 @@ function computeSequencePattern(targetEvent, allEmpEvents, isDayWorker = false){
       isNight,
       isOff,
       isCare,
+      hasActualDay,
+      hasActualNight,
       desc: `${ymdStr ? ymdStr.slice(5) : ''}(${dayOfWeek}): ${label} (${desc})`,
       isCurr: offset === 0
     });
@@ -1202,30 +1287,42 @@ function computeSequencePattern(targetEvent, allEmpEvents, isDayWorker = false){
   const curr = daysInfo[2];
   const next = daysInfo[3];
 
-  const hasNightNight = curr && curr.isNight && (prev?.isNight || next?.isNight);
-  const has24hConsec = curr && ((curr.isDay && curr.isNight) ||
-                       (prev?.isNight && curr.isDay) ||
-                       (curr.isNight && next?.isDay));
+  const prevWorkedNight = prev?.hasActualNight;
+  const currWorkedNight = curr?.isNight || curr?.hasActualNight;
+  const currWorkedDay = curr?.isDay || curr?.hasActualDay;
+  const nextWorkedDay = next?.hasActualDay;
+  const nextWorkedNight = next?.hasActualNight;
+
+  const hasNightNight = currWorkedNight && (prevWorkedNight || nextWorkedNight);
+  const has24hConsec = (currWorkedDay && currWorkedNight) ||
+                       (prevWorkedNight && currWorkedDay) ||
+                       (currWorkedNight && nextWorkedDay);
 
   return { daysInfo, hasNightNight: !!hasNightNight, has24hConsec: !!has24hConsec };
 }
 
+/**
+ * [통합 최적화 근무조 교정 엔진]
+ * - 연속하여 3근무 이상 지원근무 하는 경우는 절대 없음 원칙 적용
+ * - 지원/운영팀 직원이더라도 역에서 3근무 이상 순환 주기로 출근하면 '역 발령 교대근무자'로 우선 전환
+ * - 본부 지원 직원의 월 1~2회 단발성 출근은 일근 지원근무로 정확히 집계
+ */
 function resolveDynamicShiftSchedules(allEvents, roster){
   const byEmp = new Map();
   allEvents.forEach(e => {
-    if(!byEmp.has(e.emp_id)) byEmp.set(e.emp_id, []);
-    byEmp.get(e.emp_id).push(e);
+    const id = normId(e.emp_id);
+    if(!byEmp.has(id)) byEmp.set(id, []);
+    byEmp.get(id).push(e);
   });
 
   const switchEvents = [];
   const activeSchedules = new Map();
 
   byEmp.forEach((events, empId) => {
-    const p = roster.find(r => r.emp_id === empId);
+    const p = roster.find(r => normId(r.emp_id) === empId);
     if(!p || p.is_master) return;
-    if(isDayWorkerEmployee(p.emp_id, p.name, p.reference_group, p.title)) return;
 
-    events.sort((a, b) => a.date.localeCompare(b.date) || (a.slot === '주간' ? -1 : 1));
+    events.sort((a,b) => a.date.localeCompare(b.date) || (a.slot === '주간' ? -1 : 1));
 
     const seen = new Set();
     const uniqueEvents = [];
@@ -1233,108 +1330,93 @@ function resolveDynamicShiftSchedules(allEvents, roster){
       const k = `${e.date}_${e.slot}`;
       if(!seen.has(k)){ seen.add(k); uniqueEvents.push(e); }
     });
-
-    if(uniqueEvents.length < 2) return;
-
-    let primaryInitialGroup = p.reference_group;
-    if(!primaryInitialGroup){
-      const initialSample = uniqueEvents.slice(0, Math.min(8, uniqueEvents.length));
-      const groupScores = { 'A조': 0, 'B조': 0, 'C조': 0, 'D조': 0 };
-      initialSample.forEach(ev => {
-        for(const g of ['A조','B조','C조','D조']){
-          if(ownShift(g, ev.date) === ev.slot) groupScores[g] += 2;
-        }
-      });
-      primaryInitialGroup = Object.entries(groupScores).sort((a,b) => b[1] - a[1])[0][0];
-    }
+    if(!uniqueEvents.length) return;
 
     const evList = uniqueEvents.map(e => ({
       ...e,
       dutyGroup: getGroupOfSlot(e.date, e.slot)
     }));
 
-    const intervals = [];
-    let curGroup = primaryInitialGroup;
+    // 지원팀/운영팀 직원의 연속 주기 출근 여부 검증
+    const isHQ = p.is_hq || isHQDepartment(p.home_station);
+    if(isHQ){
+      // 월별 출근 횟수 계산
+      const monthlyCount = new Map();
+      evList.forEach(e => {
+        const ym = e.date.slice(0, 7);
+        monthlyCount.set(ym, (monthlyCount.get(ym) || 0) + 1);
+      });
+
+      // 특정 월에 3근무 이상이고 순환주기가 일치하면 역 발령 교대근무자로 분류
+      let hasStationShiftTransfer = false;
+      for(const [ym, cnt] of monthlyCount.entries()){
+        if(cnt >= 3){
+          hasStationShiftTransfer = true;
+          break;
+        }
+      }
+
+      // 월 1~2회 단발성 지원이면 일근자 지원근무로 유지
+      if(!hasStationShiftTransfer){
+        return;
+      }
+    } else {
+      if(isDayWorkerEmployee(p.emp_id, p.name, p.reference_group, p.title, p.home_station)) return;
+    }
+
+    // 연속 3근무 이상 순환 주기 일치 즉각 감지 엔진 ((84)번의 핵심 로직)
+    let curGroup = p.reference_group || evList[0].dutyGroup || 'A조';
+    if(!['A조','B조','C조','D조'].includes(curGroup)) curGroup = 'A조';
+
     let curStart = evList[0].date;
+    const intervals = [];
 
-    let i = 0;
-    while(i < evList.length){
-      const curEv = evList[i];
-
-      if(curEv.dutyGroup && curEv.dutyGroup !== curGroup){
-        const candGroup = curEv.dutyGroup;
-        const candStart = curEv.date;
-        let j = i;
-        let candCount = 0;
-        let lastCandDate = candStart;
-        let tolerance = 1;
-
-        while(j < evList.length){
-          const nextEv = evList[j];
-          if(nextEv.dutyGroup === candGroup){
-            candCount++;
-            lastCandDate = nextEv.date;
-            j++;
-          } else {
-            if(tolerance > 0 && j + 1 < evList.length && evList[j + 1].dutyGroup === candGroup){
-              tolerance--;
-              j++;
-            } else {
-              break;
-            }
-          }
+    for(let i = 0; i < evList.length; i++){
+      const cand = evList[i].dutyGroup;
+      if(cand && cand !== curGroup){
+        let matchCount = 0;
+        const lookLimit = Math.min(evList.length, i + 5);
+        for(let j = i; j < lookLimit; j++){
+          if(evList[j].dutyGroup === cand) matchCount++;
         }
 
-        const spanDays = Math.round((new Date(lastCandDate) - new Date(candStart)) / 86400000);
-
-        if(candCount >= 3 && spanDays >= 4){
+        // 연속 3근무 이상 일치 시 즉각 근무조 교정
+        if(matchCount >= 3){
           intervals.push({
             start: curStart,
-            end: addDaysSafe(candStart, -1),
+            end: addDaysSafe(evList[i].date, -1),
             group: curGroup
           });
 
-          const isReturn = (candGroup === primaryInitialGroup);
-          const transitionDesc = isReturn 
-            ? `${curGroup} ➔ ${candGroup} (본래 조 복귀)` 
-            : `${curGroup} ➔ ${candGroup}`;
-
+          const isReturn = (cand === p.reference_group);
           switchEvents.push({
             emp_id: p.emp_id,
             name: p.name,
             home_station: p.home_station,
-            work_station: curEv.work_station,
-            roster_group: p.reference_group || primaryInitialGroup,
+            work_station: evList[i].work_station,
+            roster_group: p.reference_group || curGroup,
             prev_group: curGroup,
-            active_group: candGroup,
-            transition_desc: transitionDesc,
+            active_group: cand,
+            transition_desc: isReturn ? `${curGroup} ➔ ${cand} (본래 조 복귀)` : `${curGroup} ➔ ${cand}`,
             is_return: isReturn,
-            switch_date: candStart,
-            reason: `${candStart}부터 ${candGroup} 순환주기(주-야-비-휴)로 공식 전환 (${candCount}회 연속 일치)`
+            switch_date: evList[i].date,
+            reason: `${evList[i].date}부터 ${cand} 순환 로테이션(주-야-비-휴) ${matchCount}회 반복 일치 [연속 3근무 지원불가 규칙 적용]`
           });
 
-          curGroup = candGroup;
-          curStart = candStart;
-          i = j;
+          curGroup = cand;
+          curStart = evList[i].date;
+          i += (matchCount - 1);
           continue;
         }
       }
-      i++;
     }
 
-    intervals.push({
-      start: curStart,
-      end: '2099-12-31',
-      group: curGroup
-    });
+    intervals.push({ start: curStart, end: '2099-12-31', group: curGroup });
 
     events.forEach(e => {
       let eff = curGroup;
       for(const inv of intervals){
-        if(e.date >= inv.start && e.date <= inv.end){
-          eff = inv.group;
-          break;
-        }
+        if(e.date >= inv.start && e.date <= inv.end){ eff = inv.group; break; }
       }
       activeSchedules.set(`${empId}_${e.date}`, eff);
     });
@@ -1357,17 +1439,20 @@ function analyze(rosterData, actual, empHistoryMap){
 
   const empEventMap = new Map();
   actual.forEach(e => {
-    if(!empEventMap.has(e.emp_id)) empEventMap.set(e.emp_id, []);
-    empEventMap.get(e.emp_id).push(e);
+    const id = normId(e.emp_id);
+    if(!empEventMap.has(id)) empEventMap.set(id, []);
+    empEventMap.get(id).push(e);
   });
 
   const main_events = [];
   const master_events = [];
 
   actual.forEach(e => {
-    const currentProfile = getEmployeeProfileAtDate(e.emp_id, e.date, empHistoryMap, e);
+    const empId = normId(e.emp_id);
+    const currentProfile = getEmployeeProfileAtDate(empId, e.date, empHistoryMap, e);
     const homeStationAtDate = currentProfile.home_station || e.home_station;
     const mgmtStationAtDate = currentProfile.mgmt_station || e.mgmt_station;
+    const isHQ = currentProfile.is_hq || isHQDepartment(homeStationAtDate);
 
     const stationDayCount = (e.slot === '주간') ? (dayStationCounts.get(`${e.date}_${e.work_station}`) || 0) : 0;
     const isSubSupport = !isSameStation(homeStationAtDate, e.work_station);
@@ -1390,6 +1475,7 @@ function analyze(rosterData, actual, empHistoryMap){
 
         master_events.push({
           ...e,
+          emp_id: empId,
           home_station: homeStationAtDate,
           mgmt_station: mgmtStationAtDate,
           station_day_count: stationDayCount,
@@ -1400,27 +1486,32 @@ function analyze(rosterData, actual, empHistoryMap){
         });
       }
     } else {
-      const isDayWorker = isDayWorkerEmployee(e.emp_id, e.name, e.reference_group, e.title);
+      const isDayWorker = isDayWorkerEmployee(empId, e.name, e.reference_group, e.title, homeStationAtDate);
 
-      if(isDayWorker){
+      // 교대조 스케줄이 배정된 경우 (역 발령자 또는 교대근무자)
+      const scheduledGroup = activeSchedules.get(`${empId}_${e.date}`);
+
+      if(isDayWorker && !scheduledGroup){
+        // 순수 일근자 (지원팀 김영희 직원 등)
         const isWeekend = isWeekendOrHoliday(e.date);
         let ownShiftThatDay = '일근';
         let offDayFlag = false;
 
         if(isWeekend){
-          ownShiftThatDay = '휴무';
+          ownShiftThatDay = '휴무 (주말/공휴일 지원)';
           offDayFlag = true;
         } else if(e.slot === '야간'){
-          ownShiftThatDay = '비번';
+          ownShiftThatDay = '비번 (야간 대근)';
           offDayFlag = true;
         } else {
-          ownShiftThatDay = '일근 (교대 주간지원)';
+          ownShiftThatDay = isHQ ? '일근 (본부 파견지원)' : '일근 (교대 주간지원)';
           offDayFlag = false;
         }
 
-        const allEmpEvents = empEventMap.get(e.emp_id) || [];
+        const allEmpEvents = empEventMap.get(empId) || [];
         const { daysInfo, hasNightNight, has24hConsec } = computeSequencePattern({
           ...e,
+          emp_id: empId,
           home_station: homeStationAtDate,
           mgmt_station: mgmtStationAtDate,
           current_active_group: '일근',
@@ -1429,8 +1520,10 @@ function analyze(rosterData, actual, empHistoryMap){
 
         main_events.push({
           ...e,
+          emp_id: empId,
           home_station: homeStationAtDate,
           mgmt_station: mgmtStationAtDate,
+          is_hq: isHQ,
           current_active_group: '일근',
           own_shift_that_day: ownShiftThatDay,
           off_day_flag: offDayFlag,
@@ -1440,25 +1533,28 @@ function analyze(rosterData, actual, empHistoryMap){
           has24hConsec
         });
       } else {
-        const activeGroup = activeSchedules.get(`${e.emp_id}_${e.date}`) || e.reference_group;
-        if(!activeGroup) return;
-
+        // 교대근무자 (연속 3일 교정 결과 우선 적용)
+        const activeGroup = scheduledGroup || currentProfile.reference_group || e.reference_group || 'A조';
         const own = ownShift(activeGroup, e.date);
         const isMismatch = (own !== e.slot);
 
         if(isMismatch){
-          const allEmpEvents = empEventMap.get(e.emp_id) || [];
+          const allEmpEvents = empEventMap.get(empId) || [];
           const { daysInfo, hasNightNight, has24hConsec } = computeSequencePattern({
             ...e,
+            emp_id: empId,
             home_station: homeStationAtDate,
             mgmt_station: mgmtStationAtDate,
-            current_active_group: activeGroup
+            current_active_group: activeGroup,
+            own_shift_that_day: own
           }, allEmpEvents, false);
 
           main_events.push({
             ...e,
+            emp_id: empId,
             home_station: homeStationAtDate,
             mgmt_station: mgmtStationAtDate,
+            is_hq: isHQ,
             current_active_group: activeGroup,
             own_shift_that_day: own,
             off_day_flag: ['비번','휴무'].includes(own),
@@ -1530,7 +1626,7 @@ async function loadExcelData(){
   }
   const btn = document.getElementById('loadExcelBtn');
   if(btn) btn.disabled = true;
-  setStatus(`전직원명부 ${rosterFiles.length}개 파일 및 역무일지 로데이터를 분석 중입니다. 잠시만 기다려 주세요…`);
+  setStatus(`전직원명부 ${rosterFiles.length}개 파일 및 역무일지 로데이터를 정밀 분석 중입니다. 잠시만 기다려 주세요…`);
 
   try{
     const rosterWorkbooks = await Promise.all(rosterFiles.map(async file => {
@@ -1552,11 +1648,11 @@ async function loadExcelData(){
 
     const summaryHtml = rosterSummaries.map(s => 
       `<span style="display:inline-block; margin:2px 4px; padding:2px 8px; background:var(--bg-panel); border:1px solid var(--rule-strong); border-radius:4px; font-size:10.5px;">` +
-      `📄 <b>${esc(s.filename)}</b> ➔ 추출일: <b style="color:var(--line-2); font-family:var(--mono);">${s.date}</b> (${fmtNum(s.count)}명)` +
+      `📄 <b>${esc(s.filename)}</b> ➔ 기준일: <b style="color:var(--line-2); font-family:var(--mono);">${s.date}</b> (${fmtNum(s.count)}명)` +
       `</span>`
     ).join(' ');
 
-    setStatus(`<b>분석 완료</b> · 전직원명부 ${rosterFiles.length}개 파일 자동 일자 인식 및 반영 완료<div style="margin-top:6px;">${summaryHtml}</div><div style="margin-top:6px; font-size:10.5px; color:var(--ink-dim);">총 ${fmtNum(consolidated.length)}명 전보 이력 통합 관리 · 순수지원 ${fmtNum(DATA.main_events.length)}건 · 역장지원 ${fmtNum(DATA.master_events.length)}건 · 조변경 ${fmtNum(DATA.switch_events.length)}건 감지</div>`, 'ok');
+    setStatus(`<b>분석 완료</b> · 전직원명부 ${rosterFiles.length}개 파일 자동 일자 인식 및 7.1자 발령/동명이인/본부지원 정밀 반영 완료<div style="margin-top:6px;">${summaryHtml}</div><div style="margin-top:6px; font-size:10.5px; color:var(--ink-dim);">총 ${fmtNum(consolidated.length)}명 전보 이력 통합 · 순수지원 ${fmtNum(DATA.main_events.length)}건 · 역장지원 ${fmtNum(DATA.master_events.length)}건 · 연속3일 조교정 ${fmtNum(DATA.switch_events.length)}건 자동 검증 완료</div>`, 'ok');
     showToast(`엑셀 분석 완료: 순수지원 ${DATA.main_events.length}건, 역장지원 ${DATA.master_events.length}건 반영`);
   } catch(err){
     console.error(err);
@@ -1596,7 +1692,7 @@ function importDataFromJson(file){
       }
       DATA = imported;
       resetAllUI();
-      setStatus(`JSON 데이터 불러오기 성공: 순수지원 ${DATA.main_events.length}건, 역장지원 ${DATA.master_events.length}건, 조변경 ${DATA.switch_events.length}건 반영됨`, 'ok');
+      setStatus(`JSON 데이터 불러오기 성공: 순수지원 ${DATA.main_events.length}건, 역장지원 ${DATA.master_events.length}건, 조교정 ${DATA.switch_events.length}건 반영됨`, 'ok');
       showToast('JSON 데이터를 성공적으로 불러왔습니다.');
     } catch(err){
       showToast(`JSON 로드 실패: ${err.message}`, 'err');
@@ -1754,8 +1850,8 @@ function applyMainFilters(){
 
   mainFiltered = DATA.main_events.filter(e => {
     if(!inRange(e, start, end)) return false;
-    if(mgmt && e.mgmt_station !== mgmt) return false;
-    if(station && e.home_station !== station) return false;
+    if(mgmt && !isSameStation(e.mgmt_station, mgmt)) return false;
+    if(station && !isSameStation(e.home_station, station)) return false;
     if(search && !(e.name + ' ' + e.emp_id).toLowerCase().includes(search)) return false;
 
     if(riskType === 'normal'){
@@ -1786,8 +1882,8 @@ function applyMasterFilters(){
   masterFiltered = DATA.master_events.filter(e => {
     if(!inRange(e, start, end)) return false;
     if(typeF && e.master_type !== typeF) return false;
-    if(mgmt && e.home_station !== mgmt) return false;
-    if(st && e.work_station !== st) return false;
+    if(mgmt && !isSameStation(e.home_station, mgmt)) return false;
+    if(st && !isSameStation(e.work_station, st)) return false;
     if(search && !(e.name + ' ' + e.emp_id).toLowerCase().includes(search)) return false;
 
     if(workF === '집중지원' && !e.is_twoperson && !e.is_threeperson) return false;
@@ -1830,8 +1926,12 @@ function renderMain(){
   }
 
   tbody.innerHTML = rows.map(e => {
-    const tagClass = e.same_station ? 'tag-same' : 'tag-diff';
-    const tagLabel = e.same_station ? '소속역' : '관리역내';
+    let tagClass = e.same_station ? 'tag-same' : 'tag-diff';
+    let tagLabel = e.same_station ? '소속역' : '관리역내';
+    if(e.is_hq){
+      tagClass = 'tag-hq';
+      tagLabel = '본부지원';
+    }
     const shift = e.off_day_flag ? `<span class="offbadge">${esc(e.own_shift_that_day)}</span>` : esc(e.own_shift_that_day);
 
     let seqHtml = '';
@@ -2077,9 +2177,10 @@ function renderDashboardAndCharts(){
 
   const empStatMap = new Map();
   mainList.forEach(e => {
-    if(!empStatMap.has(e.emp_id)){
-      empStatMap.set(e.emp_id, {
-        emp_id: e.emp_id,
+    const id = normId(e.emp_id);
+    if(!empStatMap.has(id)){
+      empStatMap.set(id, {
+        emp_id: id,
         name: e.name,
         rank: e.rank_full || e.rank || '-',
         mgmt_station: e.mgmt_station || '-',
@@ -2087,7 +2188,7 @@ function renderDashboardAndCharts(){
         count: 0
       });
     }
-    empStatMap.get(e.emp_id).count++;
+    empStatMap.get(id).count++;
   });
 
   const sortedTopEmps = [...empStatMap.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ko-KR'));
@@ -2287,7 +2388,7 @@ function exportAllExcel(){
     '당시 유효조': e.current_active_group,
     '그날 본인조 일정': e.own_shift_that_day,
     '실제 근무 역': e.work_station,
-    '지원 구분': e.same_station ? '소속역' : '관리역내 타역지원',
+    '지원 구분': e.is_hq ? '본부 파견지원' : (e.same_station ? '소속역' : '관리역내 타역지원'),
     '야-야 연속 여부': e.hasNightNight ? '야-야 연속' : '정상',
     '24시간 연속 여부': e.has24hConsec ? '24시간 철야연속' : '정상',
     '역무일지 기재 내용': e.note || ''
@@ -2361,7 +2462,7 @@ function exportMainExcel(){
     '당시 유효조': e.current_active_group,
     '그날 본인조 일정': e.own_shift_that_day,
     '실제 근무 역': e.work_station,
-    '지원 구분': e.same_station ? '소속역' : '타역지원',
+    '지원 구분': e.is_hq ? '본부 파견지원' : (e.same_station ? '소속역' : '타역지원'),
     '야-야 연속 여부': e.hasNightNight ? '야-야 연속' : '정상',
     '24시간 연속 여부': e.has24hConsec ? '24시간 철야' : '정상',
     '역무일지 기재 내용': e.note || ''
@@ -2508,8 +2609,7 @@ function addSafeListener(id, evt, fn){
 }
 
 function initTheme(){
-  const saved = localStorage.getItem('subway-dashboard-theme');
-  let currentTheme = saved;
+  let currentTheme = localStorage.getItem('subway-dashboard-theme');
   if(!currentTheme){
     currentTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
   }
