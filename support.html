@@ -848,18 +848,21 @@ function addDaysSafe(ymdStr, days){
 }
 
 function determineStationMaster(rawTitle, rawStation, rawDept, rawRank, rawGroup){
-  if(rawGroup) return null;
   const title = String(rawTitle || '').trim();
+  // 교대 부역장은 일근 역장(관리·환승·독립역장)이 아니므로 완전 제외
+  if(title.includes('부역장')) return null;
+  if(rawGroup) return null;
+
   const st = String(rawStation || '').trim();
   const cleanSt = normStName(st);
 
-  if(title.includes('환승역장') || (title.includes('역장') && (cleanSt.includes('수영') || cleanSt.includes('덕천')))){
+  if(title.includes('환승역장') || ((title === '역장' || title.includes('환승')) && (cleanSt.includes('수영') || cleanSt.includes('덕천')))){
     return { type: '환승역장', title: title || '환승역장' };
   }
-  if(title.includes('독립역장') || (title.includes('역장') && cleanSt.includes('사상'))){
+  if(title.includes('독립역장') || ((title === '역장' || title.includes('독립')) && cleanSt.includes('사상'))){
     return { type: '독립역장', title: title || '독립역장' };
   }
-  if(title.includes('관리역장') || title.includes('역장')){
+  if(title.includes('관리역장') || title === '역장'){
     return { type: '관리역장', title: title || '관리역장' };
   }
   return null;
