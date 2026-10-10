@@ -668,7 +668,7 @@ tbody tr.tr-conflict td .td-name {
       <button class="btn btn-sm btn-navy" onclick="goBackFromScoresDetail()" style="margin:0; padding:4px 8px; font-size:11px;"><i class="ti ti-arrow-back-up"></i> 이전 평정 화면으로 돌아가기</button>
       <span style="font-size:11px; color:var(--blue-mid); font-weight:700;" id="scores-back-bar-desc"></span>
     </div>
-    <button class="btn btn-sm ml-auto" onclick="printScoreTable()"><i class="ti ti-printer"></i> 인쇄·PDF</button>
+    <button class="btn btn-sm ml-auto" onclick="printCurrentVisibleTable('score-tbl', '평정 참고자료')"><i class="ti ti-printer"></i> 인쇄·PDF</button>
     <button class="btn btn-sm" onclick="dlScoreExcel()"><i class="ti ti-download"></i> 엑셀 다운로드</button>
     <button class="btn btn-navy btn-sm" onclick="recalcAllScores()"><i class="ti ti-calculator"></i> 전체 점수 재산출</button>
   </div>
@@ -690,7 +690,7 @@ tbody tr.tr-conflict td .td-name {
     </select>
     <select id="f1-grade-f" onchange="renderFirst()"><option value="">전체 직급</option></select>
     <button class="btn btn-sm ml-auto" onclick="autoFirstRank()"><i class="ti ti-wand"></i> 자동 순위·등급 배분</button>
-    <button class="btn btn-sm" onclick="printFirst()"><i class="ti ti-printer"></i> 인쇄 (A3 가로)</button>
+    <button class="btn btn-sm" onclick="printCurrentVisibleTable('first-tbl', '1차 평정 대상')"><i class="ti ti-printer"></i> 인쇄 (A3 가로)</button>
     <button class="btn btn-primary btn-sm" onclick="saveFirst()"><i class="ti ti-device-floppy"></i> 1차 저장</button>
   </div>
   <div id="first-tbl"><div style="padding:3rem;text-align:center;color:var(--text3)">직원 명부를 먼저 등록하세요</div></div>
@@ -718,7 +718,7 @@ tbody tr.tr-conflict td .td-name {
       <input type="file" id="firstRankFile" accept=".xlsx,.xls,.csv" onchange="handleFirstRankUpload(event)" multiple style="display:none">
     </label>
 
-    <button class="btn btn-sm" onclick="printSecondWithReference()"><i class="ti ti-printer"></i> 인쇄·PDF</button>
+    <button class="btn btn-sm" onclick="printCurrentVisibleTable('second-tbl', '2차 평정 대상')"><i class="ti ti-printer"></i> 인쇄·PDF</button>
     <button class="btn btn-sm btn-navy" onclick="dlSecondExcel()"><i class="ti ti-download"></i> 엑셀 다운로드</button>
 
     <button class="btn btn-gold btn-sm ml-auto" onclick="saveSecond()"><i class="ti ti-circle-check"></i> 2차 확정</button>
@@ -733,7 +733,7 @@ tbody tr.tr-conflict td .td-name {
     <select id="r-grade-f" onchange="renderResult()"><option value="">전체 직급</option></select>
     <select id="r-unit-f" onchange="renderResult()"><option value="">전체 단위</option></select>
     <div class="ml-auto flex">
-      <button class="btn btn-sm" onclick="printResult()"><i class="ti ti-printer"></i> 인쇄·PDF</button>
+      <button class="btn btn-sm" onclick="printCurrentVisibleTable('result-tbl', '평정 결과')"><i class="ti ti-printer"></i> 인쇄·PDF</button>
       <button class="btn btn-primary btn-sm" onclick="dlExcel('grade')"><i class="ti ti-download"></i> 직급별 평정표</button>
       <button class="btn btn-sm" onclick="dlExcel('basis')"><i class="ti ti-download"></i> 평정근거</button>
       <button class="btn btn-navy btn-sm" onclick="dlExcel('all')"><i class="ti ti-download"></i> 전체 다운로드</button>
@@ -1117,3 +1117,44 @@ table thead th .custom-two-line { display:inline-block !important; line-height:1
 
 
 
+
+
+<script id="print-current-visible-order-fix">
+/* 현재 화면의 필터·정렬·드래그 순서를 유지하고 새 탭 없이 현재 창에서 인쇄 */
+function printCurrentVisibleTable(containerId, titleText) {
+  const source = document.getElementById(containerId);
+  if (!source) { alert('인쇄할 표를 찾을 수 없습니다.'); return; }
+  const table = source.matches('table') ? source : source.querySelector('table');
+  if (!table) { alert('현재 화면에 인쇄할 표가 없습니다.'); return; }
+  const clone = table.cloneNode(true);
+  clone.querySelectorAll('tr').forEach(row => {
+    if (row.closest('thead')) return;
+    const originalRows = Array.from(table.querySelectorAll('tr'));
+    const idx = Array.from(clone.querySelectorAll('tr')).indexOf(row);
+    const original = originalRows[idx];
+    if (original) {
+      const style = window.getComputedStyle(original);
+      if (style.display === 'none' || style.visibility === 'hidden') row.remove();
+    }
+  });
+  const originals = table.querySelectorAll('input,select,textarea');
+  const copies = clone.querySelectorAll('input,select,textarea');
+  originals.forEach((el, i) => {
+    const cp = copies[i]; if (!cp) return;
+    const value = el.tagName === 'SELECT' ? el.options[el.selectedIndex]?.text : (el.type === 'checkbox' ? (el.checked ? '✓' : '') : el.value);
+    const span = document.createElement('span'); span.textContent = value == null ? '' : value;
+    cp.replaceWith(span);
+  });
+  const style = document.createElement('style');
+  style.id = 'temporary-current-table-print-style';
+  style.textContent = '@page{size:A3 landscape;margin:8mm} @media print{html,body{height:auto!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important} body{display:block!important} body>*{display:none!important} #current-table-print-area{display:block!important;position:static!important;float:none!important;clear:both!important;width:100%!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;break-before:auto!important;break-after:auto!important;background:#fff!important;color:#111!important} #current-table-print-area h2{text-align:center;font-size:16px;margin:0 0 10px;break-after:avoid-page} #current-table-print-area table{display:table!important;border-collapse:collapse;width:100%;table-layout:auto;font-size:9px;margin:0;break-before:auto;break-after:auto} #current-table-print-area tr{break-inside:avoid;page-break-inside:avoid} #current-table-print-area th,#current-table-print-area td{border:1px solid #999;padding:4px 5px;text-align:center;vertical-align:middle;overflow-wrap:anywhere} #current-table-print-area thead{display:table-header-group} #current-table-print-area thead th{background:#0D2B55!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact} #current-table-print-area tbody tr:nth-child(even){background:#eef4fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}} @media screen{#current-table-print-area{display:none}}';
+  const area = document.createElement('div'); area.id = 'current-table-print-area';
+  const h2 = document.createElement('h2'); h2.textContent = titleText;
+  area.appendChild(h2); area.appendChild(clone);
+  document.head.appendChild(style); document.body.appendChild(area);
+  const cleanup = () => { area.remove(); style.remove(); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+  setTimeout(cleanup, 1500);
+}
+</script>
