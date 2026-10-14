@@ -1,0 +1,1291 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>법인카드 청구내역 정리</title>
+<script>
+try {
+  const savedTheme = localStorage.getItem('cardDashboardTheme');
+  if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.dataset.theme = savedTheme;
+} catch (_) {}
+</script>
+<style>
+:root{
+  --bg:#f3f6f9;--panel:#ffffff;--line:#d9e2ec;--ink:#182230;--muted:#637083;
+  --primary:#1f5f8b;--primary-2:#184a6c;--soft:#eaf3f8;--good:#177245;--good-bg:#eaf7f0;
+  --warn:#a05a00;--warn-bg:#fff4dd;--bad:#b42318;--bad-bg:#fff0ef;--purple:#6941c6;--shadow:0 8px 24px rgba(24,34,48,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,"Noto Sans KR","Malgun Gothic",Arial,sans-serif;font-size:14px}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:1500px;margin:0 auto;padding:24px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.brand h1{font-size:27px;margin:0 0 5px;letter-spacing:-.6px}.brand p{margin:0;color:var(--muted)}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 13px;border-radius:10px;font-weight:700;transition:.15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(24,34,48,.08)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}.btn.primary:hover{background:var(--primary-2)}
+.btn.danger{color:var(--bad)}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.upload-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.dropzone{position:relative;min-height:132px;padding:18px;border:1.5px dashed #aac2d4;border-radius:14px;background:#fbfdff;display:flex;align-items:center;gap:16px;transition:.15s}
+.dropzone.drag{border-color:var(--primary);background:var(--soft)}
+.drop-icon{width:46px;height:46px;border-radius:14px;background:var(--soft);display:grid;place-items:center;font-size:24px;flex:0 0 auto}
+.dropzone h3{margin:0 0 6px;font-size:16px}.dropzone p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-state{margin-top:8px;font-size:12px;font-weight:700}.file-state.good{color:var(--good)}.file-state.warn{color:var(--warn)}.file-state.bad{color:var(--bad)}
+.kpis{display:grid;grid-template-columns:repeat(7,minmax(125px,1fr));gap:10px;margin:14px 0}
+.kpi{padding:15px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;min-height:91px}.kpi .label{color:var(--muted);font-size:12px;margin-bottom:8px}.kpi .value{font-size:20px;font-weight:800;letter-spacing:-.3px}.kpi .sub{font-size:11px;color:var(--muted);margin-top:4px}
+.status-good{color:var(--good)}.status-warn{color:var(--warn)}.status-bad{color:var(--bad)}
+.notice{display:none;padding:11px 14px;border-radius:11px;margin:10px 0;font-weight:700}.notice.show{display:block}.notice.info{background:var(--soft);color:var(--primary-2)}.notice.warn{background:var(--warn-bg);color:var(--warn)}.notice.bad{background:var(--bad-bg);color:var(--bad)}.notice.good{background:var(--good-bg);color:var(--good)}
+.tabs{display:flex;gap:6px;margin:12px 0 0;padding:0 6px}.tab{border:0;background:transparent;color:var(--muted);font-weight:800;padding:11px 14px;border-bottom:3px solid transparent}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.content{padding:16px}.view{display:none}.view.active{display:block}
+.filters{display:grid;grid-template-columns:2fr repeat(4,1fr) 1.2fr;gap:8px;margin-bottom:10px}.filters .wide{grid-column:auto}.control{width:100%;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 10px;color:var(--ink)}
+.toggles{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.checkchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:7px 10px;background:#fff;color:var(--muted);font-weight:700}.checkchip input{accent-color:var(--primary)}
+.table-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:610px;background:#fff}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1320px}th,td{padding:8px 9px;border-bottom:1px solid #e7edf2;border-right:1px solid #edf1f4;vertical-align:middle;white-space:nowrap}th{position:sticky;top:0;z-index:3;background:#edf4f8;color:#324456;font-size:12px;text-align:left}th:last-child,td:last-child{border-right:0}tr:last-child td{border-bottom:0}tbody tr:hover{background:#fbfdff}tbody tr.unmapped{background:#fffaf0}tbody tr.duplicate{background:#fff3f2}tbody tr.negative td.amount{color:var(--bad);font-weight:800}td.amount{text-align:right;font-variant-numeric:tabular-nums}td.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}
+.cell-input{border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 6px;width:100%;min-width:110px}.cell-input:hover,.cell-input:focus{border-color:#b8ccda;background:#fff;outline:0}.cell-input.money{text-align:right;min-width:90px}.cell-input.merchant{min-width:230px}.cell-input.dept{min-width:145px}.cell-input.budget{min-width:150px}
+.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}.badge.good{background:var(--good-bg);color:var(--good)}.badge.warn{background:var(--warn-bg);color:var(--warn)}.badge.bad{background:var(--bad-bg);color:var(--bad)}.badge.gray{background:#eef2f6;color:#5d6b7a}.badge.purple{background:#f1edff;color:var(--purple)}
+.pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:11px;color:var(--muted)}.page-buttons{display:flex;align-items:center;gap:6px}.page-info{font-size:12px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.summary-card{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#fff}.summary-card h3{margin:0;padding:13px 14px;border-bottom:1px solid var(--line);font-size:15px}.summary-card h3.summary-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.summary-title-meta{font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}.summary-card .inner{overflow:auto;max-height:390px}.summary-card table{min-width:100%}.summary-card th{position:sticky;top:0}.summary-card td,.summary-card th{padding:8px 10px}
+.validation{display:grid;grid-template-columns:1fr 1fr;gap:12px}.check-card{border:1px solid var(--line);border-radius:13px;padding:14px}.check-card h3{margin:0 0 10px;font-size:15px}.check-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #edf1f4}.check-row:first-of-type{border-top:0}.check-row span:last-child{font-weight:800;text-align:right}
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}.empty .icon{font-size:36px;margin-bottom:8px}
+.meta-strip{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.meta-chip{background:#f6f8fa;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:#526170}
+.modal{position:fixed;inset:0;background:rgba(16,24,40,.46);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.modal.open{display:flex}.modal-card{width:min(720px,96vw);max-height:86vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.22);padding:22px}.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.modal-head h2{margin:0;font-size:20px}.modal pre{background:#0f1720;color:#e9f2f8;border-radius:12px;padding:14px;overflow:auto;line-height:1.55}.close{border:0;background:#eef2f6;width:34px;height:34px;border-radius:50%;font-size:18px}
+.small{font-size:12px;color:var(--muted)}.mini-btn{border:1px solid #c9d7e2;background:#fff;color:var(--primary);border-radius:7px;padding:4px 7px;font-size:11px;font-weight:800;margin-left:5px;white-space:nowrap}.mini-btn:hover{background:var(--soft)}
+.progress{height:5px;background:#e8eef3;border-radius:999px;overflow:hidden;margin-top:8px;display:none}.progress.show{display:block}.progress > div{height:100%;width:0;background:var(--primary);transition:width .18s}
+
+/* ── Light / Dark theme ───────────────────────────── */
+html{color-scheme:light}
+html[data-theme="dark"]{color-scheme:dark}
+.theme-btn{min-width:112px;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.theme-btn .theme-icon{font-size:15px;line-height:1}
+
+html[data-theme="dark"]{
+  --bg:#0f141a;
+  --panel:#161d25;
+  --line:#2d3946;
+  --ink:#edf3f8;
+  --muted:#9ba9b8;
+  --primary:#4fa3d1;
+  --primary-2:#78b9dc;
+  --soft:#182c39;
+  --good:#65c995;
+  --good-bg:#173427;
+  --warn:#f0b35a;
+  --warn-bg:#3b2c16;
+  --bad:#ff837b;
+  --bad-bg:#3a201f;
+  --purple:#b69af5;
+  --shadow:0 8px 24px rgba(0,0,0,.24);
+}
+html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="dark"] .btn{background:#1b2530;color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] .btn:hover{box-shadow:0 4px 14px rgba(0,0,0,.28)}
+html[data-theme="dark"] .btn.primary{background:#2d7da8;border-color:#2d7da8;color:#fff}
+html[data-theme="dark"] .btn.primary:hover{background:#368bb7}
+html[data-theme="dark"] .btn.danger{color:var(--bad)}
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .kpi,
+html[data-theme="dark"] .summary-card,
+html[data-theme="dark"] .table-wrap{background:var(--panel)}
+html[data-theme="dark"] .dropzone{background:#131b23;border-color:#415265}
+html[data-theme="dark"] .dropzone.drag{background:var(--soft);border-color:var(--primary)}
+html[data-theme="dark"] .control,
+html[data-theme="dark"] .checkchip{background:#141c24;color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] .cell-input{color:var(--ink)}
+html[data-theme="dark"] .cell-input:hover,
+html[data-theme="dark"] .cell-input:focus{background:#111820;border-color:#526779}
+html[data-theme="dark"] th{background:#202b36;color:#d5e0e9}
+html[data-theme="dark"] th,
+html[data-theme="dark"] td{border-bottom-color:#283540;border-right-color:#25313c}
+html[data-theme="dark"] tbody tr:hover{background:#19232c}
+html[data-theme="dark"] tbody tr.unmapped{background:var(--panel)}
+html[data-theme="dark"] tbody tr.unmapped:hover{background:#19232c}
+html[data-theme="dark"] tbody tr.duplicate{background:#34201f}
+html[data-theme="dark"] .badge.gray{background:#27323d;color:#c0ccd6}
+html[data-theme="dark"] .badge.purple{background:#2e2546;color:#c8b5ff}
+html[data-theme="dark"] .meta-chip{background:#1b2530;color:#b5c2ce;border-color:var(--line)}
+html[data-theme="dark"] .check-row{border-top-color:#2a3742}
+html[data-theme="dark"] .modal-card{background:#172029;color:var(--ink)}
+html[data-theme="dark"] .close{background:#26323d;color:var(--ink)}
+html[data-theme="dark"] .mini-btn{background:#17212a;color:#7ec0e3;border-color:#3a4b5b}
+html[data-theme="dark"] .mini-btn:hover{background:var(--soft)}
+html[data-theme="dark"] .progress{background:#27333e}
+html[data-theme="dark"] input[type="date"]{color-scheme:dark}
+
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(4,1fr)}.filters{grid-template-columns:repeat(3,1fr)}.summary-grid,.validation{grid-template-columns:1fr}}
+@media(max-width:1050px){.upload-grid{grid-template-columns:1fr}}@media(max-width:720px){.app{padding:12px}.header{align-items:flex-start;flex-direction:column}.upload-grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.brand h1{font-size:23px}}
+
+
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <h1>법인카드 청구내역 정리</h1>
+      <p>OCR PDF + 카드정보 CSV + 클린회계 XLSX → 3자 비교 → Excel 다운로드</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn theme-btn" id="themeBtn" type="button" aria-pressed="false" title="다크모드/라이트모드 전환"><span class="theme-icon" aria-hidden="true">🌙</span><span id="themeLabel">다크모드</span></button>
+      <button class="btn" id="helpBtn">샘플 형식 안내</button>
+      <button class="btn danger" id="resetBtn">초기화</button>
+      <button class="btn primary" id="exportBtn" disabled>Excel 다운로드</button>
+    </div>
+  </header>
+
+  <section class="upload-grid">
+    <label class="dropzone" id="pdfDrop">
+      <div class="drop-icon">📄</div>
+      <div>
+        <h3>① 카드명세서 PDF</h3>
+        <p>텍스트 레이어가 포함된 PDF를 선택하세요.<br>현재 버전은 제공된 BC카드 명세서 형식에 최적화되어 있습니다.</p>
+        <div class="file-state" id="pdfState">파일을 선택해 주세요.</div>
+        <div class="progress" id="pdfProgress"><div></div></div>
+      </div>
+      <input id="pdfInput" type="file" accept="application/pdf,.pdf" />
+    </label>
+    <label class="dropzone" id="csvDrop">
+      <div class="drop-icon">🗂️</div>
+      <div>
+        <h3>② 부서 카드정보 CSV</h3>
+        <p>필수: 카드번호 끝4자리 + 부서명.<br>UTF-8 / CP949(EUC-KR) CSV를 모두 인식합니다.</p>
+        <div class="file-state" id="csvState">파일을 선택해 주세요.</div>
+      </div>
+      <input id="csvInput" type="file" accept="text/csv,.csv" />
+    </label>
+    <label class="dropzone" id="cleanDrop">
+      <div class="drop-icon">📗</div>
+      <div>
+        <h3>③ 클린회계자료 XLSX</h3>
+        <p>필수: 사용부서·카드번호·사용일자·사용처·사용금액.<br>PDF 거래와 CSV 매핑 결과를 자동 대조합니다.</p>
+        <div class="file-state" id="cleanState">파일을 선택해 주세요.</div>
+      </div>
+      <input id="cleanInput" type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx" />
+    </label>
+  </section>
+
+  <div id="globalNotice" class="notice info"></div>
+
+  <section class="kpis">
+    <div class="kpi"><div class="label">청구월</div><div class="value" id="kpiMonth">-</div><div class="sub">명세서 기준</div></div>
+    <div class="kpi"><div class="label">결제일</div><div class="value" id="kpiDate">-</div><div class="sub">결제 예정일</div></div>
+    <div class="kpi"><div class="label">청구 총액</div><div class="value" id="kpiTotal">-</div><div class="sub">결제하실 총 금액</div></div>
+    <div class="kpi"><div class="label">거래 건수</div><div class="value" id="kpiCount">0건</div><div class="sub" id="kpiCountSub">PDF 미업로드</div></div>
+    <div class="kpi"><div class="label">취소 / 환불</div><div class="value" id="kpiNegative">0건</div><div class="sub" id="kpiNegativeSub">0원</div></div>
+    <div class="kpi"><div class="label">미매핑 카드</div><div class="value" id="kpiUnmapped">0건</div><div class="sub">거래 기준</div></div>
+    <div class="kpi"><div class="label">검증 상태</div><div class="value" id="kpiValidation">대기</div><div class="sub" id="kpiValidationSub">파일을 업로드하세요</div></div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs">
+      <button class="tab active" data-tab="transactions">거래내역</button>
+      <button class="tab" data-tab="summary">요약</button>
+      <button class="tab" data-tab="validation">검증</button>
+    </div>
+    <div class="content">
+      <div id="transactionsView" class="view active">
+        <div class="meta-strip" id="metaStrip"></div>
+        <div class="filters">
+          <input class="control wide" id="searchInput" placeholder="가맹점 · 부서 · 카드 · 예산과목 검색" />
+          <select class="control" id="deptFilter"><option value="">전체 부서</option></select>
+          <select class="control" id="cardFilter"><option value="">전체 카드</option></select>
+          <input class="control" id="dateFrom" type="date" title="시작일" />
+          <input class="control" id="dateTo" type="date" title="종료일" />
+          <select class="control" id="sortSelect">
+            <option value="date-desc">일자 최신순</option><option value="date-asc">일자 오래된순</option>
+            <option value="amount-desc">금액 큰순</option><option value="amount-asc">금액 작은순</option>
+          </select>
+        </div>
+        <div class="toggles">
+          <label class="checkchip"><input type="checkbox" id="negativeOnly"> 음수 거래만</label>
+          <label class="checkchip"><input type="checkbox" id="unmappedOnly"> 미매핑·중복만</label>
+          <span class="small" id="filterCount">0건 표시</span>
+        </div>
+        <div id="tableArea"></div>
+      </div>
+
+      <div id="summaryView" class="view">
+        <div id="summaryArea" class="empty"><div class="icon">📊</div>PDF를 업로드하면 요약이 표시됩니다.</div>
+      </div>
+
+      <div id="validationView" class="view">
+        <div id="validationArea" class="empty"><div class="icon">✅</div>PDF를 업로드하면 자동 검증 결과가 표시됩니다.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="helpModal" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head"><h2>입력 파일 형식</h2><button class="close" id="closeHelp">×</button></div>
+    <p><b>PDF</b>는 OCR/텍스트 레이어가 있어야 합니다. 이미지 스캔만 있는 PDF는 이 버전에서 새 OCR을 수행하지 않습니다.</p>
+    <p><b>CSV 최소 형식</b></p>
+    <pre>카드끝4자리,부서명
+1590,제2여객사업소
+3150,사상역
+0037,장산관리역</pre>
+    <p><b>권장 확장 형식</b></p>
+    <pre>부서번호,부서명,카드끝4자리,카드명,부서비포함여부
+200,제2여객사업소,1590,공용카드,Y
+227,사상역,3150,역무카드,Y</pre>
+    <p class="small">카드 끝 4자리는 문자열로 처리하므로 <b>0037</b>의 앞자리 0이 유지됩니다. 같은 끝 4자리가 서로 다른 부서에 등록되면 자동 확정하지 않고 중복매핑으로 표시합니다.</p>
+    <p><b>클린회계자료 XLSX 필수 헤더</b></p>
+    <pre>사용부서 | 카드번호 | 사용일자 | 사용처 | 사용금액</pre>
+    <p class="small">클린회계자료는 카드끝4자리 + 사용일자 + 사용금액으로 거래 후보를 찾고, 사용처와 CSV 부서까지 대조합니다. 세 자료가 모두 일치하면 Excel의 <b>3자일치</b> 열에 TRUE가 표시됩니다.</p>
+    <button class="btn" id="templateBtn">CSV 템플릿 다운로드</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const state = {
+  statement: null,
+  transactions: [],
+  cardRows: [],
+  cardMap: new Map(),
+  csvErrors: [],
+  cleanRows: [],
+  cleanErrors: [],
+  cleanName: '',
+  cleanSheetName: '',
+  pdfName: '', csvName: '', pdfPages: 0,
+  page: 1, pageSize: 25
+};
+
+const $ = id => document.getElementById(id);
+const fmtMoney = n => Number.isFinite(+n) ? new Intl.NumberFormat('ko-KR').format(+n) + '원' : '-';
+const fmtNum = n => Number.isFinite(+n) ? new Intl.NumberFormat('ko-KR').format(+n) : '-';
+const norm = s => String(s ?? '').trim();
+const htmlEsc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
+
+function applyTheme(theme, persist=true){
+  const next = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  const btn = $('themeBtn');
+  const label = $('themeLabel');
+  const icon = btn?.querySelector('.theme-icon');
+  if(btn){
+    const dark = next === 'dark';
+    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    btn.title = dark ? '라이트모드로 전환' : '다크모드로 전환';
+    if(label) label.textContent = dark ? '라이트모드' : '다크모드';
+    if(icon) icon.textContent = dark ? '☀️' : '🌙';
+  }
+  if(persist){
+    try{ localStorage.setItem('cardDashboardTheme', next); }catch(_){ }
+  }
+}
+function toggleTheme(){
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+}
+
+function setNotice(msg, kind='info') {
+  const el = $('globalNotice');
+  el.className = 'notice show ' + kind;
+  el.textContent = msg;
+}
+function clearNotice(){ $('globalNotice').className='notice info'; $('globalNotice').textContent=''; }
+function setProgress(pct){ const p=$('pdfProgress'); p.classList.toggle('show', pct < 100 && pct > 0); p.firstElementChild.style.width=Math.max(0,Math.min(100,pct))+'%'; }
+
+function bytesToBinaryString(bytes){
+  let out='', chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk) out += String.fromCharCode(...bytes.subarray(i, i+chunk));
+  return out;
+}
+function binaryStringToBytes(s){
+  const out=new Uint8Array(s.length);
+  for(let i=0;i<s.length;i++) out[i]=s.charCodeAt(i)&255;
+  return out;
+}
+async function inflateBytes(bytes){
+  if(!('DecompressionStream' in window)) throw new Error('이 브라우저는 PDF 압축 해제를 지원하지 않습니다. 최신 Chrome 또는 Edge를 사용해 주세요.');
+  const ds=new DecompressionStream('deflate');
+  const stream=new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function extractPdfObjects(bytes){
+  const bin=bytesToBinaryString(bytes);
+  const re=/(?:^|[\r\n])(\d+)\s+(\d+)\s+obj\b/g;
+  const hits=[]; let m;
+  while((m=re.exec(bin))) hits.push({num:+m[1], gen:+m[2], idx:m.index + (m[0].startsWith('\r')||m[0].startsWith('\n')?1:0), bodyStart:re.lastIndex});
+  const map=new Map();
+  for(let i=0;i<hits.length;i++){
+    const h=hits[i], end=i+1<hits.length?hits[i+1].idx:bin.length;
+    const body=bin.slice(h.bodyStart,end);
+    map.set(h.num,{num:h.num,body});
+  }
+  return {bin,map};
+}
+
+function streamBytesFromObject(obj){
+  const body=obj.body;
+  const sm=body.indexOf('stream');
+  if(sm<0) return null;
+  let start=sm+6;
+  if(body.slice(start,start+2)==='\r\n') start+=2; else if(body[start]==='\r'||body[start]==='\n') start+=1;
+  const head=body.slice(0,sm);
+  const lm=head.match(/\/Length\s+(\d+)(?!\s+\d+\s+R)/);
+  let raw;
+  if(lm){ raw=body.slice(start,start+(+lm[1])); }
+  else { const e=body.indexOf('endstream',start); raw=body.slice(start,e<0?body.length:e).replace(/[\r\n]+$/,''); }
+  return {head, bytes:binaryStringToBytes(raw)};
+}
+
+async function decodedStream(obj){
+  const s=streamBytesFromObject(obj); if(!s) return null;
+  if(/\/Filter\s*\/FlateDecode|\/Filter\s*\[\s*\/FlateDecode/.test(s.head)) return await inflateBytes(s.bytes);
+  if(/\/Filter\s*\//.test(s.head)) throw new Error('현재 지원하지 않는 PDF 압축/필터 형식입니다.');
+  return s.bytes;
+}
+
+function parseToUnicodeMap(cmapText){
+  const map=new Map();
+  const hexToUnicode = h => {
+    const clean=h.replace(/\s/g,''); const b=new Uint8Array(clean.length/2);
+    for(let i=0;i<b.length;i++) b[i]=parseInt(clean.slice(i*2,i*2+2),16);
+    try{return new TextDecoder('utf-16be').decode(b)}catch{return ''}
+  };
+  const blocks=[...cmapText.matchAll(/beginbfchar([\s\S]*?)endbfchar/g)];
+  for(const b of blocks){
+    for(const m of b[1].matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)) map.set(m[1].toUpperCase(),hexToUnicode(m[2]));
+  }
+  for(const b of cmapText.matchAll(/beginbfrange([\s\S]*?)endbfrange/g)){
+    const text=b[1];
+    for(const m of text.matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g)){
+      const a=parseInt(m[1],16), z=parseInt(m[2],16), d=parseInt(m[3],16), width=m[1].length;
+      if(z-a>2048) continue;
+      for(let i=0;i<=z-a;i++) map.set((a+i).toString(16).toUpperCase().padStart(width,'0'), String.fromCodePoint(d+i));
+    }
+    for(const m of text.matchAll(/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*\[([^\]]+)\]/g)){
+      const a=parseInt(m[1],16), z=parseInt(m[2],16), width=m[1].length;
+      const vals=[...m[3].matchAll(/<([0-9A-Fa-f]+)>/g)].map(x=>x[1]);
+      for(let i=0;i<=z-a && i<vals.length;i++) map.set((a+i).toString(16).toUpperCase().padStart(width,'0'),hexToUnicode(vals[i]));
+    }
+  }
+  return map;
+}
+
+async function buildFontMap(pageBody,objMap){
+  const out=new Map();
+  const fm=pageBody.match(/\/Font\s*<<([\s\S]*?)>>/);
+  if(!fm) return out;
+  for(const m of fm[1].matchAll(/\/([A-Za-z0-9_.-]+)\s+(\d+)\s+\d+\s+R/g)){
+    const name=m[1], ref=+m[2], fobj=objMap.get(ref);
+    if(!fobj) continue;
+    const enc=(fobj.body.match(/\/Encoding\s*\/([^\s/>]+)/)||[])[1] || '';
+    const tu=(fobj.body.match(/\/ToUnicode\s+(\d+)\s+\d+\s+R/)||[])[1];
+    let toUnicode=null;
+    if(tu && objMap.get(+tu)){
+      try{ const b=await decodedStream(objMap.get(+tu)); toUnicode=parseToUnicodeMap(new TextDecoder('latin1').decode(b)); }catch{}
+    }
+    out.set(name,{encoding:enc,toUnicode});
+  }
+  return out;
+}
+
+function parseLiteralString(s, start){
+  const out=[]; let i=start+1, depth=1;
+  while(i<s.length && depth>0){
+    let c=s.charCodeAt(i)&255;
+    if(c===92){
+      i++; if(i>=s.length) break; c=s.charCodeAt(i)&255;
+      const map={110:10,114:13,116:9,98:8,102:12};
+      if(map[c]!=null){out.push(map[c]);i++;continue}
+      if(c===40||c===41||c===92){out.push(c);i++;continue}
+      if(c>=48&&c<=55){let oct=String.fromCharCode(c);i++;for(let k=0;k<2&&i<s.length;k++){let d=s.charCodeAt(i)&255;if(d>=48&&d<=55){oct+=String.fromCharCode(d);i++}else break}out.push(parseInt(oct,8)&255);continue}
+      if(c===10){i++;continue} if(c===13){i++;if((s.charCodeAt(i)&255)===10)i++;continue}
+      out.push(c);i++;continue;
+    }
+    if(c===40){depth++;out.push(c);i++;continue}
+    if(c===41){depth--;if(depth===0){i++;break}out.push(c);i++;continue}
+    out.push(c);i++;
+  }
+  return {token:{kind:'string',value:new Uint8Array(out)},next:i};
+}
+function parseHexString(s,start){
+  const end=s.indexOf('>',start+1); if(end<0) return {token:{kind:'string',value:new Uint8Array()},next:s.length};
+  let h=s.slice(start+1,end).replace(/\s/g,''); if(h.length%2)h+='0'; const b=new Uint8Array(h.length/2);
+  for(let i=0;i<b.length;i++) b[i]=parseInt(h.slice(i*2,i*2+2),16)||0;
+  return {token:{kind:'string',value:b},next:end+1};
+}
+function tokenizePdfContent(s){
+  const out=[]; let i=0;
+  const isWS=c=>c===0||c===9||c===10||c===12||c===13||c===32;
+  const isDelim=c=>isWS(c)||'()<>[]{}/%'.includes(String.fromCharCode(c));
+  while(i<s.length){
+    let c=s.charCodeAt(i)&255;
+    if(isWS(c)){i++;continue}
+    if(c===37){while(i<s.length && ![10,13].includes(s.charCodeAt(i)&255))i++;continue}
+    if(c===40){const r=parseLiteralString(s,i);out.push(r.token);i=r.next;continue}
+    if(c===60 && s[i+1]!=='<'){const r=parseHexString(s,i);out.push(r.token);i=r.next;continue}
+    if(c===91){
+      let depth=1,j=i+1; const arr=[];
+      while(j<s.length && depth){
+        let cc=s.charCodeAt(j)&255;
+        if(isWS(cc)){j++;continue}
+        if(cc===40){const r=parseLiteralString(s,j);arr.push(r.token);j=r.next;continue}
+        if(cc===60 && s[j+1]!=='<'){const r=parseHexString(s,j);arr.push(r.token);j=r.next;continue}
+        if(cc===91){depth++;j++;continue} if(cc===93){depth--;j++;continue}
+        let k=j;while(k<s.length && !isDelim(s.charCodeAt(k)&255) && s[k]!==']')k++;
+        const w=s.slice(j,k); if(w) arr.push(/^[+\-]?(?:\d+\.?\d*|\.\d+)$/.test(w)?+w:{kind:'word',value:w}); j=k||j+1;
+      }
+      out.push({kind:'array',value:arr});i=j;continue;
+    }
+    if(c===47){let j=i+1;while(j<s.length&&!isDelim(s.charCodeAt(j)&255))j++;out.push({kind:'name',value:s.slice(i+1,j)});i=j;continue}
+    if(c===60 && s[i+1]==='<'){out.push({kind:'word',value:'<<'});i+=2;continue}
+    if(c===62 && s[i+1]==='>'){out.push({kind:'word',value:'>>'});i+=2;continue}
+    let j=i;while(j<s.length&&!isDelim(s.charCodeAt(j)&255))j++;
+    if(j===i){i++;continue}
+    const w=s.slice(i,j);
+    out.push(/^[+\-]?(?:\d+\.?\d*|\.\d+)$/.test(w)?+w:{kind:'word',value:w});i=j;
+  }
+  return out;
+}
+
+function decodeTextBytes(bytes,font){
+  if(font?.toUnicode?.size){
+    const keys=[...font.toUnicode.keys()]; const lens=[...new Set(keys.map(k=>k.length/2))].sort((a,b)=>b-a);
+    let out='',i=0;
+    while(i<bytes.length){let found=false;for(const len of lens){if(i+len>bytes.length)continue;let h='';for(let k=0;k<len;k++)h+=bytes[i+k].toString(16).toUpperCase().padStart(2,'0');if(font.toUnicode.has(h)){out+=font.toUnicode.get(h);i+=len;found=true;break}}if(!found){out+='�';i++}}
+    return out;
+  }
+  const enc=font?.encoding||'';
+  if(/UCS2|Identity-H|Identity-V/i.test(enc) || (bytes.length%2===0 && bytes.some((v,i)=>i%2===0 && v===0))){
+    try{return new TextDecoder('utf-16be').decode(bytes)}catch{}
+  }
+  if(bytes.length%2===0){
+    try{
+      const s=new TextDecoder('utf-16be').decode(bytes); const bad=(s.match(/�/g)||[]).length; const ctrl=[...s].filter(ch=>ch.charCodeAt(0)<32&&!/\s/.test(ch)).length;
+      if(bad===0&&ctrl===0&&s.trim()) return s;
+    }catch{}
+  }
+  try{return new TextDecoder('windows-1252').decode(bytes)}catch{return String.fromCharCode(...bytes)}
+}
+
+function contentToItems(contentBytes,fontMap,pageNo){
+  const s=bytesToBinaryString(contentBytes), tokens=tokenizePdfContent(s);
+  let stack=[],x=0,y=0,fontName=''; const items=[];
+  const textFrom = tok => tok?.kind==='string' ? decodeTextBytes(tok.value,fontMap.get(fontName)) : '';
+  const show = tok => { const text=textFrom(tok); if(text && text.trim()!=='') items.push({x,y,text,page:pageNo,font:fontName}); };
+  for(const tok of tokens){
+    if(tok && tok.kind==='word'){
+      const op=tok.value;
+      if(op==='BT'){x=0;y=0;stack=[];continue}
+      if(op==='Tm'){const a=stack.slice(-6); if(a.length===6){x=+a[4]||0;y=+a[5]||0} stack=[];continue}
+      if(op==='Td'||op==='TD'){const a=stack.slice(-2);if(a.length===2){x+=+a[0]||0;y+=+a[1]||0}stack=[];continue}
+      if(op==='Tf'){const a=stack.slice(-2);if(a[0]?.kind==='name')fontName=a[0].value;stack=[];continue}
+      if(op==='Tj'){show(stack.at(-1));stack=[];continue}
+      if(op==='TJ'){
+        const arr=stack.at(-1); if(arr?.kind==='array'){
+          let text=''; for(const v of arr.value) if(v?.kind==='string') text+=decodeTextBytes(v.value,fontMap.get(fontName));
+          if(text.trim()) items.push({x,y,text,page:pageNo,font:fontName});
+        } stack=[];continue;
+      }
+      if(op==="'"){show(stack.at(-1));stack=[];continue}
+      if(op==='"'){show(stack.at(-1));stack=[];continue}
+      stack=[];
+    } else stack.push(tok);
+  }
+  return items;
+}
+
+function parseNumber(s){
+  if(s==null) return null; const t=String(s).replace(/,/g,'').replace(/\s+/g,'').replace(/−/g,'-');
+  if(!/^[-+]?\d+$/.test(t)) return null; return parseInt(t,10);
+}
+function normalizeDate(s){
+  const t=String(s||'').replace(/\s+/g,'').replace(/\//g,'.');
+  const m=t.match(/(20\d{2})\.(\d{1,2})\.?([.]?\d{1,2})/);
+  if(!m) return '';
+  const d=String(m[3]).replace('.','');
+  return `${m[1]}-${String(m[2]).padStart(2,'0')}-${d.padStart(2,'0')}`;
+}
+function cardLast4(card){const m=String(card||'').replace(/\s/g,'').match(/(\d{4})$/);return m?m[1]:''}
+
+function itemsToTransactions(itemsByPage){
+  const tx=[];
+  for(let p=0;p<itemsByPage.length;p++){
+    const items=itemsByPage[p];
+    const starts=items.filter(it=>it.x<52 && it.text.replace(/\s/g,'')==='일시').sort((a,b)=>b.y-a.y);
+    const groups=starts.map(s=>({start:s,items:[]}));
+    for(const it of items){
+      if(it.x<20||it.x>580) continue;
+      let best=-1,dist=1e9;
+      for(let i=0;i<starts.length;i++){const d=Math.abs(it.y-starts[i].y);if(d<dist){dist=d;best=i}}
+      if(best>=0 && dist<=18) groups[best].items.push(it);
+    }
+    for(const g of groups){
+      const cols={type:[],card:[],date:[],merchant:[],principal:[],fee:[],amount:[],period:[],balance:[],round:[]};
+      for(const it of g.items){
+        let c;
+        if(it.x<52)c='type'; else if(it.x<137.5)c='card'; else if(it.x<182.5)c='date'; else if(it.x<282.5)c='merchant';
+        else if(it.x<342.5)c='principal'; else if(it.x<392.5)c='fee'; else if(it.x<452.5)c='amount'; else if(it.x<482.5)c='period'; else if(it.x<542.5)c='balance'; else c='round';
+        cols[c].push(it);
+      }
+      const join=c=>cols[c].sort((a,b)=>b.y-a.y||a.x-b.x).map(x=>x.text.trim()).join('').trim();
+      const card=join('card').replace(/\s+/g,''), date=normalizeDate(join('date'));
+      const principal=parseNumber(join('principal')), amount=parseNumber(join('amount'));
+      if(!/\d{4}-\d{4}-\*{4}-\d{4}/.test(card)||!date||(principal==null&&amount==null)) continue;
+      tx.push({
+        type:join('type')||'일시', cardNumberMasked:card, cardLast4:cardLast4(card), useDate:date,
+        merchantName:join('merchant'), principal:principal??amount??0, fee:parseNumber(join('fee'))??0,
+        useAmount:amount??principal??0, period:(parseNumber(join('period')) ?? join('period')) || 0,
+        remainingBalance:parseNumber(join('balance'))??0, installmentRound:parseNumber(join('round'))??0,
+        budgetCategory:'', department:'', mappingStatus:'미매핑', includeInDepartmentExpense:true,
+        sourcePage:p+1, manualDepartment:false
+      });
+    }
+  }
+  if(tx.length) return tx;
+  return sequentialFallback(itemsByPage);
+}
+
+function sequentialFallback(itemsByPage){
+  const tx=[];
+  for(let p=0;p<itemsByPage.length;p++){
+    const arr=itemsByPage[p]; const starts=[];
+    arr.forEach((it,i)=>{if(it.text.replace(/\s/g,'')==='일시')starts.push(i)});
+    for(let s=0;s<starts.length;s++){
+      const chunk=arr.slice(starts[s],starts[s+1]??arr.length).map(x=>x.text).join(' ');
+      const cm=chunk.match(/\d{4}\s*-\s*\d{4}\s*-\s*\*{4}\s*-\s*\d{4}/); if(!cm)continue;
+      const card=cm[0].replace(/\s/g,''); const rest=chunk.slice((cm.index||0)+cm[0].length);
+      const dm=rest.match(/20\d{2}\s*[./]\s*\d{1,2}\s*[./]\s*\d{1,2}/); if(!dm)continue;
+      const date=normalizeDate(dm[0]), after=rest.slice((dm.index||0)+dm[0].length);
+      const nums=[...after.matchAll(/-?\s*\d[\d,]*/g)]; if(nums.length<6)continue;
+      const last6=nums.slice(-6), merchant=after.slice(0,last6[0].index).replace(/\s+/g,' ').trim();
+      const vals=last6.map(m=>parseNumber(m[0])??0);
+      tx.push({type:'일시',cardNumberMasked:card,cardLast4:cardLast4(card),useDate:date,merchantName:merchant,
+        principal:vals[0],fee:vals[1],useAmount:vals[2],period:vals[3],remainingBalance:vals[4],installmentRound:vals[5],
+        budgetCategory:'',department:'',mappingStatus:'미매핑',includeInDepartmentExpense:true,sourcePage:p+1,manualDepartment:false});
+    }
+  }
+  return tx;
+}
+
+function parseStatementMeta(itemsByPage){
+  const first=itemsByPage[0]||[], all=first;
+  const findRegex = re => (all.find(x=>re.test(x.text))||{}).text || '';
+  const title=findRegex(/비씨카드.*이용대금\s*명세서/);
+  const mm=title.match(/(20\d{2})년\s*(\d{1,2})월/);
+  const business=findRegex(/\d{3}-\d{2}-\d{5}/);
+  const dept=findRegex(/\d{8,}\(.+\)/);
+  const dm=dept.match(/^(\d+)\((.+)\)$/);
+  const account=findRegex(/^\d{5,}\*+$/);
+  let payment=''; for(const it of all){const m=it.text.match(/20\d{2}\s*\/\s*\d{1,2}\s*\/\s*\d{1,2}/);if(m){payment=normalizeDate(m[0]);break}}
+  let total=null;
+  const label=all.find(x=>x.text.replace(/\s/g,'').includes('결제하실총금액'));
+  if(label){const nums=all.filter(x=>Math.abs(x.y-label.y)<1.5&&x.x>160).map(x=>parseNumber(x.text)).filter(x=>x!=null);if(nums.length)total=nums.reduce((a,b)=>Math.abs(b)>Math.abs(a)?b:a,0)}
+  return {statementMonth:mm?`${mm[1]}-${String(mm[2]).padStart(2,'0')}`:'',businessNumber:business,
+    departmentCode:dm?dm[1]:'',departmentName:dm?dm[2]:'',accountNumberMasked:account,paymentDate:payment,statementTotal:total,title};
+}
+
+async function parsePdfFile(file){
+  setProgress(8); const bytes=new Uint8Array(await file.arrayBuffer());
+  if(bytesToBinaryString(bytes.subarray(0,5))!=='%PDF-') throw new Error('PDF 파일이 아닙니다.');
+  const {map}=extractPdfObjects(bytes); setProgress(18);
+  let pageRefs=[];
+  for(const [n,o] of map){ if(/\/Type\s*\/Pages\b/.test(o.body)){const km=o.body.match(/\/Kids\s*\[([\s\S]*?)\]/);if(km){pageRefs=[...km[1].matchAll(/(\d+)\s+\d+\s+R/g)].map(m=>+m[1]);break}} }
+  if(!pageRefs.length){for(const [n,o] of map)if(/\/Type\s*\/Page\b/.test(o.body)&&!/\/Type\s*\/Pages\b/.test(o.body))pageRefs.push(n);pageRefs.sort((a,b)=>a-b)}
+  if(!pageRefs.length) throw new Error('PDF 페이지를 찾지 못했습니다.');
+  const itemsByPage=[];
+  for(let pi=0;pi<pageRefs.length;pi++){
+    const pobj=map.get(pageRefs[pi]); if(!pobj)continue;
+    const fontMap=await buildFontMap(pobj.body,map);
+    let refs=[]; const one=pobj.body.match(/\/Contents\s+(\d+)\s+\d+\s+R/); const many=pobj.body.match(/\/Contents\s*\[([\s\S]*?)\]/);
+    if(many)refs=[...many[1].matchAll(/(\d+)\s+\d+\s+R/g)].map(m=>+m[1]); else if(one)refs=[+one[1]];
+    let pageItems=[];
+    for(const ref of refs){const obj=map.get(ref);if(!obj)continue;const content=await decodedStream(obj);if(content)pageItems.push(...contentToItems(content,fontMap,pi+1))}
+    itemsByPage.push(pageItems); setProgress(20+Math.round((pi+1)/pageRefs.length*55));
+  }
+  const textCount=itemsByPage.reduce((a,b)=>a+b.length,0); if(textCount<10) throw new Error('이 PDF에서 텍스트 레이어를 충분히 찾지 못했습니다. OCR 처리된 PDF를 사용해 주세요.');
+  const statement=parseStatementMeta(itemsByPage), transactions=itemsToTransactions(itemsByPage);
+  setProgress(92); if(!transactions.length) throw new Error('거래내역 표를 인식하지 못했습니다. 제공된 BC카드 명세서와 같은 형식인지 확인해 주세요.');
+  transactions.forEach((t,i)=>t.rowId=`P${t.sourcePage}-${String(i+1).padStart(3,'0')}`);
+  setProgress(100); setTimeout(()=>setProgress(0),250);
+  return {statement,transactions,pages:pageRefs.length};
+}
+
+function parseCsvRows(text){
+  const rows=[]; let row=[],cell='',quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++}else if(c==='"')quoted=false;else cell+=c}
+    else {if(c==='"')quoted=true;else if(c===','){row.push(cell);cell=''}else if(c==='\n'){row.push(cell.replace(/\r$/,''));rows.push(row);row=[];cell=''}else cell+=c}
+  }
+  if(cell.length||row.length){row.push(cell.replace(/\r$/,''));rows.push(row)}
+  return rows.filter(r=>r.some(v=>String(v).trim()!==''));
+}
+function headerKey(s){return String(s||'').replace(/^\uFEFF/,'').replace(/[\s_()\-]/g,'').toLowerCase()}
+function readCsvText(bytes){
+  let s=new TextDecoder('utf-8').decode(bytes); const bad=(s.match(/�/g)||[]).length;
+  if(bad>0){try{s=new TextDecoder('euc-kr').decode(bytes)}catch{}}
+  return s.replace(/^\uFEFF/,'');
+}
+function parseCardCsv(fileBytes){
+  const rows=parseCsvRows(readCsvText(fileBytes)); if(rows.length<2) throw new Error('CSV에 헤더와 데이터 행이 필요합니다.');
+  const headers=rows[0].map(headerKey);
+  const aliases={
+    card:['카드끝4자리','카드번호끝4자리','끝4자리','카드4자리'].map(headerKey),
+    dept:['부서명','역명','사용부서','소속'].map(headerKey), deptNo:['부서번호','번호','코드'].map(headerKey),
+    cardName:['카드명','카드이름'].map(headerKey), include:['부서비포함여부','부서비포함','포함여부'].map(headerKey)
+  };
+  const idx={}; for(const [k,arr] of Object.entries(aliases))idx[k]=headers.findIndex(h=>arr.includes(h));
+  if(idx.card<0) throw new Error('카드번호 열을 찾지 못했습니다. 헤더를 카드끝4자리/끝4자리 등으로 지정해 주세요.');
+  if(idx.dept<0) throw new Error('부서명 열을 찾지 못했습니다. 헤더를 부서명/역명/사용부서 등으로 지정해 주세요.');
+  const out=[],errors=[];
+  for(let r=1;r<rows.length;r++){
+    const vals=rows[r]; const raw=norm(vals[idx.card]); let digits=raw.replace(/\D/g,'');
+    if(digits.length>4)digits=digits.slice(-4);
+    if(digits.length!==4){errors.push(`${r+1}행: 카드번호 '${raw}'는 끝 4자리로 인식할 수 없습니다.`);continue}
+    const dept=norm(vals[idx.dept]); if(!dept){errors.push(`${r+1}행: 부서명이 비어 있습니다.`);continue}
+    const inc=idx.include>=0?norm(vals[idx.include]).toUpperCase():'';
+    out.push({cardLast4:digits,department:dept,departmentNo:idx.deptNo>=0?norm(vals[idx.deptNo]):'',cardName:idx.cardName>=0?norm(vals[idx.cardName]):'',include:inc===''?true:['Y','YES','TRUE','1','포함','O'].includes(inc)});
+  }
+  return {rows:out,errors};
+}
+
+
+// --- Clean accounting XLSX reader: 외부 라이브러리 없이 ZIP/OOXML 읽기 ---
+function readU16LE(bytes,o){return bytes[o]|(bytes[o+1]<<8)}
+function readU32LE(bytes,o){return (bytes[o]|(bytes[o+1]<<8)|(bytes[o+2]<<16)|(bytes[o+3]<<24))>>>0}
+function normalizeZipPath(base,target){
+  if(String(target||'').startsWith('/'))return String(target).slice(1);
+  const parts=(base+'/'+target).split('/'),out=[];
+  for(const p of parts){if(!p||p==='.')continue;if(p==='..')out.pop();else out.push(p)}
+  return out.join('/');
+}
+function parseZipEntries(bytes){
+  let eocd=-1;
+  for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){
+    if(readU32LE(bytes,i)===0x06054b50){eocd=i;break}
+  }
+  if(eocd<0)throw new Error('XLSX ZIP 구조를 찾지 못했습니다.');
+  const total=readU16LE(bytes,eocd+10),cdOffset=readU32LE(bytes,eocd+16);
+  const dec=new TextDecoder('utf-8'),map=new Map();let p=cdOffset;
+  for(let i=0;i<total;i++){
+    if(readU32LE(bytes,p)!==0x02014b50)throw new Error('XLSX 중앙 디렉터리를 읽지 못했습니다.');
+    const method=readU16LE(bytes,p+10),compSize=readU32LE(bytes,p+20),nameLen=readU16LE(bytes,p+28),
+      extraLen=readU16LE(bytes,p+30),commentLen=readU16LE(bytes,p+32),localOffset=readU32LE(bytes,p+42);
+    const name=dec.decode(bytes.subarray(p+46,p+46+nameLen));
+    if(readU32LE(bytes,localOffset)!==0x04034b50)throw new Error('XLSX 로컬 파일 구조를 읽지 못했습니다.');
+    const localNameLen=readU16LE(bytes,localOffset+26),localExtraLen=readU16LE(bytes,localOffset+28);
+    const dataStart=localOffset+30+localNameLen+localExtraLen;
+    map.set(name,{name,method,data:bytes.subarray(dataStart,dataStart+compSize)});
+    p+=46+nameLen+extraLen+commentLen;
+  }
+  return map;
+}
+async function unzipEntry(entry){
+  if(!entry)throw new Error('XLSX 내부 파일을 찾지 못했습니다.');
+  if(entry.method===0)return entry.data;
+  if(entry.method!==8)throw new Error(`지원하지 않는 XLSX 압축 방식입니다. (${entry.method})`);
+  if(!('DecompressionStream' in window))throw new Error('이 브라우저는 XLSX 압축 해제를 지원하지 않습니다. 최신 Chrome/Edge를 사용해 주세요.');
+  let lastErr;
+  for(const fmt of ['deflate-raw','deflate']){
+    try{
+      const ds=new DecompressionStream(fmt);
+      return new Uint8Array(await new Response(new Blob([entry.data]).stream().pipeThrough(ds)).arrayBuffer());
+    }catch(e){lastErr=e}
+  }
+  throw new Error('XLSX 압축 해제에 실패했습니다. '+(lastErr?.message||''));
+}
+async function zipText(entries,name,optional=false){
+  const e=entries.get(name);
+  if(!e){if(optional)return '';throw new Error(`XLSX 내부 파일 누락: ${name}`)}
+  return new TextDecoder('utf-8').decode(await unzipEntry(e));
+}
+function xmlDoc(text,label){
+  const doc=new DOMParser().parseFromString(text,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw new Error(`${label} XML을 읽지 못했습니다.`);
+  return doc;
+}
+function xlsxSharedStrings(text){
+  if(!text)return[];
+  const doc=xmlDoc(text,'sharedStrings');
+  return [...doc.getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent||'').join(''));
+}
+function xlsxColIndex(ref){
+  const m=String(ref||'').match(/^([A-Z]+)/i);if(!m)return 0;
+  let n=0;for(const ch of m[1].toUpperCase())n=n*26+(ch.charCodeAt(0)-64);return n-1;
+}
+function xlsxCellValue(c,shared){
+  const type=c.getAttribute('t')||'',v=c.getElementsByTagName('v')[0]?.textContent??'';
+  if(type==='s')return shared[Number(v)]??'';
+  if(type==='inlineStr')return [...c.getElementsByTagName('t')].map(x=>x.textContent||'').join('');
+  if(type==='b')return v==='1';
+  if(type==='str')return v;
+  if(v==='')return '';
+  const n=Number(v);return Number.isFinite(n)?n:v;
+}
+function xlsxRows(sheetXml,shared){
+  const doc=xmlDoc(sheetXml,'worksheet'),rows=[];
+  for(const r of doc.getElementsByTagName('row')){
+    const arr=[];
+    for(const c of r.getElementsByTagName('c'))arr[xlsxColIndex(c.getAttribute('r'))]=xlsxCellValue(c,shared);
+    rows.push(arr);
+  }
+  return rows.filter(r=>r.some(v=>String(v??'').trim()!==''));
+}
+function excelValueToIso(v){
+  if(typeof v==='number'&&Number.isFinite(v)){
+    const d=new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  }
+  const s=norm(v);
+  if(/^\d+(\.\d+)?$/.test(s))return excelValueToIso(Number(s));
+  const m=s.match(/(\d{4})\D{0,3}(\d{1,2})\D{0,3}(\d{1,2})/);
+  return m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:'';
+}
+async function parseCleanXlsx(fileBytes){
+  const entries=parseZipEntries(fileBytes);
+  const workbookDoc=xmlDoc(await zipText(entries,'xl/workbook.xml'),'workbook');
+  const relDoc=xmlDoc(await zipText(entries,'xl/_rels/workbook.xml.rels'),'workbook relationships');
+  const sheets=[...workbookDoc.getElementsByTagName('sheet')];
+  if(!sheets.length)throw new Error('XLSX에 워크시트가 없습니다.');
+  const chosen=sheets.find(s=>/법인카드|카드.*사용내역/i.test(s.getAttribute('name')||''))||sheets[0];
+  const rid=chosen.getAttribute('r:id')||chosen.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+  const rel=[...relDoc.getElementsByTagName('Relationship')].find(x=>x.getAttribute('Id')===rid);
+  if(!rel)throw new Error('XLSX 워크시트 연결정보를 찾지 못했습니다.');
+  const sheetPath=normalizeZipPath('xl',rel.getAttribute('Target'));
+  const shared=xlsxSharedStrings(await zipText(entries,'xl/sharedStrings.xml',true));
+  const rows=xlsxRows(await zipText(entries,sheetPath),shared);
+  if(rows.length<2)throw new Error('클린회계자료에 헤더와 데이터 행이 필요합니다.');
+
+  let headerRow=0;
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const keys=rows[i].map(headerKey);
+    if(keys.includes(headerKey('카드번호'))&&keys.includes(headerKey('사용부서'))){headerRow=i;break}
+  }
+  const headers=rows[headerRow].map(headerKey);
+  const aliases={
+    card:['카드번호','법인카드번호'].map(headerKey),
+    dept:['사용부서','부서명','역명'].map(headerKey),
+    date:['사용일자','사용일','일자','승인일자'].map(headerKey),
+    merchant:['사용처','가맹점','가맹점명'].map(headerKey),
+    amount:['사용금액','이용금액','금액','승인금액'].map(headerKey)
+  };
+  const idx={};for(const [k,a] of Object.entries(aliases))idx[k]=headers.findIndex(h=>a.includes(h));
+  const missing=Object.entries(idx).filter(([,v])=>v<0).map(([k])=>({card:'카드번호',dept:'사용부서',date:'사용일자',merchant:'사용처',amount:'사용금액'}[k]));
+  if(missing.length)throw new Error('클린회계자료 필수 열을 찾지 못했습니다: '+missing.join(', '));
+
+  const out=[],errors=[];
+  for(let r=headerRow+1;r<rows.length;r++){
+    const vals=rows[r],rawCard=norm(vals[idx.card]),digits=rawCard.replace(/\D/g,'');
+    const cardLast4=digits.length>=4?digits.slice(-4):'';
+    const department=norm(vals[idx.dept]),useDate=excelValueToIso(vals[idx.date]),merchantName=norm(vals[idx.merchant]),amount=parseNumber(vals[idx.amount]);
+    if(!cardLast4||!department||!useDate||!merchantName||amount==null){
+      errors.push(`${r+1}행: 카드번호/사용부서/사용일자/사용처/사용금액 중 인식하지 못한 값이 있습니다.`);
+      continue;
+    }
+    out.push({sourceRow:r+1,cardNumber:rawCard,cardLast4,department,useDate,merchantName,amount});
+  }
+  if(!out.length)throw new Error('클린회계자료에서 비교 가능한 행을 찾지 못했습니다.');
+  return {rows:out,errors,sheetName:chosen.getAttribute('name')||''};
+}
+function merchantKey(s){
+  return norm(s).toLowerCase()
+    .replace(/㈜|\(주\)|주식회사|유한회사/g,'')
+    .replace(/[^0-9a-z가-힣]/gi,'');
+}
+function merchantCompatible(a,b){
+  const x=merchantKey(a),y=merchantKey(b);
+  if(!x||!y)return false;
+  return x===y||(Math.min(x.length,y.length)>=4&&(x.includes(y)||y.includes(x)));
+}
+function deptKey(s){return norm(s).replace(/\s+/g,'').toLowerCase()}
+function cleanCompareAmount(t){return Number.isFinite(+t.principal)?+t.principal:+t.useAmount}
+function compareKey(cardLast4,date,amount){return `${cardLast4}|${date}|${Number(amount)}`}
+function reconcileCleanTransactions(){
+  for(const t of state.transactions){
+    t.cleanCardNumber='';t.cleanCardLast4='';t.cleanDepartment='';t.cleanUseDate='';t.cleanMerchant='';t.cleanAmount=null;
+    t.cleanMatchStatus=state.cleanRows.length?'미일치':'미업로드';t.cleanMatchReason=state.cleanRows.length?'클린회계 거래 없음':'클린회계 미업로드';t.threeWayMatch=null;
+  }
+  if(!state.transactions.length||!state.cleanRows.length)return;
+
+  const index=new Map(),used=new Set();
+  for(const c of state.cleanRows){
+    const k=compareKey(c.cardLast4,c.useDate,c.amount);
+    if(!index.has(k))index.set(k,[]);
+    index.get(k).push(c);
+  }
+
+  for(const t of state.transactions){
+    const k=compareKey(t.cardLast4,t.useDate,cleanCompareAmount(t));
+    const candidates=(index.get(k)||[]).filter(c=>!used.has(c));
+    if(!candidates.length){t.threeWayMatch=false;continue}
+
+    const exact=candidates.filter(c=>merchantKey(c.merchantName)===merchantKey(t.merchantName));
+    const fuzzy=candidates.filter(c=>merchantCompatible(c.merchantName,t.merchantName));
+    let choice=null;
+    if(exact.length===1)choice=exact[0];
+    else if(fuzzy.length===1)choice=fuzzy[0];
+    else if(candidates.length===1)choice=candidates[0];
+    else{
+      const sig=new Set(candidates.map(c=>deptKey(c.department)+'|'+merchantKey(c.merchantName)));
+      if(sig.size===1)choice=candidates[0];
+    }
+    if(!choice){
+      t.cleanMatchStatus='복수후보';t.cleanMatchReason='같은 카드·일자·금액의 클린회계 행이 여러 건입니다.';t.threeWayMatch=false;continue;
+    }
+
+    used.add(choice);
+    t.cleanCardNumber=choice.cardNumber;t.cleanCardLast4=choice.cardLast4;t.cleanDepartment=choice.department;t.cleanUseDate=choice.useDate;
+    t.cleanMerchant=choice.merchantName;t.cleanAmount=choice.amount;t.cleanMatchStatus='일치후보';
+
+    const csvOk=t.mappingStatus==='정상';
+    const cardOk=t.cardLast4===choice.cardLast4;
+    const deptOk=csvOk&&deptKey(t.department)===deptKey(choice.department);
+    const merchantOk=merchantCompatible(t.merchantName,choice.merchantName);
+    const transactionOk=cardOk&&t.useDate===choice.useDate&&Number(cleanCompareAmount(t))===Number(choice.amount)&&merchantOk;
+
+    t.threeWayMatch=!!(csvOk&&transactionOk&&deptOk);
+    t.cleanMatchStatus=t.threeWayMatch?'TRUE':'FALSE';
+    if(t.threeWayMatch)t.cleanMatchReason='PDF 카드/거래 + CSV 부서 + 클린회계자료가 모두 일치';
+    else if(!csvOk)t.cleanMatchReason=`CSV 카드 매핑 상태: ${t.mappingStatus}`;
+    else if(!deptOk)t.cleanMatchReason=`부서 불일치: CSV '${t.department}' / 클린 '${choice.department}'`;
+    else if(!merchantOk)t.cleanMatchReason=`사용처 불일치: PDF '${t.merchantName}' / 클린 '${choice.merchantName}'`;
+    else t.cleanMatchReason='거래정보 불일치';
+  }
+}
+
+function rebuildCardMap(){
+  state.cardMap=new Map();
+  for(const r of state.cardRows){if(!state.cardMap.has(r.cardLast4))state.cardMap.set(r.cardLast4,[]);state.cardMap.get(r.cardLast4).push(r)}
+  remapTransactions();
+}
+function remapTransactions(){
+  for(const t of state.transactions){
+    if(t.manualDepartment){t.mappingStatus='수동확정';continue}
+    const rows=state.cardMap.get(t.cardLast4)||[];
+    const depts=[...new Set(rows.map(r=>r.department))];
+    if(rows.length===0){t.department='';t.mappingStatus='미매핑';t.includeInDepartmentExpense=true}
+    else if(depts.length>1){t.department='';t.mappingStatus='중복매핑';t.includeInDepartmentExpense=true}
+    else {t.department=depts[0];t.mappingStatus='정상';t.includeInDepartmentExpense=rows[0].include;if(t.includeInDepartmentExpense&&!t.budgetCategory)t.budgetCategory='부서운영업무비'}
+  }
+  markPossibleDuplicates(); reconcileCleanTransactions(); renderAll();
+}
+function markPossibleDuplicates(){
+  const counts=new Map(); for(const t of state.transactions){const k=[t.cardLast4,t.useDate,t.merchantName,t.principal].join('|');counts.set(k,(counts.get(k)||0)+1)}
+  for(const t of state.transactions){const k=[t.cardLast4,t.useDate,t.merchantName,t.principal].join('|');t.duplicatePossible=(counts.get(k)||0)>1}
+}
+
+function validationData(){
+  const tx=state.transactions, st=state.statement||{};
+  const sum=tx.reduce((a,t)=>a+(Number(t.principal)||0),0), diff=st.statementTotal==null?null:sum-st.statementTotal;
+  const required=tx.filter(t=>!t.cardNumberMasked||!t.useDate||!t.merchantName||(t.principal==null&&t.useAmount==null)).length;
+  const unmapped=tx.filter(t=>t.mappingStatus==='미매핑').length, dupmap=tx.filter(t=>t.mappingStatus==='중복매핑').length;
+  const dup=tx.filter(t=>t.duplicatePossible).length, neg=tx.filter(t=>t.principal<0), zeros=tx.filter(t=>t.principal===0);
+  const cleanUploaded=state.cleanRows.length>0, tripleTrue=tx.filter(t=>t.threeWayMatch===true).length,
+    tripleFalse=cleanUploaded?tx.filter(t=>t.threeWayMatch===false).length:0,
+    cleanMissing=cleanUploaded?tx.filter(t=>t.cleanMatchStatus==='미일치').length:0,
+    cleanAmbiguous=cleanUploaded?tx.filter(t=>t.cleanMatchStatus==='복수후보').length:0,
+    deptMismatch=cleanUploaded?tx.filter(t=>t.cleanMatchReason?.startsWith('부서 불일치')).length:0;
+  const ok=(diff===0||diff===null)&&required===0&&unmapped===0&&dupmap===0&&(!cleanUploaded||tripleFalse===0);
+  return {sum,diff,required,unmapped,dupmap,dup,negCount:neg.length,negSum:neg.reduce((a,t)=>a+t.principal,0),zeroCount:zeros.length,cleanUploaded,tripleTrue,tripleFalse,cleanMissing,cleanAmbiguous,deptMismatch,ok};
+}
+
+function renderKpis(){
+  const st=state.statement||{},v=validationData();
+  $('kpiMonth').textContent=st.statementMonth?st.statementMonth.replace('-','년 ')+'월':'-';
+  $('kpiDate').textContent=st.paymentDate||'-'; $('kpiTotal').textContent=st.statementTotal==null?'-':fmtMoney(st.statementTotal);
+  $('kpiCount').textContent=state.transactions.length+'건'; $('kpiCountSub').textContent=state.pdfName?`${state.pdfPages}페이지 인식`:'PDF 미업로드';
+  $('kpiNegative').textContent=v.negCount+'건'; $('kpiNegativeSub').textContent=fmtMoney(v.negSum);
+  $('kpiUnmapped').textContent=(v.unmapped+v.dupmap)+'건';
+  const el=$('kpiValidation'); el.className='value';
+  if(!state.transactions.length){el.textContent='대기';$('kpiValidationSub').textContent='파일을 업로드하세요'}
+  else if(v.diff!==null&&v.diff!==0){el.textContent='확인 필요';el.classList.add('status-bad');$('kpiValidationSub').textContent=`총액 차이 ${fmtMoney(v.diff)}`}
+  else if(v.required||v.unmapped||v.dupmap){el.textContent='확인 필요';el.classList.add('status-warn');$('kpiValidationSub').textContent=`필수값/매핑 ${v.required+v.unmapped+v.dupmap}건`}
+  else if(v.cleanUploaded&&v.tripleFalse){el.textContent='확인 필요';el.classList.add('status-warn');$('kpiValidationSub').textContent=`3자 비교 FALSE ${v.tripleFalse}건`}
+  else {el.textContent='정상';el.classList.add('status-good');$('kpiValidationSub').textContent=v.cleanUploaded?'총액·매핑·3자 비교 통과':'총액·필수값 검증 통과'}
+  $('exportBtn').disabled=!state.transactions.length;
+  const chips=[]; if(st.businessNumber)chips.push(`사업자번호 ${st.businessNumber}`); if(st.departmentCode)chips.push(`부서코드 ${st.departmentCode}`); if(st.departmentName)chips.push(st.departmentName); if(st.accountNumberMasked)chips.push(`계좌 ${st.accountNumberMasked}`);
+  $('metaStrip').innerHTML=chips.map(x=>`<span class="meta-chip">${htmlEsc(x)}</span>`).join('');
+}
+function buildFilterOptions(){
+  const dept=$('deptFilter'),card=$('cardFilter'),dv=dept.value,cv=card.value;
+  const depts=[...new Set(state.transactions.map(t=>t.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
+  const cards=[...new Set(state.transactions.map(t=>t.cardLast4).filter(Boolean))].sort();
+  dept.innerHTML='<option value="">전체 부서</option>'+depts.map(x=>`<option>${htmlEsc(x)}</option>`).join('');
+  card.innerHTML='<option value="">전체 카드</option>'+cards.map(x=>`<option>${htmlEsc(x)}</option>`).join('');
+  dept.value=depts.includes(dv)?dv:'';card.value=cards.includes(cv)?cv:'';
+}
+function filteredTransactions(){
+  const q=$('searchInput').value.trim().toLowerCase(), dept=$('deptFilter').value, card=$('cardFilter').value,from=$('dateFrom').value,to=$('dateTo').value;
+  let arr=state.transactions.filter(t=>{
+    if(q && ![t.merchantName,t.department,t.cardLast4,t.cardNumberMasked,t.budgetCategory,t.cleanDepartment,t.cleanMerchant,t.cleanMatchReason].some(v=>String(v||'').toLowerCase().includes(q)))return false;
+    if(dept&&t.department!==dept)return false;if(card&&t.cardLast4!==card)return false;if(from&&t.useDate<from)return false;if(to&&t.useDate>to)return false;
+    if($('negativeOnly').checked&&!(t.principal<0))return false;if($('unmappedOnly').checked&&!['미매핑','중복매핑'].includes(t.mappingStatus))return false;return true;
+  });
+  const sort=$('sortSelect').value; arr.sort((a,b)=>sort==='amount-desc'?b.principal-a.principal:sort==='amount-asc'?a.principal-b.principal:sort==='date-asc'?a.useDate.localeCompare(b.useDate):b.useDate.localeCompare(a.useDate));
+  return arr;
+}
+function statusBadge(s){const cls=s==='정상'?'good':s==='미매핑'?'warn':s==='중복매핑'?'bad':'purple';return `<span class="badge ${cls}">${htmlEsc(s)}</span>`}
+function tripleBadge(t){
+  if(!state.cleanRows.length)return '<span class="badge gray">미업로드</span>';
+  if(t.threeWayMatch===true)return `<span class="badge good" title="${htmlEsc(t.cleanMatchReason)}">TRUE</span>`;
+  return `<span class="badge bad" title="${htmlEsc(t.cleanMatchReason||'불일치')}">FALSE</span>`;
+}
+function renderTable(preserveScroll=false){
+  const area=$('tableArea');
+  const prevWrap=preserveScroll?area.querySelector('.table-wrap'):null;
+  const prevScrollTop=prevWrap?prevWrap.scrollTop:0;
+  const prevScrollLeft=prevWrap?prevWrap.scrollLeft:0;
+  const prevWindowX=preserveScroll?window.scrollX:0;
+  const prevWindowY=preserveScroll?window.scrollY:0; if(!state.transactions.length){area.innerHTML='<div class="empty"><div class="icon">📋</div>카드명세서 PDF를 업로드해 주세요.</div>';$('filterCount').textContent='0건 표시';return}
+  const arr=filteredTransactions(),pages=Math.max(1,Math.ceil(arr.length/state.pageSize));state.page=Math.min(state.page,pages);const start=(state.page-1)*state.pageSize,rows=arr.slice(start,start+state.pageSize);
+  $('filterCount').textContent=`전체 ${state.transactions.length}건 중 ${arr.length}건 표시`;
+  const body=rows.map(t=>`<tr data-id="${t.rowId}" class="${t.mappingStatus==='미매핑'?'unmapped ':t.mappingStatus==='중복매핑'?'duplicate ':''}${t.principal<0?'negative':''}">
+    <td>${htmlEsc(t.type)}</td><td class="mono">${htmlEsc(t.cardNumberMasked)}</td><td class="mono">${htmlEsc(t.cardLast4)}</td>
+    <td><input class="cell-input" data-field="useDate" type="date" value="${htmlEsc(t.useDate)}"></td>
+    <td><input class="cell-input merchant" data-field="merchantName" value="${htmlEsc(t.merchantName)}"></td>
+    <td class="amount"><input class="cell-input money" data-field="principal" inputmode="numeric" value="${htmlEsc(fmtNum(t.principal))}"></td>
+    <td class="amount"><input class="cell-input money" data-field="fee" inputmode="numeric" value="${htmlEsc(fmtNum(t.fee))}"></td>
+    <td class="amount"><input class="cell-input money" data-field="useAmount" inputmode="numeric" value="${htmlEsc(fmtNum(t.useAmount))}"></td>
+    <td style="text-align:center"><input data-field="includeInDepartmentExpense" type="checkbox" ${t.includeInDepartmentExpense?'checked':''}></td>
+    <td><input class="cell-input budget" data-field="budgetCategory" value="${htmlEsc(t.budgetCategory)}" placeholder="직접 입력"></td>
+    <td><input class="cell-input dept" data-field="department" value="${htmlEsc(t.department)}" placeholder="부서/역명"></td>
+    <td>${statusBadge(t.mappingStatus)}</td>
+    <td>${tripleBadge(t)}</td><td class="mono">P.${t.sourcePage}</td><td>${t.duplicatePossible?'<span class="badge gray">중복 가능</span>':''}${t.budgetCategory?'<button class="mini-btn" data-action="apply-budget">동일가맹점 적용</button>':''}</td>
+  </tr>`).join('');
+  area.innerHTML=`<div class="table-wrap"><table><thead><tr><th>구분</th><th>이용 카드</th><th>끝4자리</th><th>일자</th><th>가맹점(은행)명</th><th>원금</th><th>수수료</th><th>이용금액</th><th>부서비 포함</th><th>예산과목 정보</th><th>비고(부서/역명)</th><th>매핑상태</th><th>3자 검증</th><th>원본</th><th>검토</th></tr></thead><tbody>${body}</tbody></table></div>
+  <div class="pagination"><div class="page-info">${arr.length?start+1:0}–${Math.min(start+state.pageSize,arr.length)} / ${arr.length}건</div><div class="page-buttons"><button class="btn" id="prevPage" ${state.page<=1?'disabled':''}>이전</button><span>${state.page} / ${pages}</span><button class="btn" id="nextPage" ${state.page>=pages?'disabled':''}>다음</button></div></div>`;
+  $('prevPage').onclick=()=>{state.page--;renderTable()};$('nextPage').onclick=()=>{state.page++;renderTable()};
+  if(preserveScroll){
+    const nextWrap=area.querySelector('.table-wrap');
+    if(nextWrap){nextWrap.scrollTop=prevScrollTop;nextWrap.scrollLeft=prevScrollLeft;}
+    window.scrollTo(prevWindowX,prevWindowY);
+  }
+}
+function aggregate(){
+  const dept=new Map(),merch=new Map(),card=new Map();
+  for(const t of state.transactions){
+    const d=t.department||'(미매핑)'; if(!dept.has(d))dept.set(d,{count:0,pos:0,neg:0,net:0,deptExpense:0});const x=dept.get(d);x.count++;x.net+=t.principal;if(t.principal>=0)x.pos+=t.principal;else x.neg+=t.principal;if(t.includeInDepartmentExpense)x.deptExpense+=t.principal;
+    if(!merch.has(t.merchantName))merch.set(t.merchantName,{count:0,net:0});merch.get(t.merchantName).count++;merch.get(t.merchantName).net+=t.principal;
+    if(!card.has(t.cardLast4))card.set(t.cardLast4,{department:t.department||'',count:0,net:0});card.get(t.cardLast4).count++;card.get(t.cardLast4).net+=t.principal;
+  }
+  const master=[...new Map(state.cardRows.map(r=>[r.department,{departmentNo:r.departmentNo,department:r.department}])).values()];
+  return {dept,merch,card,master};
+}
+function renderSummary(){
+  const area=$('summaryArea'); if(!state.transactions.length){area.className='empty';area.innerHTML='<div class="icon">📊</div>PDF를 업로드하면 요약이 표시됩니다.';return}
+  area.className='summary-grid'; const {dept,merch,card,master}=aggregate();
+  const drows=[...dept].sort((a,b)=>b[1].net-a[1].net).map(([k,v])=>`<tr><td>${htmlEsc(k)}</td><td class="amount">${v.count}</td><td class="amount">${fmtNum(v.pos)}</td><td class="amount">${fmtNum(v.neg)}</td><td class="amount"><b>${fmtNum(v.net)}</b></td></tr>`).join('');
+  const mrows=[...merch].sort((a,b)=>b[1].net-a[1].net).map(([k,v])=>`<tr><td>${htmlEsc(k)}</td><td class="amount">${v.count}</td><td class="amount">${fmtNum(v.net)}</td></tr>`).join('');
+  const crows=[...card].sort((a,b)=>b[1].net-a[1].net).map(([k,v])=>`<tr><td class="mono">${htmlEsc(k)}</td><td>${htmlEsc(v.department)}</td><td class="amount">${v.count}</td><td class="amount">${fmtNum(v.net)}</td></tr>`).join('');
+  const deptNames=master.length?master:[...dept.keys()].filter(x=>x!=='(미매핑)').map(department=>({departmentNo:'',department}));
+  const erows=deptNames.map(r=>{const v=dept.get(r.department);return `<tr><td>${htmlEsc(r.departmentNo)}</td><td>${htmlEsc(r.department)}</td><td class="amount">${fmtNum(v?v.deptExpense:0)}</td></tr>`}).join('');
+  area.innerHTML=`
+  <div class="summary-card"><h3>부서별 사용액</h3><div class="inner"><table><thead><tr><th>부서명</th><th>건수</th><th>사용액</th><th>취소액</th><th>순사용액</th></tr></thead><tbody>${drows}</tbody></table></div></div>
+  <div class="summary-card"><h3>부서비 사용액</h3><div class="inner"><table><thead><tr><th>부서번호</th><th>부서명</th><th>부서비 사용액</th></tr></thead><tbody>${erows}</tbody></table></div></div>
+  <div class="summary-card"><h3 class="summary-title"><span>가맹점별 사용현황</span><span class="summary-title-meta">카드 사용처 ${[...merch.keys()].filter(k=>String(k||'').trim()).length}곳</span></h3><div class="inner"><table><thead><tr><th>가맹점명</th><th>거래건수</th><th>순사용액</th></tr></thead><tbody>${mrows}</tbody></table></div></div>
+  <div class="summary-card"><h3>카드별 사용현황</h3><div class="inner"><table><thead><tr><th>끝4자리</th><th>부서명</th><th>거래건수</th><th>순사용액</th></tr></thead><tbody>${crows}</tbody></table></div></div>`;
+}
+function renderValidation(){
+  const area=$('validationArea');if(!state.transactions.length){area.className='empty';area.innerHTML='<div class="icon">✅</div>PDF를 업로드하면 자동 검증 결과가 표시됩니다.';return}
+  area.className='validation';const v=validationData(),st=state.statement||{};const total=st.statementTotal;
+  const totalStatus=total==null?'총액 검증 불가':v.diff===0?'일치':'불일치';const totalCls=total==null?'warn':v.diff===0?'good':'bad';
+  const sample=state.transactions.length===56&&v.sum===6994182&&v.negCount===5&&v.zeroCount===1;
+  area.innerHTML=`
+  <div class="check-card"><h3>총액 검증</h3><div class="check-row"><span>거래 원금 합계</span><span>${fmtMoney(v.sum)}</span></div><div class="check-row"><span>청구서 총액</span><span>${total==null?'-':fmtMoney(total)}</span></div><div class="check-row"><span>차이</span><span>${v.diff==null?'-':fmtMoney(v.diff)}</span></div><div class="check-row"><span>결과</span><span class="badge ${totalCls}">${totalStatus}</span></div></div>
+  <div class="check-card"><h3>거래행 검증</h3><div class="check-row"><span>필수값 누락</span><span>${v.required}건</span></div><div class="check-row"><span>중복 가능 표시</span><span>${v.dup}건</span></div><div class="check-row"><span>음수 거래</span><span>${v.negCount}건 / ${fmtMoney(v.negSum)}</span></div><div class="check-row"><span>0원 거래</span><span>${v.zeroCount}건</span></div></div>
+  <div class="check-card"><h3>카드 매핑</h3><div class="check-row"><span>정상/수동확정</span><span>${state.transactions.filter(t=>['정상','수동확정'].includes(t.mappingStatus)).length}건</span></div><div class="check-row"><span>미매핑</span><span>${v.unmapped}건</span></div><div class="check-row"><span>중복매핑</span><span>${v.dupmap}건</span></div><div class="check-row"><span>CSV 오류</span><span>${state.csvErrors.length}건</span></div></div>
+  <div class="check-card"><h3>3자 비교</h3><div class="check-row"><span>클린회계자료</span><span>${v.cleanUploaded?`${state.cleanRows.length}건`:'미업로드'}</span></div><div class="check-row"><span>TRUE</span><span class="status-good">${v.tripleTrue}건</span></div><div class="check-row"><span>FALSE</span><span class="${v.tripleFalse?'status-bad':''}">${v.tripleFalse}건</span></div><div class="check-row"><span>클린 거래 없음 / 복수후보</span><span>${v.cleanMissing} / ${v.cleanAmbiguous}건</span></div><div class="check-row"><span>부서 불일치</span><span>${v.deptMismatch}건</span></div></div>
+  <div class="check-card"><h3>샘플 Acceptance Test</h3><div class="check-row"><span>56건 / 6,994,182원 / 음수 5건 / 0원 1건</span><span class="badge ${sample?'good':'gray'}">${sample?'샘플 기준 통과':'해당 없음/불일치'}</span></div><div class="small" style="margin-top:8px">제공된 샘플 PDF와 동일한 명세서라면 위 4개 조건이 동시에 맞아야 합니다.</div></div>`;
+}
+function renderAll(){renderKpis();buildFilterOptions();renderTable();renderSummary();renderValidation()}
+
+function updateTxFromInput(e){
+  const el=e.target,field=el.dataset.field;if(!field)return;const tr=el.closest('tr');if(!tr)return;const t=state.transactions.find(x=>x.rowId===tr.dataset.id);if(!t)return;
+  if(field==='includeInDepartmentExpense'){t[field]=el.checked;if(el.checked)t.budgetCategory='부서운영업무비';else t.budgetCategory='';}
+  else if(['principal','fee','useAmount'].includes(field)){const n=parseNumber(el.value);if(n!=null){t[field]=n;el.value=fmtNum(n)}else{el.value=fmtNum(t[field]);return}}
+  else if(field==='department'){t.department=el.value.trim();t.manualDepartment=!!t.department;t.mappingStatus=t.department?'수동확정':'미매핑'}
+  else t[field]=el.value;
+  markPossibleDuplicates();reconcileCleanTransactions();renderKpis();renderSummary();renderValidation();buildFilterOptions();
+  if(field==='department'||field==='budgetCategory'||field==='includeInDepartmentExpense') renderTable(true);
+}
+
+async function handlePdf(file){
+  clearNotice();state.pdfName=file.name;$('pdfState').className='file-state';$('pdfState').textContent=`${file.name} · ${(file.size/1024).toFixed(1)} KB 분석 중...`;
+  try{
+    const r=await parsePdfFile(file);state.statement=r.statement;state.transactions=r.transactions;state.pdfPages=r.pages;remapTransactions();
+    $('pdfState').className='file-state good';$('pdfState').textContent=`✓ ${file.name} · ${r.pages}페이지 · ${r.transactions.length}건 인식`;
+    const v=validationData(); if(v.diff===0)setNotice(`PDF 인식 완료: ${r.transactions.length}건, 거래 합계 ${fmtMoney(v.sum)} — 청구 총액과 일치합니다.`,'good');
+    else if(v.diff!=null)setNotice(`PDF 인식 완료: ${r.transactions.length}건. 거래 합계와 청구 총액이 ${fmtMoney(v.diff)} 차이납니다. 검증 탭을 확인해 주세요.`,'warn');
+    else setNotice(`PDF 인식 완료: ${r.transactions.length}건. 청구 총액을 찾지 못해 총액 검증은 생략됩니다.`,'warn');
+  }catch(err){state.statement=null;state.transactions=[];state.pdfPages=0;renderAll();$('pdfState').className='file-state bad';$('pdfState').textContent='✕ '+err.message;setNotice(err.message,'bad');setProgress(0)}
+}
+async function handleCsv(file){
+  state.csvName=file.name;$('csvState').className='file-state';$('csvState').textContent=`${file.name} 분석 중...`;
+  try{const r=parseCardCsv(new Uint8Array(await file.arrayBuffer()));state.cardRows=r.rows;state.csvErrors=r.errors;rebuildCardMap();const unique=new Set(r.rows.map(x=>x.cardLast4)).size;
+    $('csvState').className='file-state '+(r.errors.length?'warn':'good');$('csvState').textContent=`${r.errors.length?'⚠':'✓'} ${file.name} · 카드 ${unique}개${r.errors.length?` · 오류 ${r.errors.length}건`:''}`;
+    if(r.errors.length)setNotice(`CSV 일부 행을 건너뛰었습니다: ${r.errors.slice(0,3).join(' / ')}${r.errors.length>3?' …':''}`,'warn');
+  }catch(err){state.cardRows=[];state.cardMap=new Map();state.csvErrors=[err.message];remapTransactions();$('csvState').className='file-state bad';$('csvState').textContent='✕ '+err.message;setNotice(err.message,'bad')}
+}
+
+
+async function handleClean(file){
+  state.cleanName=file.name;$('cleanState').className='file-state';$('cleanState').textContent=`${file.name} 분석 중...`;
+  try{
+    const r=await parseCleanXlsx(new Uint8Array(await file.arrayBuffer()));
+    state.cleanRows=r.rows;state.cleanErrors=r.errors;state.cleanSheetName=r.sheetName;reconcileCleanTransactions();renderAll();
+    const v=validationData();
+    $('cleanState').className='file-state '+(r.errors.length?'warn':'good');
+    $('cleanState').textContent=`${r.errors.length?'⚠':'✓'} ${file.name} · ${r.sheetName||'워크시트'} · ${r.rows.length}건${r.errors.length?` · 건너뜀 ${r.errors.length}건`:''}`;
+    if(state.transactions.length){
+      setNotice(`클린회계 비교 완료: TRUE ${v.tripleTrue}건 / FALSE ${v.tripleFalse}건. 검증 탭과 Excel의 3자일치 열에서 확인할 수 있습니다.`,v.tripleFalse?'warn':'good');
+    }else if(r.errors.length){
+      setNotice(`클린회계자료 ${r.rows.length}건을 읽었습니다. 일부 행 ${r.errors.length}건은 건너뛰었습니다.`,'warn');
+    }else setNotice(`클린회계자료 ${r.rows.length}건을 읽었습니다. PDF와 CSV를 업로드하면 자동 비교합니다.`,'good');
+  }catch(err){
+    state.cleanRows=[];state.cleanErrors=[err.message];state.cleanSheetName='';reconcileCleanTransactions();renderAll();
+    $('cleanState').className='file-state bad';$('cleanState').textContent='✕ '+err.message;setNotice(err.message,'bad');
+  }
+}
+
+// --- XLSX writer: 외부 라이브러리 없이 Store 방식 ZIP + OOXML 생성 ---
+const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0}
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function concatBytes(parts){const len=parts.reduce((a,b)=>a+b.length,0),out=new Uint8Array(len);let o=0;for(const p of parts){out.set(p,o);o+=p.length}return out}
+function dosTimeDate(d=new Date()){const time=((d.getHours()&31)<<11)|((d.getMinutes()&63)<<5)|((Math.floor(d.getSeconds()/2))&31);const date=(((d.getFullYear()-1980)&127)<<9)|(((d.getMonth()+1)&15)<<5)|(d.getDate()&31);return {time,date}}
+function makeZip(files){
+  const enc=new TextEncoder(),locals=[],centrals=[];let offset=0;const dt=dosTimeDate();
+  for(const f of files){const name=enc.encode(f.name),data=typeof f.data==='string'?enc.encode(f.data):f.data,crc=crc32(data),flags=0x0800;
+    const local=concatBytes([u32(0x04034b50),u16(20),u16(flags),u16(0),u16(dt.time),u16(dt.date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);locals.push(local);
+    const central=concatBytes([u32(0x02014b50),u16(20),u16(20),u16(flags),u16(0),u16(dt.time),u16(dt.date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]);centrals.push(central);offset+=local.length;
+  }
+  const centralBlob=concatBytes(centrals),end=concatBytes([u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(centralBlob.length),u32(offset),u16(0)]);return concatBytes([...locals,centralBlob,end]);
+}
+function colName(n){let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
+function cellXml(ref,val,style=0,type='auto'){
+  if(val==null||val==='')return `<c r="${ref}"${style?` s="${style}"`:''}/>`;
+  if(type==='f'){
+    const formula=String(val).replace(/^=/,'');
+    return `<c r="${ref}"${style?` s="${style}"`:''}><f>${xmlEsc(formula)}</f></c>`;
+  }
+  if(type==='n'){
+    const n=typeof val==='number'?val:Number(val);
+    if(Number.isFinite(n))return `<c r="${ref}"${style?` s="${style}"`:''}><v>${n}</v></c>`;
+    return `<c r="${ref}"${style?` s="${style}"`:''}/>`;
+  }
+  if(type==='auto'&&typeof val==='number'&&Number.isFinite(val))return `<c r="${ref}"${style?` s="${style}"`:''}><v>${val}</v></c>`;
+  return `<c r="${ref}" t="inlineStr"${style?` s="${style}"`:''}><is><t xml:space="preserve">${xmlEsc(val)}</t></is></c>`;
+}
+function xmlEsc(s){
+  return String(s)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+function excelSerial(dateStr){const [y,m,d]=dateStr.split('-').map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/86400000}
+function rowXml(r,vals,styles=[],types=[],attrs=''){return `<row r="${r}"${attrs?` ${attrs}`:''}>${vals.map((v,i)=>cellXml(colName(i+1)+r,v,styles[i]||0,types[i]||'auto')).join('')}</row>`}
+function buildWorkbookFiles(){
+  const st=state.statement||{}, tx=state.transactions, v=validationData(), {dept,merch,card,master}=aggregate();
+  const h25='ht="25" customHeight="1"',h20='ht="20" customHeight="1"';
+  const rows=[];
+  const blank21=()=>new Array(21).fill('');
+  const styles21=(s)=>[...new Array(18).fill(s),0,0,0];
+  const sourceHeaders=['구분','이용 카드','일자','가맹점(은행)명','원금','수수료','이용금액/현지금액','기간','결제후잔액','회차','예산과목 정보','비고','클린 카드번호','클린 사용부서','클린 사용일자','클린 사용처','클린 사용금액','3자일치'];
+
+  // T5 피벗테이블: A12:L(데이터 마지막 행)을 원본으로 하여
+  // 행 = 예산과목 정보, 값 = 이용금액/현지금액 합계로 구성한다.
+  const pivotMap=new Map();
+  for(const t of tx){
+    const category=t.includeInDepartmentExpense?norm(t.budgetCategory):'';
+    if(!pivotMap.has(category))pivotMap.set(category,0);
+    pivotMap.set(category,pivotMap.get(category)+(Number(t.useAmount)||0));
+  }
+  const pivotItems=[...pivotMap.entries()];
+  const pivotCategories=pivotItems.map(x=>x[0]);
+  const pivotGrand=pivotItems.reduce((a,x)=>a+x[1],0);
+  const pivotEndRow=6+pivotItems.length;
+  function applyPivotDisplay(r,vals,sty,types){
+    if(r===5){
+      vals[19]='예산과목 정보'; vals[20]='합계 : 이용금액/현지금액';
+      sty[19]=15; sty[20]=15;
+      return;
+    }
+    if(r>=6&&r<6+pivotItems.length){
+      const [label,sum]=pivotItems[r-6];
+      vals[19]=label||'(blank)'; vals[20]=sum; sty[19]=16; sty[20]=17; types[20]='n';
+      return;
+    }
+    if(r===pivotEndRow){
+      vals[19]='총합계'; vals[20]=pivotGrand; sty[19]=19; sty[20]=22; types[20]='n';
+    }
+  }
+
+  // 사용내역 시트: 상단 요약영역을 압축해 표시
+  // 기존 5행 삭제 + (삭제 후) 9~13행 삭제 효과를 반영해 상세표 헤더는 12행부터 시작한다.
+  let vals=blank21(),sty=styles21(6); vals[0]=st.title||`비씨카드 ${st.statementMonth||''} 이용대금 명세서`; rows.push(rowXml(1,vals,sty,[],h25));
+  for(const [r,label,value] of [[2,'사업자번호',st.businessNumber],[3,'부서코드(부서명)',`${st.departmentCode||''}${st.departmentName?`(${st.departmentName})`:''}`],[4,'계좌번호',st.accountNumberMasked]]){
+    vals=blank21();sty=styles21(3);vals[0]=label;vals[1]=value||'';sty[0]=19;sty[1]=19;rows.push(rowXml(r,vals,sty,[],h25));
+  }
+  vals=blank21();sty=styles21(3);vals[0]='결제일';vals[1]=st.paymentDate?excelSerial(st.paymentDate):'';sty[0]=19;sty[1]=20;
+  const row5Types=new Array(21).fill('auto'); if(st.paymentDate)row5Types[1]='n';applyPivotDisplay(5,vals,sty,row5Types);rows.push(rowXml(5,vals,sty,row5Types,h25));
+
+  // 청구내역은 A:D에 바로 붙여서 표시
+  vals=blank21();sty=styles21(3);vals[0]='청구내역';vals[1]='금액';vals[2]='수수료';vals[3]='합계';[0,1,2,3].forEach(i=>sty[i]=5);let ptypes=new Array(21).fill('auto');applyPivotDisplay(6,vals,sty,ptypes);rows.push(rowXml(6,vals,sty,ptypes,h25));
+  vals=blank21();sty=styles21(13);vals[0]='전월미결제액';vals[1]=0;vals[2]=0;vals[3]=0;sty[0]=21;[1,2,3].forEach(i=>sty[i]=22);ptypes=new Array(21).fill('auto');applyPivotDisplay(7,vals,sty,ptypes);rows.push(rowXml(7,vals,sty,ptypes,h25));
+  vals=blank21();sty=styles21(13);vals[0]='당월청구금액';vals[1]=st.statementTotal??v.sum;vals[2]=0;vals[3]=st.statementTotal??v.sum;sty[0]=21;[1,2,3].forEach(i=>sty[i]=22);ptypes=new Array(21).fill('auto');applyPivotDisplay(8,vals,sty,ptypes);rows.push(rowXml(8,vals,sty,ptypes,h25));
+  vals=blank21();sty=styles21(13);vals[0]='결제하실 총 금액';vals[1]=st.statementTotal??v.sum;vals[2]=0;vals[3]=st.statementTotal??v.sum;sty[0]=19;[1,2,3].forEach(i=>sty[i]=22);ptypes=new Array(21).fill('auto');applyPivotDisplay(9,vals,sty,ptypes);rows.push(rowXml(9,vals,sty,ptypes,h25));
+  for(let r=10;r<=Math.min(11,pivotEndRow);r++){vals=blank21();sty=styles21(0);ptypes=new Array(21).fill('auto');applyPivotDisplay(r,vals,sty,ptypes);rows.push(rowXml(r,vals,sty,ptypes,h20));}
+
+  const headers=sourceHeaders;
+  const headerStyles=[11,11,11,11,12,12,12,12,12,12,11,11,11,11,11,11,12,11];
+  rows.push(rowXml(12,headers,headerStyles,[],h20));
+
+  // 상세영역: 12행 헤더, 13행부터 데이터. E~J는 기본 가로정렬, 나머지는 가운데.
+  const detailStyles=[7,7,9,7,10,10,10,8,10,8,7,7,7,7,9,8,10,7];
+  const detailTypes=['auto','auto','n','auto','n','n','n','auto','n','auto','auto','auto','auto','auto','n','auto','n','f'];
+  const lastData=12+tx.length;
+  for(let r=13;r<=lastData;r++){
+    const t=tx[r-13];
+    rows.push(rowXml(r,[t.type,t.cardNumberMasked,excelSerial(t.useDate),t.merchantName,t.principal,t.fee,t.useAmount,t.period,t.remainingBalance,t.installmentRound,t.includeInDepartmentExpense?t.budgetCategory:'',t.department,t.cleanCardNumber,t.cleanDepartment,t.cleanUseDate?excelSerial(t.cleanUseDate):'',t.cleanMerchant,t.cleanAmount==null?'':t.cleanAmount,`RIGHT(B${r},4)=RIGHT(M${r},4)`],detailStyles,detailTypes,h20));
+  }
+  const pivotSourceRef=`A12:L${lastData}`;
+  const pivotLocationRef=`T5:U${pivotEndRow}`;
+  const pivotFieldXml=sourceHeaders.slice(0,12).map((_,i)=>{
+    if(i===10){
+      const items=pivotCategories.map((x,idx)=>`<item x="${idx}"/>`).join('')+'<item t="default"/>';
+      return `<pivotField axis="axisRow" compact="0" outline="0" showAll="0"><items count="${pivotCategories.length+1}">${items}</items></pivotField>`;
+    }
+    if(i===6)return '<pivotField dataField="1" showAll="0"/>';
+    return '<pivotField showAll="0"/>';
+  }).join('');
+  const pivotRowItems=pivotCategories.map((_,idx)=>`<i><x v="${idx}"/></i>`).join('')+'<i t="grand"><x/></i>';
+  const pivotTableXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" name="예산과목피벗" cacheId="1" dataCaption="값" updatedVersion="8" minRefreshableVersion="3" useAutoFormatting="1" itemPrintTitles="1" createdVersion="8" indent="0" compact="0" compactData="0" gridDropZones="1" multipleFieldFilters="0"><location ref="${pivotLocationRef}" firstHeaderRow="1" firstDataRow="1" firstDataCol="1"/><pivotFields count="12">${pivotFieldXml}</pivotFields><rowFields count="1"><field x="10"/></rowFields><rowItems count="${pivotCategories.length+1}">${pivotRowItems}</rowItems><colItems count="1"><i/></colItems><dataFields count="1"><dataField name="합계 : 이용금액/현지금액" fld="6" subtotal="sum" baseField="0" baseItem="0"/></dataFields><pivotTableStyleInfo name="PivotStyleLight16" showRowHeaders="1" showColHeaders="1" showRowStripes="0" showColStripes="0" showLastColumn="1"/></pivotTableDefinition>`;
+
+  const pivotCacheFields=sourceHeaders.slice(0,12).map((h,i)=>{
+    const name=xmlEsc(h);
+    if(i===10){
+      const shared=pivotCategories.map(x=>x===''?'<m/>':`<s v="${xmlEsc(x)}"/>`).join('');
+      const hasBlank=pivotCategories.includes('')?'1':'0',hasString=pivotCategories.some(x=>x!=='')?'1':'0';
+      return `<cacheField name="${name}" numFmtId="0"><sharedItems count="${pivotCategories.length}" containsBlank="${hasBlank}" containsString="${hasString}">${shared}</sharedItems></cacheField>`;
+    }
+    if(i===2)return `<cacheField name="${name}" numFmtId="164"><sharedItems containsSemiMixedTypes="0" containsString="0" containsDate="1"/></cacheField>`;
+    if([4,5,6,8,9].includes(i))return `<cacheField name="${name}" numFmtId="0"><sharedItems containsSemiMixedTypes="0" containsString="0" containsNumber="1"/></cacheField>`;
+    return `<cacheField name="${name}" numFmtId="0"><sharedItems/></cacheField>`;
+  }).join('');
+  const pivotCacheDefinitionXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1" refreshOnLoad="1" enableRefresh="1" refreshedBy="Local Card Dashboard" createdVersion="8" refreshedVersion="8" minRefreshableVersion="3" recordCount="${tx.length}"><cacheSource type="worksheet"><worksheetSource ref="${pivotSourceRef}" sheet="사용내역"/></cacheSource><cacheFields count="12">${pivotCacheFields}</cacheFields></pivotCacheDefinition>`;
+
+  function pivotRecordCell(v,kind,fieldIndex){
+    if(fieldIndex===10){const idx=pivotCategories.indexOf(v==null?'':String(v));return idx>=0?`<x v="${idx}"/>`:'<m/>';}
+    if(v==null||v==='')return '<m/>';
+    if(kind==='date')return `<d v="${xmlEsc(v)}T00:00:00"/>`;
+    if(kind==='number'){const n=Number(v);return Number.isFinite(n)?`<n v="${n}"/>`:'<m/>';}
+    if(typeof v==='number'&&Number.isFinite(v))return `<n v="${v}"/>`;
+    return `<s v="${xmlEsc(v)}"/>`;
+  }
+  const pivotCacheRecordsXml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><pivotCacheRecords xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${tx.length}">${tx.map(t=>{const cat=t.includeInDepartmentExpense?norm(t.budgetCategory):'';const vals=[t.type,t.cardNumberMasked,t.useDate,t.merchantName,t.principal,t.fee,t.useAmount,t.period,t.remainingBalance,t.installmentRound,cat,t.department];const kinds=['string','string','date','string','number','number','number','auto','number','number','string','string'];return '<r>'+vals.map((x,i)=>pivotRecordCell(x,kinds[i],i)).join('')+'</r>';}).join('')}</pivotCacheRecords>`;
+
+  const sheet1=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><dimension ref="A1:U${lastData}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="18" customWidth="1"/><col min="2" max="2" width="31" customWidth="1"/><col min="3" max="3" width="13" customWidth="1"/><col min="4" max="4" width="35" customWidth="1"/><col min="5" max="7" width="14" customWidth="1"/><col min="8" max="10" width="8" customWidth="1"/><col min="11" max="12" width="15" customWidth="1"/><col min="13" max="13" width="24" customWidth="1"/><col min="14" max="14" width="20" customWidth="1"/><col min="15" max="15" width="13" customWidth="1"/><col min="16" max="16" width="35" customWidth="1"/><col min="17" max="17" width="14" customWidth="1"/><col min="18" max="18" width="10" customWidth="1"/><col min="19" max="19" width="4" customWidth="1"/><col min="20" max="20" width="20" customWidth="1"/><col min="21" max="21" width="24" customWidth="1"/></cols><sheetData>${rows.join('')}</sheetData><autoFilter ref="A12:R${lastData}"/><mergeCells count="1"><mergeCell ref="A1:R1"/></mergeCells><pivotTableParts count="1"><pivotTablePart r:id="rId1"/></pivotTableParts></worksheet>`;
+
+  // 요약 시트: 첨부 예시처럼 노란 제목/헤더 + 테두리, 12pt
+  let sr=1,srows=[];
+  const sumTitle=(text,width)=>{const a=new Array(width).fill(''),s=new Array(width).fill(14);a[0]=text;srows.push(rowXml(sr++,a,s,[],h20))};
+  const sumHeader=(labels)=>srows.push(rowXml(sr++,labels,new Array(labels.length).fill(15),[],h20));
+  const sumBlank=()=>srows.push(rowXml(sr++,[],[],[],h20));
+
+  sumTitle('A. 부서별 전체 사용액',5);sumHeader(['부서명','거래건수','사용액','취소액','순사용액']);
+  for(const [k,x] of [...dept].sort((a,b)=>b[1].net-a[1].net))srows.push(rowXml(sr++,[k,x.count,x.pos,x.neg,x.net],[16,16,17,17,17],[],h20));
+  sumBlank();
+  sumTitle('B. 부서별 부서비 사용액',3);sumHeader(['부서번호','부서명','부서비 사용액']);
+  const deptNames=master.length?master:[...dept.keys()].filter(x=>x!=='(미매핑)').map(department=>({departmentNo:'',department}));
+  for(const r of deptNames){const x=dept.get(r.department);srows.push(rowXml(sr++,[r.departmentNo,r.department,x?x.deptExpense:0],[16,16,17],[],h20))}
+  sumBlank();
+  sumTitle('C. 가맹점별 이용건수',3);sumHeader(['가맹점(은행)명','거래건수','순사용액']);
+  for(const [k,x] of [...merch].sort((a,b)=>b[1].net-a[1].net))srows.push(rowXml(sr++,[k,x.count,x.net],[16,16,17],[],h20));
+  sumBlank();
+  sumTitle('D. 카드별 사용액',4);sumHeader(['카드끝4자리','부서명','거래건수','순사용액']);
+  for(const [k,x] of [...card].sort((a,b)=>b[1].net-a[1].net))srows.push(rowXml(sr++,[String(k).padStart(4,'0'),x.department,x.count,x.net],[23,16,16,17],['text','auto','auto','auto'],h20));
+  const sheet2Last=Math.max(1,sr-1);
+  const sheet2=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:E${sheet2Last}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="20"/><cols><col min="1" max="1" width="34" customWidth="1"/><col min="2" max="2" width="22" customWidth="1"/><col min="3" max="5" width="16" customWidth="1"/></cols><sheetData>${srows.join('')}</sheetData></worksheet>`;
+
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="#,##0;[Red]-#,##0"/></numFmts><fonts count="4"><font><sz val="12"/><name val="Arial"/></font><font><b/><sz val="12"/><name val="Arial"/></font><font><sz val="14"/><name val="Arial"/></font><font><b/><sz val="14"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFC000"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FF808080"/></left><right style="thin"><color rgb="FF808080"/></right><top style="thin"><color rgb="FF808080"/></top><bottom style="thin"><color rgb="FF808080"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="24">
+  <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="165" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="164" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="164" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" horizontal="center" vertical="center"/></xf>
+  <xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="165" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  <xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment shrinkToFit="1" vertical="center"/></xf>
+  </cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  return [
+    {name:'[Content_Types].xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/pivotCache/pivotCacheDefinition1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml"/><Override PartName="/xl/pivotCache/pivotCacheRecords1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml"/><Override PartName="/xl/pivotTables/pivotTable1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>`},
+    {name:'_rels/.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`},
+    {name:'xl/workbook.xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets><sheet name="사용내역" sheetId="1" r:id="rId1"/><sheet name="요약" sheetId="2" r:id="rId2"/></sheets><calcPr calcId="191029" calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"/><pivotCaches><pivotCache cacheId="1" r:id="rId4"/></pivotCaches></workbook>`},
+    {name:'xl/_rels/workbook.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition1.xml"/></Relationships>`},
+    {name:'xl/styles.xml',data:styles},{name:'xl/worksheets/sheet1.xml',data:sheet1},{name:'xl/worksheets/sheet2.xml',data:sheet2},
+    {name:'xl/worksheets/_rels/sheet1.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable" Target="../pivotTables/pivotTable1.xml"/></Relationships>`},
+    {name:'xl/pivotTables/pivotTable1.xml',data:pivotTableXml},
+    {name:'xl/pivotTables/_rels/pivotTable1.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition" Target="../pivotCache/pivotCacheDefinition1.xml"/></Relationships>`},
+    {name:'xl/pivotCache/pivotCacheDefinition1.xml',data:pivotCacheDefinitionXml},
+    {name:'xl/pivotCache/pivotCacheRecords1.xml',data:pivotCacheRecordsXml},
+    {name:'xl/pivotCache/_rels/pivotCacheDefinition1.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheRecords" Target="pivotCacheRecords1.xml"/></Relationships>`},
+    {name:'docProps/core.xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>법인카드 청구내역</dc:title><dc:creator>Local Card Dashboard</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created></cp:coreProperties>`},
+    {name:'docProps/app.xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Local Card Dashboard</Application></Properties>`}
+  ];
+}
+function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function exportXlsx(){
+  if(!state.transactions.length)return;const v=validationData();
+  if(v.diff!==null&&v.diff!==0&&!confirm(`거래 합계와 청구 총액이 ${fmtMoney(v.diff)} 차이납니다.\n그래도 Excel을 생성할까요?`))return;
+  if((v.required||v.unmapped||v.dupmap)&&!confirm(`확인 필요한 항목이 ${v.required+v.unmapped+v.dupmap}건 있습니다.\n그래도 Excel을 생성할까요?`))return;
+  if(v.cleanUploaded&&v.tripleFalse&&!confirm(`3자 비교 FALSE가 ${v.tripleFalse}건 있습니다.\nExcel에는 TRUE/FALSE가 그대로 표시됩니다. 그래도 생성할까요?`))return;
+  try{const zip=makeZip(buildWorkbookFiles());const date=state.statement?.paymentDate||new Date().toISOString().slice(0,10);downloadBlob(new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),`카드명세서_${date}.xlsx`)}catch(e){setNotice('Excel 생성 실패: '+e.message,'bad')}
+}
+
+function resetAll(){
+  if(state.transactions.length&&!confirm('현재 불러온 데이터와 수정 내용을 모두 초기화할까요?'))return;
+  state.statement=null;state.transactions=[];state.cardRows=[];state.cardMap=new Map();state.csvErrors=[];state.cleanRows=[];state.cleanErrors=[];state.cleanName='';state.cleanSheetName='';state.pdfName='';state.csvName='';state.pdfPages=0;state.page=1;
+  $('pdfInput').value='';$('csvInput').value='';$('cleanInput').value='';$('pdfState').className='file-state';$('pdfState').textContent='파일을 선택해 주세요.';$('csvState').className='file-state';$('csvState').textContent='파일을 선택해 주세요.';$('cleanState').className='file-state';$('cleanState').textContent='파일을 선택해 주세요.';
+  ['searchInput','dateFrom','dateTo'].forEach(id=>$(id).value='');$('deptFilter').value='';$('cardFilter').value='';$('negativeOnly').checked=false;$('unmappedOnly').checked=false;clearNotice();renderAll();
+}
+function setupDrop(drop,input,handler){
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));
+  drop.addEventListener('drop',e=>{const f=e.dataTransfer.files?.[0];if(f)handler(f)}); input.addEventListener('change',()=>{const f=input.files?.[0];if(f)handler(f)});
+}
+function init(){
+  setupDrop($('pdfDrop'),$('pdfInput'),handlePdf);setupDrop($('csvDrop'),$('csvInput'),handleCsv);setupDrop($('cleanDrop'),$('cleanInput'),handleClean);
+  document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$(btn.dataset.tab+'View').classList.add('active')});
+  ['searchInput','deptFilter','cardFilter','dateFrom','dateTo','sortSelect','negativeOnly','unmappedOnly'].forEach(id=>$(id).addEventListener(id.includes('Input')?'input':'change',()=>{state.page=1;renderTable()}));
+  $('tableArea').addEventListener('change',updateTxFromInput);$('tableArea').addEventListener('blur',updateTxFromInput,true);$('tableArea').addEventListener('click',e=>{const btn=e.target.closest('[data-action=\"apply-budget\"]');if(!btn)return;const tr=btn.closest('tr'),t=state.transactions.find(x=>x.rowId===tr?.dataset.id);if(!t||!t.budgetCategory)return;let n=0;for(const x of state.transactions){if(x.merchantName===t.merchantName&&x.rowId!==t.rowId){x.budgetCategory=t.budgetCategory;n++}}renderTable();setNotice(`'${t.merchantName}' ${n}건에 예산과목 '${t.budgetCategory}'을 적용했습니다.`,'info')});
+  $('exportBtn').onclick=exportXlsx;$('resetBtn').onclick=resetAll;
+  $('themeBtn').onclick=toggleTheme; applyTheme(document.documentElement.dataset.theme || 'light', false);
+  $('helpBtn').onclick=()=>{$('helpModal').classList.add('open');$('helpModal').setAttribute('aria-hidden','false')};$('closeHelp').onclick=()=>{$('helpModal').classList.remove('open');$('helpModal').setAttribute('aria-hidden','true')};$('helpModal').onclick=e=>{if(e.target===$('helpModal'))$('closeHelp').click()};
+  $('templateBtn').onclick=()=>{const text='부서번호,부서명,카드끝4자리,카드명,부서비포함여부\r\n200,제2여객사업소,1590,공용카드,Y\r\n227,사상역,3150,역무카드,Y\r\n';downloadBlob(new Blob(['\uFEFF'+text],{type:'text/csv;charset=utf-8'}),'카드정보_템플릿.csv')};
+  renderAll();
+}
+init();
+})();
+</script>
+
+
+</body>
+</html>
