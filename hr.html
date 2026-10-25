@@ -213,6 +213,7 @@
         }
         .icon-btn:hover { background: var(--hover); color: var(--tx); }
         .icon-btn:active { transform: scale(.94); }
+        .icon-btn.danger:hover { background: var(--danger); color: #fff; }
         .hdr-logo {
             width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
@@ -887,6 +888,7 @@
             <div class="hchip danger"><span class="n" id="hc-l2">-</span><span class="l">타호선<br>대상</span></div>
             <div class="hchip purple"><span class="n" id="hc-67">-</span><span class="l">공로연수<br>예정</span></div>
         </div>
+        <button id="btn-hdr-reset" class="icon-btn danger" onclick="resetProject()" title="대시보드 초기화" aria-label="대시보드 초기화"><svg class="ic"><use href="#i-reset"/></svg></button>
         <button id="themeToggle" class="icon-btn" title="테마 전환" aria-label="테마 전환"></button>
     </div>
 
