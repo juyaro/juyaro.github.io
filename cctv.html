@@ -1497,6 +1497,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     } : null;
     return {
       id:r.id,
+      z:r.z,
       color:r.color,
       shape:r.shape || 'rect',
       reveal:!!r.reveal,
@@ -1764,6 +1765,19 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   let duration = 0;
   let regions = [];
   let revealRegions = [];
+  // 레이어 순서: 만들어진 순서대로 z 값을 부여해 모자이크·제외 영역을 하나의 스택으로 적용합니다.
+  let layerSeq = 0;
+  function syncLayerSeq(){
+    allRegions().forEach(r => {
+      if(typeof r.z === 'number') layerSeq = Math.max(layerSeq, r.z);
+    });
+    allRegions().forEach(r => {
+      if(typeof r.z !== 'number') r.z = ++layerSeq;
+    });
+  }
+  function layerOrderedRegions(){
+    return allRegions().slice().sort((a,b) => (a.z||0) - (b.z||0));
+  }
   let selectedRegionId = null;
   let selectedRegionIds = new Set();
   // Ctrl/Command 키를 마우스 이벤트와 별도로 추적합니다. (일부 환경에서 modifier가 누락되는 문제 대비)
@@ -2014,7 +2028,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   const history = { stack:[], index:-1, max:80 };
   function liteRegion(r){
     return {
-      id:r.id, color:r.color, shape:r.shape || 'rect', reveal:!!r.reveal,
+      id:r.id, z:r.z, color:r.color, shape:r.shape || 'rect', reveal:!!r.reveal,
       keyframes:r.keyframes.map(k => ({...k})),
       visibilityKeys:(r.visibilityKeys || []).map(k => ({t:k.t, visible:!!k.visible})),
       pendingPlace:false
@@ -2637,15 +2651,13 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       autoRects = updateAutoMotion(t);
       autoRects.forEach(rect => applyGlassMosaic(rect, 'ellipse'));
     }
-    regions.forEach(r => {
+    syncLayerSeq();
+    layerOrderedRegions().forEach(r => {
       if(!regionVisibleAtTime(r, t)) return;
       const rect = getRectAtTime(r, t);
-      if(rect) applyGlassMosaic(rect, r.shape);
-    });
-    revealRegions.forEach(r => {
-      if(!regionVisibleAtTime(r, t)) return;
-      const rect = getRectAtTime(r, t);
-      if(rect) revealOriginal(rect, r.shape);
+      if(!rect) return;
+      if(r.reveal) revealOriginal(rect, r.shape);
+      else applyGlassMosaic(rect, r.shape);
     });
     // 편집 화면에서만 테두리/번호/손잡이를 그립니다. 실제 렌더링에는 들어가지 않습니다.
     if(editing){
@@ -2763,14 +2775,6 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(hx, hy, hs/2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
       });
-      const cx = rect.x + rect.w/2, cy = rect.y + rect.h/2;
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(cx-7, cy-1, 14, 2);
-      ctx.fillRect(cx-1, cy-7, 2, 14);
     });
     ctx.restore();
   }
@@ -3283,7 +3287,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   }
   function createMosaicRegion(pendingPlace){
     const now = clampNum(srcVideo.currentTime, 0, duration || 0);
-    const r = { id:uid(), color:COLORS[regions.length % COLORS.length], shape:'rect', keyframes:[], pendingPlace, visibilityKeys:visibilityKeysFromCreateTime(now) };
+    const r = { id:uid(), z:++layerSeq, color:COLORS[regions.length % COLORS.length], shape:'rect', keyframes:[], pendingPlace, visibilityKeys:visibilityKeysFromCreateTime(now) };
     regions.push(r);
     setSingleSelectedRegion(r.id);
     return r;
@@ -3296,7 +3300,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   addRevealBtn.addEventListener('click', () => {
     allRegions().filter(r => r.pendingPlace).forEach(r => removeRegion(r.id, {silent:true}));
     const now = clampNum(srcVideo.currentTime, 0, duration || 0);
-    const r = { id:uid(), color:'#ffffff', shape:'rect', keyframes:[], pendingPlace:true, reveal:true, visibilityKeys:visibilityKeysFromCreateTime(now) };
+    const r = { id:uid(), z:++layerSeq, color:'#ffffff', shape:'rect', keyframes:[], pendingPlace:true, reveal:true, visibilityKeys:visibilityKeysFromCreateTime(now) };
     revealRegions.push(r);
     setSingleSelectedRegion(r.id);
     rerender();
@@ -3434,7 +3438,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       if(r && hitTest(r,t,p)) target = r;
     }
     if(!target){
-      const hitRegions = allRegions().filter(r => hitTest(r,t,p));
+      const hitRegions = layerOrderedRegions().reverse().filter(r => hitTest(r,t,p));
       hitRegions.sort((a,b) => (isRegionCompleted(a.id) ? 1 : 0) - (isRegionCompleted(b.id) ? 1 : 0));
       target = hitRegions[0] || null;
     }
@@ -3452,17 +3456,14 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     const pending = allRegions().find(r => r.pendingPlace);
     if(pending){ drag = { type:'new', region:pending, startX:p.x, startY:p.y, startClientX:e.clientX, startClientY:e.clientY, autoCreated:false }; return; }
 
-    // 우선순위: 현재 선택 영역 → 제외영역 → 미완료 모자이크 → 완료 영역
+    // 우선순위: 현재 선택 영역 → 위쪽 레이어 순 (미완료 → 완료)
     const candidates = [];
     const primary = selectedRegionId ? allRegions().find(r => r.id === selectedRegionId) : null;
     if(primary && !isRegionCompleted(primary.id) && hitTest(primary, t, p)) candidates.push(primary);
-    const revealHits = revealRegions.slice().reverse().filter(r => r.id !== (primary && primary.id) && hitTest(r,t,p));
-    const mosaicHits = regions.slice().reverse().filter(r => r.id !== (primary && primary.id) && hitTest(r,t,p));
+    const stackHits = layerOrderedRegions().reverse().filter(r => r.id !== (primary && primary.id) && hitTest(r,t,p));
     candidates.push(
-      ...revealHits.filter(r => !isRegionCompleted(r.id)),
-      ...mosaicHits.filter(r => !isRegionCompleted(r.id)),
-      ...revealHits.filter(r => isRegionCompleted(r.id)),
-      ...mosaicHits.filter(r => isRegionCompleted(r.id))
+      ...stackHits.filter(r => !isRegionCompleted(r.id)),
+      ...stackHits.filter(r => isRegionCompleted(r.id))
     );
     const region = candidates[0];
 
