@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f5f5f7" id="themeColorMeta">
-<title>CCTV 개인정보 보호 편집기</title>
+<title>CCTV 영상 개인정보 보호 편집</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
@@ -216,6 +216,10 @@
   .field{display:flex; flex-direction:column; gap:5px; flex:1; min-width:120px;}
   .field > label{font-size:11.5px; font-weight:600; color:var(--text-2); letter-spacing:.01em;}
   .field-row{display:flex; gap:10px; align-items:flex-end;}
+  .date-wrap{position:relative;}
+  .date-native::-webkit-calendar-picker-indicator{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;}
+  .date-icon{position:absolute; right:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-2); pointer-events:none;}
+  .date-weekday{position:absolute; left:12px; right:32px; top:50%; transform:translateY(-50%); font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:clip; pointer-events:none;}
   .field-note{font-size:11.5px; color:var(--text-2); display:flex; align-items:center; gap:5px; min-height:18px;}
   .field-note.ok{color:var(--green);}
   .field-note.err{color:var(--red);}
@@ -553,6 +557,17 @@
   .alert-actions button.danger{color:var(--red);}
   .alert-actions button:hover{background:var(--fill);}
   .alert-actions.single{grid-template-columns:1fr;}
+  .alert{width:440px; max-width:100%; border-radius:24px; overflow:hidden; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-pop);}
+  .alert-body{padding:34px 28px 22px;}
+  .alert-icon{width:52px; height:52px; margin:0 auto 18px; border-radius:15px; background:var(--blue-tint); color:var(--blue);}
+  .alert-body h3{font-size:17px; font-weight:700; letter-spacing:-.01em; margin:0 0 9px;}
+  .alert-body p{font-size:13px; font-weight:500; color:var(--text-2); line-height:1.6; margin:0;}
+  .alert-actions{display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:0 27px 27px; border-top:0;}
+  .alert-actions button{height:44px; border:0; border-radius:12px; background:var(--surface-2); color:var(--text); font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; transition:filter .15s;}
+  .alert-actions button + button{border-left:0; background:var(--blue); color:#fff;}
+  .alert-actions button:hover{background:var(--surface-3);}
+  .alert-actions button + button:hover{background:var(--blue);}
+  .alert-actions button.danger{background:var(--red); color:#fff;}
 
   .sheet{
     width:min(620px, 100%); max-height:min(80vh, 720px); border-radius:18px; background:var(--surface);
@@ -599,6 +614,71 @@
 </style>
 </head>
 <body>
+<style>
+  .pw-gate{position:fixed; inset:0; z-index:20000; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; color:#f5f5f7; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif; background:radial-gradient(circle at 14% 8%, rgba(10,132,255,.38), transparent 42%), radial-gradient(circle at 72% 14%, rgba(48,209,88,.16), transparent 38%), radial-gradient(circle at 86% 92%, rgba(94,92,230,.36), transparent 42%), #0b0b0d; -webkit-font-smoothing:antialiased;}
+  .pw-gate.hidden{display:none;}
+  .pw-gate-card{width:375px; max-width:100%; box-sizing:border-box; padding:36px 33px 26px; border-radius:24px; background:rgba(28,28,32,.78); border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 80px rgba(0,0,0,.55); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); display:flex; flex-direction:column; align-items:center; text-align:center;}
+  .pw-gate-icon{width:70px; height:70px; border-radius:20px; display:flex; align-items:center; justify-content:center; background:linear-gradient(145deg,#3d9bff,#0a64e0); box-shadow:0 12px 30px rgba(10,132,255,.45), inset 0 1px 0 rgba(255,255,255,.25);}
+  .pw-gate-icon svg{width:34px; height:34px; color:#fff;}
+  .pw-gate h2{margin:20px 0 0; font-size:20px; font-weight:700; letter-spacing:-.01em; color:#fff;}
+  .pw-gate-desc{margin:8px 0 0; font-size:14px; line-height:1.5; font-weight:500; color:rgba(235,235,245,.6);}
+  .pw-gate-field{position:relative; width:100%; margin-top:26px;}
+  .pw-gate input{display:block; width:100%; height:46px; box-sizing:border-box; border-radius:999px; border:2px solid transparent; background:rgba(255,255,255,.1); color:#f5f5f7; padding:0 50px; font-size:15px; font-family:inherit; text-align:center; outline:none; transition:border-color .15s, box-shadow .15s, background .15s;}
+  .pw-gate input::placeholder{color:rgba(235,235,245,.38);}
+  .pw-gate input:focus{border-color:rgba(10,132,255,.9); box-shadow:0 0 0 4px rgba(10,132,255,.22); background:rgba(255,255,255,.12);}
+  .pw-gate input.is-error{border-color:rgba(255,69,58,.9); box-shadow:0 0 0 4px rgba(255,69,58,.2);}
+  .pw-gate button{position:absolute; right:6px; top:50%; transform:translateY(-50%); width:34px; height:34px; border:0; border-radius:50%; background:#f5f5f7; color:#0b0b0d; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:transform .12s, opacity .15s;}
+  .pw-gate button:hover{transform:translateY(-50%) scale(1.06);}
+  .pw-gate button svg{width:16px; height:16px;}
+  .pw-gate-msg{min-height:18px; margin:10px 0 0; font-size:12.5px; color:#ff453a; font-weight:500;}
+  .pw-gate-foot{display:flex; align-items:center; justify-content:center; gap:6px; margin:10px 0 0; font-size:12px; font-weight:500; color:rgba(235,235,245,.36);}
+  .pw-gate-foot svg{width:12px; height:12px; flex:0 0 auto;}
+</style>
+<div id="pwGate" class="pw-gate" role="dialog" aria-modal="true" aria-labelledby="pwGateTitle">
+  <div class="pw-gate-card">
+    <div class="pw-gate-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-shield"/></svg></div>
+    <h2 id="pwGateTitle">CCTV 영상 개인정보 보호 편집</h2>
+    <p class="pw-gate-desc">계속하려면 암호를 입력하세요.</p>
+    <form id="gateForm" class="pw-gate-field" autocomplete="off">
+      <input type="password" id="gatePw" placeholder="암호 입력" autocomplete="off" aria-label="암호">
+      <button type="button" id="gateBtn" aria-label="확인"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </form>
+    <p id="gateMsg" class="pw-gate-msg" aria-live="polite"></p>
+    <p class="pw-gate-foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>이 기기에서만 처리되며 외부로 전송되지 않습니다</p>
+  </div>
+</div>
+<script>
+(function(){
+  var GATE_PASSWORD = 'cctv';
+  var gate = document.getElementById('pwGate');
+  var input = document.getElementById('gatePw');
+  var gateForm = document.getElementById('gateForm');
+  var btn = document.getElementById('gateBtn');
+  var msg = document.getElementById('gateMsg');
+  function tryOpen(){
+    if(input.value === GATE_PASSWORD){
+      gate.classList.add('hidden');
+      input.value = '';
+      msg.textContent = '';
+      window.cctvUnlocked = true;
+      if(typeof window.cctvOnUnlock === 'function') window.cctvOnUnlock();
+    } else {
+      msg.textContent = '암호가 올바르지 않습니다. 다시 입력해 주세요.';
+      input.classList.add('is-error');
+      input.select();
+    }
+  }
+  input.addEventListener('input', function(){ input.classList.remove('is-error'); msg.textContent = ''; });
+  // 폼 기본 제출(페이지 새로고침)만 막고, 실제 확인은 아래 keyup/click에서 합니다.
+  gateForm.addEventListener('submit', function(e){ e.preventDefault(); });
+  input.addEventListener('keyup', function(e){
+    if(e.key === 'Enter') tryOpen();
+  });
+  btn.addEventListener('click', tryOpen);
+  input.focus();
+})();
+</script>
+
 
 <!-- SF Symbols 느낌의 인라인 아이콘 스프라이트 -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
@@ -659,7 +739,7 @@
     <div class="brand">
       <div class="brand-icon"><svg class="ic lg"><use href="#ic-shield"/></svg></div>
       <div>
-        <h1>CCTV 개인정보 보호 편집기</h1>
+        <h1>CCTV 영상 개인정보 보호 편집</h1>
         <p>모자이크 · 타임라인 편집 · 암호/만료 잠금 배부 파일 생성</p>
       </div>
     </div>
@@ -672,6 +752,8 @@
       <button type="button" id="resetAllBtn" class="btn btn-icon" title="초기화 (처음 상태로)" aria-label="초기화"><svg class="ic"><use href="#ic-reset"/></svg></button>
       <button type="button" id="shortcutBtn" class="btn btn-icon" title="키보드 단축키 (?)" aria-label="키보드 단축키"><svg class="ic"><use href="#ic-keyboard"/></svg></button>
       <button type="button" id="themeToggle" class="btn btn-icon" aria-label="테마 전환" title="테마 전환"></button>
+        <button type="button" id="topSaveProjectBtn" class="btn btn-icon" title="편집 저장 (프로젝트 JSON)" aria-label="편집 저장"><svg class="ic"><use href="#ic-save"/></svg></button>
+        <button type="button" id="topLoadProjectBtn" class="btn btn-icon" title="불러오기 (프로젝트 JSON)" aria-label="불러오기"><svg class="ic"><use href="#ic-folder"/></svg></button>
     </div>
   </div>
 </header>
@@ -709,6 +791,8 @@
           <span class="time-label" id="timeLabel"><strong>00:00.00</strong><span>/ 00:00</span></span>
         </div>
         <div class="transport-right">
+          <button type="button" id="stageAddRegionBtn" class="btn btn-primary" disabled title="모자이크 영역 추가 (M)"><svg class="ic"><use href="#ic-plus"/></svg> 모자이크 영역</button>
+          <button type="button" id="stageAddRevealBtn" class="btn" disabled title="제외 영역 추가 (E)"><svg class="ic"><use href="#ic-eye"/></svg> 제외 영역</button>
           <button type="button" id="splitBtn" class="btn" disabled title="현재 위치에서 구간 자르기 (S)"><svg class="ic"><use href="#ic-scissors"/></svg> 자르기 <span class="kbd-hint">S</span></button>
           <button type="button" id="deleteSegmentBtn" class="btn btn-danger" disabled title="선택한 구간 삭제"><svg class="ic"><use href="#ic-trash"/></svg> 선택 구간 삭제</button>
         </div>
@@ -739,8 +823,8 @@
         </div>
         <div class="card-actions">
           <button type="button" id="clearGroupBtn" class="btn btn-sm" hidden>묶음 해제</button>
-          <button type="button" id="addRevealBtn" class="btn" disabled title="모자이크를 걷어내 원본이 보이는 영역 (E)"><svg class="ic"><use href="#ic-eye"/></svg> 제외 영역</button>
           <button type="button" id="addRegionBtn" class="btn btn-primary" disabled title="모자이크 영역 추가 (M)"><svg class="ic"><use href="#ic-plus"/></svg> 모자이크 영역</button>
+          <button type="button" id="addRevealBtn" class="btn" disabled title="모자이크를 걷어내 원본이 보이는 영역 (E)"><svg class="ic"><use href="#ic-eye"/></svg> 제외 영역</button>
         </div>
       </div>
       <div class="region-tip">
@@ -867,15 +951,15 @@
           <span class="label"><span>열람 암호 보이기</span></span>
         </label>
         <div class="field-row">
-          <div class="field" style="flex:0 0 auto;">
+          <div class="field" style="flex:0 0 auto;min-width:0;">
             <label for="pkgDays">보관 기간</label>
-            <div class="row" style="gap:6px;"><input type="number" id="pkgDays" class="input" value="30" min="1"><span class="sub">일 후 만료</span></div>
+            <div class="row" style="gap:6px;"><input type="number" id="pkgDays" class="input" style="width:56px;flex:0 0 56px;" value="30" min="1"></div>
           </div>
-          <div class="field">
+          <div class="field" style="flex:1 1 0;min-width:150px;">
             <label for="pkgExpireDate">만료 날짜</label>
-            <input type="date" id="pkgExpireDate" class="input">
+            <div class="date-wrap"><input type="date" id="pkgExpireDate" class="input date-native" style="color:transparent;padding-right:12px;"><svg class="ic date-icon"><use href="#ic-calendar"/></svg><span id="pkgExpireWeekday" class="date-weekday"></span></div>
           </div>
-          <div class="field" style="flex:0 0 112px;">
+          <div class="field" style="flex:0 0 128px;min-width:0;">
             <label for="pkgExpireTime">만료 시간</label>
             <input type="time" id="pkgExpireTime" class="input" value="23:59">
           </div>
@@ -1699,6 +1783,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     }
   }
   loadProjectBtn?.addEventListener('click', () => projectInput?.click());
+  $('topSaveProjectBtn')?.addEventListener('click', () => saveProjectBtn?.click());
+  $('topLoadProjectBtn')?.addEventListener('click', () => projectInput?.click());
   $('dzProjectBtn').addEventListener('click', () => projectInput?.click());
   projectInput?.addEventListener('change', async (e) => {
     const f=e.target.files?.[0];
@@ -1842,6 +1928,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     updateExpiryNote();
   }
   function updateExpiryNote(){
+    const wd = $('pkgExpireWeekday');
+    if(wd){ const v = pkgExpireDate.value; wd.textContent = v ? `${v}(${'일월화수목금토'[new Date(`${v}T00:00:00`).getDay()]})` : ''; }
     const note = $('expiryNote');
     if(!note) return;
     const time = pkgExpireTime.value || '23:59';
@@ -1972,7 +2060,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     stageWrap.classList.add('has-video');
     dropzone.hidden = true;
     emptyHint.hidden = true;
-    [playBtn, splitBtn, addRegionBtn, addRevealBtn, exportBtn, $('toStartBtn'), $('stepBackBtn'), $('stepFwdBtn'), $('toEndBtn')].forEach(b => b.disabled = false);
+    [playBtn, splitBtn, addRegionBtn, addRevealBtn, $('stageAddRegionBtn'), $('stageAddRevealBtn'), exportBtn, $('toStartBtn'), $('stepBackBtn'), $('stepFwdBtn'), $('toEndBtn')].forEach(b => b.disabled = false);
     regions = [];
     revealRegions = [];
     completedRegionIds = new Set();
@@ -2587,8 +2675,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   function getRectAtTime(region, t){
     const kfs = region.keyframes;
     if(kfs.length === 0) return null;
-    if(kfs.length === 1 || t <= kfs[0].t) return kfs[0];
-    if(t >= kfs[kfs.length-1].t) return kfs[kfs.length-1];
+    if(kfs.length === 1 || t <= kfs[0].t) return {...kfs[0]};
+    if(t >= kfs[kfs.length-1].t) return {...kfs[kfs.length-1]};
     for(let i=0;i<kfs.length-1;i++){
       const a = kfs[i], b = kfs[i+1];
       if(t >= a.t && t <= b.t){
@@ -2635,10 +2723,26 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     ctx.restore();
   }
 
+  // 편집 화면 표시 배율: 캔버스 픽셀 / 화면 픽셀. 선 굵기·점선·라벨·손잡이를 해상도와 무관하게 같은 화면 크기로 그립니다.
+  function overlayScale(){
+    const w = stage.getBoundingClientRect().width;
+    return w > 0 ? stage.width / w : 1;
+  }
+  let overlayK = 1;
+  let labelHits = [];
+  function labelHitAt(p){
+    for(let i=labelHits.length-1;i>=0;i--){
+      const h = labelHits[i];
+      if(p.x >= h.x-4 && p.x <= h.x+h.w+4 && p.y >= h.y-4 && p.y <= h.y+h.h+4) return h;
+    }
+    return null;
+  }
+
   function drawFrame(atTime, opts){
     if(!duration) return;
     if(srcVideo.readyState < 2) return;
     const editing = opts && opts.editing;
+    if(editing){ overlayK = overlayScale(); labelHits = []; }
     const t = atTime !== undefined ? atTime : srcVideo.currentTime;
     try{
       ctx.drawImage(srcVideo, 0, 0, stage.width, stage.height);
@@ -2678,17 +2782,28 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     ctx.arcTo(x, y, x+w, y, rr);
     ctx.closePath();
   }
-  function drawLabel(text, x, y, bg, fg){
-    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Pretendard Variable", "Segoe UI", sans-serif';
-    const tw = ctx.measureText(text).width + 14;
-    const lx = clampNum(x + 6, 4, stage.width - tw - 4);
-    const ly = clampNum(y + 6, 4, stage.height - 24);
+  function drawLabel(text, x, y, bg, fg, box, regionId){
+    const k = overlayK || 1;
+    ctx.font = `600 ${13*k}px -apple-system, BlinkMacSystemFont, "Pretendard Variable", "Segoe UI", sans-serif`;
+    const padX = 7*k, lh = 20*k;
+    const tw = ctx.measureText(text).width + padX*2;
+    // 영역이 작아 라벨이 들어가지 않으면 영역 바깥(위, 공간이 없으면 아래)에 표시합니다.
+    const fits = !box || (box.w >= tw + 8*k && box.h >= lh + 8*k);
+    let lx = x + 6*k, ly = y + 6*k;
+    if(!fits){
+      lx = x;
+      ly = y - lh - 4*k;
+      if(ly < 0) ly = y + box.h + 4*k;
+    }
+    lx = clampNum(lx, 4*k, stage.width - tw - 4*k);
+    ly = clampNum(ly, 4*k, stage.height - lh - 4*k);
+    if(regionId) labelHits.push({id:regionId, x:lx, y:ly, w:tw, h:lh});
     ctx.fillStyle = bg;
-    roundRectPath(lx, ly, tw, 20, 6);
+    roundRectPath(lx, ly, tw, lh, 6*k);
     ctx.fill();
     ctx.fillStyle = fg;
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, lx + 7, ly + 10.5);
+    ctx.fillText(text, lx + padX, ly + lh/2);
     ctx.textBaseline = 'alphabetic';
   }
 
@@ -2698,15 +2813,16 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     ctx.save();
     autoRects.forEach((r, i) => {
       ctx.strokeStyle = '#ffd60a';
-      ctx.lineWidth = autoMenuTrackId === r.id ? 3.5 : 2;
-      ctx.setLineDash([6,4]);
+      const K = overlayK;
+      ctx.lineWidth = (autoMenuTrackId === r.id ? 1.5 : 1) * K;
+      ctx.setLineDash([2*K,2*K]);
       ctx.globalAlpha = r.hold ? 0.55 : 0.95;
       ctx.beginPath();
       ctx.ellipse(r.x+r.w/2, r.y+r.h/2, r.w/2, r.h/2, 0, 0, Math.PI*2);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
-      drawLabel(`자동 ${i+1}`, r.x, r.y, 'rgba(255,214,10,.95)', '#1d1d1f');
+      drawLabel(`자동 ${i+1}`, r.x, r.y, 'rgba(255,214,10,.95)', '#1d1d1f', r);
     });
     ctx.restore();
   }
@@ -2723,15 +2839,16 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       const color = r.color || COLORS[index % COLORS.length];
       ctx.save();
       ctx.strokeStyle = color;
-      ctx.lineWidth = selected ? 3.5 : 2.5;
-      ctx.setLineDash(selected ? [8,4] : [6,4]);
+      const K = overlayK;
+      ctx.lineWidth = (selected ? 1.5 : 1) * K;
+      ctx.setLineDash(selected ? [2.5*K,2*K] : [2*K,2*K]);
       ctx.globalAlpha = selected ? 1 : 0.92;
       ctx.beginPath();
       if(r.shape === 'ellipse') ctx.ellipse(rect.x+rect.w/2, rect.y+rect.h/2, rect.w/2, rect.h/2, 0, 0, Math.PI*2);
       else ctx.rect(rect.x, rect.y, rect.w, rect.h);
       ctx.stroke();
       ctx.setLineDash([]);
-      drawLabel(String(index + 1) + (r.tracking?.active ? ' ◎' : ''), rect.x, rect.y, color, '#111');
+      drawLabel(String(index + 1) + (r.tracking?.active ? ' ◎' : ''), rect.x, rect.y, color, '#111', rect, r.id);
       ctx.restore();
     });
     // 제외영역은 항상 모자이크보다 위에 표시합니다.
@@ -2743,16 +2860,17 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       ctx.save();
       const revealColor = '#ffffff';
       ctx.strokeStyle = revealColor;
-      ctx.lineWidth = isRegionSelected(r.id) ? 4 : 3;
-      ctx.setLineDash(isRegionSelected(r.id) ? [10,4] : [7,4]);
-      ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4;
+      const K = overlayK;
+      ctx.lineWidth = (isRegionSelected(r.id) ? 1.5 : 1) * K;
+      ctx.setLineDash(isRegionSelected(r.id) ? [2.5*K,2*K] : [2*K,2*K]);
+      ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4*K;
       ctx.beginPath();
       if(r.shape === 'ellipse') ctx.ellipse(rect.x+rect.w/2, rect.y+rect.h/2, rect.w/2, rect.h/2, 0, 0, Math.PI*2);
       else ctx.rect(rect.x, rect.y, rect.w, rect.h);
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.setLineDash([]);
-      drawLabel('제외 ' + String(index + 1), rect.x, rect.y, '#ffffff', '#111');
+      drawLabel('제외 ' + String(index + 1), rect.x, rect.y, '#ffffff', '#111', rect, r.id);
       ctx.restore();
     });
     ctx.restore();
@@ -2764,15 +2882,16 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       const rect = getRectAtTime(r, t);
       if(!rect) return;
       ctx.strokeStyle = r.reveal ? '#ffffff' : (r.color || '#0a84ff');
-      ctx.setLineDash([7,4]);
-      ctx.lineWidth = 2;
+      const K = overlayK;
+      ctx.setLineDash([2.5*K,2*K]);
+      ctx.lineWidth = 1.5*K;
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
       ctx.setLineDash([]);
-      const hs = 12;
+      const hs = 12*K;
       [[rect.x,rect.y],[rect.x+rect.w,rect.y],[rect.x,rect.y+rect.h],[rect.x+rect.w,rect.y+rect.h]].forEach(([hx,hy]) => {
         ctx.fillStyle = '#fff';
         ctx.strokeStyle = 'rgba(0,0,0,.6)';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.5*K;
         ctx.beginPath(); ctx.arc(hx, hy, hs/2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
       });
     });
@@ -3306,6 +3425,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     rerender();
   });
   $('clearGroupBtn').addEventListener('click', () => { setSingleSelectedRegion(null); rerender(); });
+  $('stageAddRegionBtn').addEventListener('click', () => { if(!addRegionBtn.disabled) addRegionBtn.click(); });
+  $('stageAddRevealBtn').addEventListener('click', () => { if(!addRevealBtn.disabled) addRevealBtn.click(); });
 
   function upsertKeyframe(region, t, rect, block){
     const eps = 0.04;
@@ -3330,7 +3451,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     if(!regionVisibleAtTime(region, t)) return null;
     const rect = getRectAtTime(region, t);
     if(!rect) return null;
-    const hs = 14;
+    const hs = 14 * overlayScale();
     const corners = { tl:[rect.x, rect.y], tr:[rect.x+rect.w, rect.y], bl:[rect.x, rect.y+rect.h], br:[rect.x+rect.w, rect.y+rect.h] };
     for(const [k,[cx,cy]] of Object.entries(corners)){
       if(Math.abs(p.x-cx)<hs && Math.abs(p.y-cy)<hs) return {mode:'resize', corner:k, rect};
@@ -3355,6 +3476,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     if(allRegions().some(r => r.pendingPlace)){ stage.style.cursor = 'crosshair'; return; }
     const p = canvasCoords(e);
     const t = srcVideo.currentTime;
+    if(labelHitAt(p)){ stage.style.cursor = 'move'; return; }
     if(selectedRegionId && !isRegionCompleted(selectedRegionId)){
       const region = allRegions().find(r => r.id === selectedRegionId);
       const hit = region && hitTest(region, t, p);
@@ -3456,6 +3578,18 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     const pending = allRegions().find(r => r.pendingPlace);
     if(pending){ drag = { type:'new', region:pending, startX:p.x, startY:p.y, startClientX:e.clientX, startClientY:e.clientY, autoCreated:false }; return; }
 
+    // 번호 라벨을 잡으면 작은 영역도 그대로 이동합니다.
+    const labelHit = labelHitAt(p);
+    if(labelHit && !isRegionCompleted(labelHit.id)){
+      const lr = allRegions().find(r => r.id === labelHit.id);
+      const lrect = lr && regionVisibleAtTime(lr, t) ? getRectAtTime(lr, t) : null;
+      if(lrect){
+        setSingleSelectedRegion(lr.id);
+        rerender();
+        drag = {type:'move', region:lr, startRect:{...lrect}, startX:p.x, startY:p.y, moved:false};
+        return;
+      }
+    }
     // 우선순위: 현재 선택 영역 → 위쪽 레이어 순 (미완료 → 완료)
     const candidates = [];
     const primary = selectedRegionId ? allRegions().find(r => r.id === selectedRegionId) : null;
@@ -3489,7 +3623,9 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         .map(r => ({region:r,rect:getRectAtTime(r,t)}))
         .filter(v => v.rect);
       if(moving.length > 1){
-        drag={type:'multi-pending',items:moving,startX:p.x,startY:p.y,startClientX:e.clientX,startClientY:e.clientY};
+        // 드래그 중 재생 시간이 흐르면 위치 기준이 어긋나 과하게 움직이므로, 드래그 동안 시간을 고정합니다.
+        srcVideo.pause();
+        drag={type:'multi-pending',items:moving,t0:t,startX:p.x,startY:p.y,startClientX:e.clientX,startClientY:e.clientY};
         return;
       }
     }
@@ -3528,7 +3664,8 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       drawFrame(t, {editing:true});
       ctx.save();
       ctx.strokeStyle = drag.region.reveal ? '#ffffff' : drag.region.color;
-      ctx.lineWidth = 2; ctx.setLineDash([6,4]); ctx.strokeRect(x,y,w,h);
+      const K = overlayScale();
+      ctx.lineWidth = 1.5*K; ctx.setLineDash([2*K,2*K]); ctx.strokeRect(x,y,w,h);
       ctx.fillStyle = drag.region.reveal ? 'rgba(255,255,255,.12)' : 'rgba(10,132,255,.12)'; ctx.fillRect(x,y,w,h);
       ctx.restore();
       drag.rect = {x,y,w,h};
@@ -3550,9 +3687,10 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       const moved = Math.hypot((e.clientX||drag.startClientX)-drag.startClientX, (e.clientY||drag.startClientY)-drag.startClientY);
       if(moved < 4) return;
       drag.type = 'multi-move';
-      drawFrame(t,{editing:true});
+      drawFrame(drag.t0,{editing:true});
     }
     if(drag.type === 'multi-move'){
+      const tt = drag.t0;
       const dx = p.x - drag.startX, dy = p.y - drag.startY;
       let minDx = -Infinity, maxDx = Infinity, minDy = -Infinity, maxDy = Infinity;
       drag.items.forEach(({rect}) => {
@@ -3561,9 +3699,9 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       });
       const cdx = clampNum(dx, minDx, maxDx), cdy = clampNum(dy, minDy, maxDy);
       drag.items.forEach(({region, rect:startRect}) => {
-        upsertKeyframe(region, t, { x:clampNum(startRect.x + cdx, 0, stage.width - startRect.w), y:clampNum(startRect.y + cdy, 0, stage.height - startRect.h), w:startRect.w, h:startRect.h }, currentBlockOf(region, t));
+        upsertKeyframe(region, tt, { x:clampNum(startRect.x + cdx, 0, stage.width - startRect.w), y:clampNum(startRect.y + cdy, 0, stage.height - startRect.h), w:startRect.w, h:startRect.h }, currentBlockOf(region, tt));
       });
-      drawFrame(t, {editing:true});
+      drawFrame(tt, {editing:true});
       return;
     }
     if(drag.type === 'resize'){
@@ -3598,12 +3736,13 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     if(d.type === 'multi-move'){ commitHistory(); return; }
     if(d.type === 'move' || d.type === 'resize'){ if(d.moved) commitHistory(); return; }
     if(d.type === 'new'){
-      // 가로·세로 모두 약 1cm(96dpi 기준 약 38px) 이상 드래그해야 실제 영역으로 인정합니다.
-      const CM_PX = 96 / 2.54;
+      // 가로·세로 모두 최소 0.3cm(96dpi 기준 약 11.3px, 화면 기준) 이상이어야 실제 영역으로 인정합니다.
+      const MIN_REGION_PX = 0.3 * 96 / 2.54;
       const dxClient = Math.abs((e.clientX ?? d.startClientX) - d.startClientX);
       const dyClient = Math.abs((e.clientY ?? d.startClientY) - d.startClientY);
-      const isMosaicDrag = dxClient >= CM_PX && dyClient >= CM_PX;
-      if(isMosaicDrag && d.rect && d.rect.w >= CM_PX && d.rect.h >= CM_PX){
+      const isMosaicDrag = dxClient >= MIN_REGION_PX && dyClient >= MIN_REGION_PX;
+      const screenK = overlayScale();
+      if(isMosaicDrag && d.rect && d.rect.w / screenK >= MIN_REGION_PX && d.rect.h / screenK >= MIN_REGION_PX){
         const t = srcVideo.currentTime;
         upsertKeyframe(d.region, t, d.rect, 18);
         // 영역을 화면에 그린(표시한) 바로 그 시점이 시작 지점입니다. (종료는 영상 끝)
@@ -3613,7 +3752,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
         rerender(); commitHistory();
         announceRegionCreated(d.region);
       } else if(d.region){
-        // 1cm 미만의 클릭/미세 드래그는 새 영역을 만들지 않습니다.
+        // 0.3cm 미만의 클릭/미세 드래그는 새 영역을 만들지 않습니다.
         if(d.autoCreated){
           removeRegion(d.region.id, {silent:true});
         } else {
@@ -5521,7 +5660,8 @@ if(document.readyState==='loading'){
     if(sw) sw.classList.toggle('on', !!e.target.checked);
   });
   document.querySelectorAll('.switch input').forEach(i => i.closest('.switch').classList.toggle('on', i.checked));
-  offerResumeOnStart();
+  window.cctvOnUnlock = offerResumeOnStart;
+  if(window.cctvUnlocked) offerResumeOnStart();
 })();
 </script>
 </body>
