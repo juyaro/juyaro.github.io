@@ -557,6 +557,7 @@
   .alert-actions button.danger{color:var(--red);}
   .alert-actions button:hover{background:var(--fill);}
   .alert-actions.single{grid-template-columns:1fr;}
+  #addRegionBtn[hidden], #addRevealBtn[hidden]{display:none !important;}
   .alert{width:440px; max-width:100%; border-radius:24px; overflow:hidden; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-pop);}
   .alert-body{padding:34px 28px 22px;}
   .alert-icon{width:52px; height:52px; margin:0 auto 18px; border-radius:15px; background:var(--blue-tint); color:var(--blue);}
@@ -823,8 +824,8 @@
         </div>
         <div class="card-actions">
           <button type="button" id="clearGroupBtn" class="btn btn-sm" hidden>묶음 해제</button>
-          <button type="button" id="addRegionBtn" class="btn btn-primary" disabled title="모자이크 영역 추가 (M)"><svg class="ic"><use href="#ic-plus"/></svg> 모자이크 영역</button>
-          <button type="button" id="addRevealBtn" class="btn" disabled title="모자이크를 걷어내 원본이 보이는 영역 (E)"><svg class="ic"><use href="#ic-eye"/></svg> 제외 영역</button>
+          <button type="button" id="addRegionBtn" class="btn btn-primary" disabled hidden title="모자이크 영역 추가 (M)"><svg class="ic"><use href="#ic-plus"/></svg> 모자이크 영역</button>
+          <button type="button" id="addRevealBtn" class="btn" disabled hidden title="모자이크를 걷어내 원본이 보이는 영역 (E)"><svg class="ic"><use href="#ic-eye"/></svg> 제외 영역</button>
         </div>
       </div>
       <div class="region-tip">
@@ -2558,7 +2559,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     if(!ids.length) return;
     ids.forEach(id => removeRegion(id, {silent:true}));
     rerender(); commitHistory();
-    toast(`영역 ${ids.length}개를 삭제했습니다.`, {type:'info', action:{label:'실행 취소', onClick:undo}});
+    /* 삭제 안내 팝업 없음 */
   }
 
   // =====================================================================
@@ -2788,7 +2789,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
     const padX = 7*k, lh = 20*k;
     const tw = ctx.measureText(text).width + padX*2;
     // 영역이 작아 라벨이 들어가지 않으면 영역 바깥(위, 공간이 없으면 아래)에 표시합니다.
-    const fits = !box || (box.w >= tw + 8*k && box.h >= lh + 8*k);
+    const fits = !box; // 번호는 항상 영역 바깥 위쪽(왼쪽 모서리 기준)에 표시
     let lx = x + 6*k, ly = y + 6*k;
     if(!fits){
       lx = x;
@@ -3402,7 +3403,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
   function announceRegionCreated(r){
     const rg = regionRange(r);
     const name = `${r.reveal ? '제외 영역' : '모자이크 영역'} ${regionDisplayNumber(r)}`;
-    toast(`${name} 추가 · 표시 ${rg ? `${fmtPrecise(rg.start)} → ${rg.end >= duration - 0.001 ? '영상 끝' : fmtPrecise(rg.end)}` : '없음'} — 카드에서 시작·종료 지점을 지정하세요.`, {type:'success', duration:4500});
+    /* 추가 안내 팝업 없음 */
   }
   function createMosaicRegion(pendingPlace){
     const now = clampNum(srcVideo.currentTime, 0, duration || 0);
@@ -3528,7 +3529,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       setSingleSelectedRegion(id); rerender();
     }else if(action === 'delete'){
       removeRegion(id); rerender();
-      toast('영역을 삭제했습니다.', {type:'info', action:{label:'실행 취소', onClick:undo}});
+      /* 삭제 안내 팝업 없음 */
     }else if(action === 'editComplete'){
       if(isRegionCompleted(id)) reopenRegion(id); else completeRegion(id);
     }else if(action === 'visibility'){
@@ -3870,7 +3871,7 @@ self.onmessage = async ({ data: { id, type, data: _data } }) => {
       el.querySelector('[data-act="complete"]').addEventListener('click', () => { if(isRegionCompleted(r.id)) reopenRegion(r.id); else completeRegion(r.id); });
       el.querySelector('[data-act="delete"]').addEventListener('click', () => {
         removeRegion(r.id); rerender();
-        toast(`${r.reveal ? '제외 영역' : '모자이크 영역'} ${no}번을 삭제했습니다.`, {type:'info', action:{label:'실행 취소', onClick:undo}});
+        /* 삭제 안내 팝업 없음 */
       });
       if(!expanded){ regionList.appendChild(el); return; }
 
